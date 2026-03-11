@@ -1,0 +1,22 @@
+# Build outputs
+bin/
+obj/
+TestResults/
+
+# Visual Studio / Rider
+.vs/
+*.user
+*.suo
+*.userprefs
+*.rsuser
+
+# Runtime state
+logs/
+state/
+
+# Packaging
+artifacts/*.zip
+
+# OS noise
+Thumbs.db
+Desktop.ini
