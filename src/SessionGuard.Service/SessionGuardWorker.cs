@@ -4,20 +4,17 @@ namespace SessionGuard.Service;
 
 public sealed class SessionGuardWorker : BackgroundService
 {
-    private readonly SessionGuardCoordinator _coordinator;
     private readonly IConfigurationRepository _configurationRepository;
-    private readonly IScanSnapshotStore _snapshotStore;
+    private readonly SessionGuardServiceRuntime _runtime;
     private readonly IAppLogger _logger;
 
     public SessionGuardWorker(
-        SessionGuardCoordinator coordinator,
         IConfigurationRepository configurationRepository,
-        IScanSnapshotStore snapshotStore,
+        SessionGuardServiceRuntime runtime,
         IAppLogger logger)
     {
-        _coordinator = coordinator;
         _configurationRepository = configurationRepository;
-        _snapshotStore = snapshotStore;
+        _runtime = runtime;
         _logger = logger;
     }
 
@@ -30,20 +27,7 @@ public sealed class SessionGuardWorker : BackgroundService
             try
             {
                 var configuration = await _configurationRepository.LoadAsync(stoppingToken);
-                var result = await _coordinator.ScanAsync(
-                    configuration.AppSettings.GuardModeEnabledByDefault,
-                    stoppingToken);
-
-                await _snapshotStore.PersistAsync(result, stoppingToken);
-                _logger.Info(
-                    "service.snapshot.updated",
-                    new
-                    {
-                        result.State,
-                        result.RiskLevel,
-                        result.RestartPending,
-                        result.HasAmbiguousSignals
-                    });
+                await _runtime.ScanNowAsync(stoppingToken);
 
                 await Task.Delay(TimeSpan.FromSeconds(configuration.AppSettings.ScanIntervalSeconds), stoppingToken);
             }

@@ -4,7 +4,7 @@
 
 - Windows can restart for reasons outside the small set of user-mode-visible signals this MVP inspects.
 - Policy-backed mitigations reduce risk but do not override every restart path on every device configuration.
-- SessionGuard does not ship a kernel component, service hardening layer, or enterprise management channel in v0.1.0.
+- SessionGuard now includes a service-hostable worker and local IPC path, but it still does not ship a hardened installed service model, kernel component, or enterprise management channel.
 
 ## Visibility limitations
 
@@ -21,9 +21,10 @@
 
 ## UX limitations
 
-- The desktop UI is still a full window, not a tray utility.
+- The desktop UI now minimizes to the tray, but it is still primarily a dashboard window rather than a dedicated lightweight tray client.
 - Desktop notifications are not implemented in the MVP; warning behavior is currently focused on dashboard state and optional window raising.
-- A service-hostable worker project now exists, but service installation, auto-start behavior, and tray coordination are not yet part of the shipped workflow.
+- The local named-pipe control plane is intentionally simple and not yet versioned for long-term compatibility guarantees.
+- Service installation, auto-start behavior, and a dedicated tray-shell package are not yet part of the shipped workflow.
 
 ## Recovery limitations
 

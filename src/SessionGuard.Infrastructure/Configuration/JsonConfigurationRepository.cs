@@ -2,17 +2,12 @@ using System.Text.Json;
 using SessionGuard.Core.Configuration;
 using SessionGuard.Core.Services;
 using SessionGuard.Infrastructure.Environment;
+using SessionGuard.Infrastructure.Serialization;
 
 namespace SessionGuard.Infrastructure.Configuration;
 
 public sealed class JsonConfigurationRepository : IConfigurationRepository
 {
-    private static readonly JsonSerializerOptions SerializerOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-        ReadCommentHandling = JsonCommentHandling.Skip
-    };
-
     private readonly RuntimePaths _paths;
 
     public JsonConfigurationRepository(RuntimePaths paths)
@@ -40,14 +35,14 @@ public sealed class JsonConfigurationRepository : IConfigurationRepository
         await using var appSettingsStream = File.OpenRead(appSettingsPath);
         var appSettings = await JsonSerializer.DeserializeAsync<AppSettings>(
                               appSettingsStream,
-                              SerializerOptions,
+                              SessionGuardJson.Default,
                               cancellationToken) ??
                           new AppSettings();
 
         await using var protectedProcessStream = File.OpenRead(protectedProcessesPath);
         var protectedProcessCatalog = await JsonSerializer.DeserializeAsync<ProtectedProcessCatalog>(
                                           protectedProcessStream,
-                                          SerializerOptions,
+                                          SessionGuardJson.Default,
                                           cancellationToken) ??
                                       new ProtectedProcessCatalog();
 

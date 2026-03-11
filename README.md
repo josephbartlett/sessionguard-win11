@@ -34,7 +34,9 @@ SessionGuard does not guarantee prevention of every OS-driven restart path, and 
   - `NoAutoRebootWithLoggedOnUsers`
   - policy-managed active hours (`SetActiveHours`, `ActiveHoursStart`, `ActiveHoursEnd`)
 - Local JSON-line logging under the runtime `logs/` folder.
-- Machine-readable scan snapshot at `state/current-scan.json` as a service/tray foundation.
+- Tray-aware WPF dashboard behavior that minimizes to the notification area and can reopen the dashboard on demand.
+- Named-pipe control plane between the desktop app and the service-hostable worker, with local fallback if the service is not reachable.
+- Machine-readable scan snapshot at `state/current-scan.json` shared by the desktop app and service path.
 - Unit tests for process matching, status aggregation, and configuration parsing.
 
 ## Repo layout
@@ -54,17 +56,19 @@ Build the full solution:
 dotnet build SessionGuard.sln
 ```
 
+Run the background service host locally:
+
+```powershell
+dotnet run --project src/SessionGuard.Service/SessionGuard.Service.csproj
+```
+
 Run the desktop app in non-elevated mode:
 
 ```powershell
 dotnet run --project src/SessionGuard.App/SessionGuard.App.csproj
 ```
 
-Run the background worker locally:
-
-```powershell
-dotnet run --project src/SessionGuard.Service/SessionGuard.Service.csproj
-```
+When the service host is running, the desktop app prefers the named-pipe service control plane and reports `Control plane: Service`. If the service is not reachable, the app falls back to a local in-process scan path and reports `Control plane: Local fallback`.
 
 Run the desktop app in an elevated PowerShell session to test mitigation actions:
 
@@ -109,15 +113,16 @@ dotnet test SessionGuard.sln
 6. Launch the app from an elevated shell, apply the recommended mitigation, and confirm the mitigation state changes to applied.
 7. Reset managed settings and verify the app reports the reverted state.
 8. Review the latest file under `logs/` and confirm scans, detections, mitigation attempts, and failures are recorded.
-9. Inspect `state/current-scan.json` and confirm the latest dashboard state is serialized for future integration work.
-10. Run the service project and confirm it also updates `state/current-scan.json` without the WPF window running.
+9. Run the service project, then launch the desktop app and confirm the dashboard reports `Control plane: Service`.
+10. Minimize or close the dashboard window and confirm SessionGuard remains available in the notification area.
+11. Inspect `state/current-scan.json` and confirm the latest status is serialized by the service or local fallback path.
 
 ## What the MVP does not do
 
 - It does not disable Windows Update.
 - It does not promise absolute prevention of every automatic restart.
 - It does not inspect unsaved buffers, browser tab counts, or developer session internals.
-- It now includes a service-hostable worker, but there is still no tray shell or IPC boundary.
+- It now includes a service-hostable worker, named-pipe IPC, and tray-aware window behavior, but it is not yet packaged as an installed Windows Service plus dedicated tray shell.
 - It does not yet capture or restore workspace snapshots.
 
 ## Further documentation

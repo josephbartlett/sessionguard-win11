@@ -11,9 +11,12 @@ The repo now includes `SessionGuard.Service`, a background worker/service-host f
 - reuses the shared scan coordinator
 - reuses the same provider stack
 - writes the shared `state/current-scan.json` snapshot
+- exposes a local named-pipe control plane
 - can be run locally from the CLI as a console host
 
-This is not the full service split yet. It is the first concrete background component.
+The repo also now includes a tray-aware WPF shell that prefers the service control plane and falls back locally when the service is unavailable.
+
+This is not the full service split yet. It is the first concrete service-plus-client control boundary.
 
 ## Proposed components
 
@@ -67,11 +70,12 @@ Current foundation already in repo:
 
 - `state/current-scan.json` captures the latest aggregated scan result in a machine-readable format
 - core status models already separate raw indicators from user-facing evaluation
-- `SessionGuard.Service` already hosts the scan loop outside the WPF app
+- `SessionGuard.Service` already hosts the scan loop and named-pipe control plane outside the WPF app
+- `SessionGuard.App` already behaves as a tray-aware client that can consume remote status or fall back locally
 
 Migration path:
 
-1. move signal providers and mitigation writers behind service-hostable abstractions
-2. introduce a small local IPC contract for health state and action requests
-3. downgrade the current WPF window into a tray-aware client
-4. add service installation, health checks, and upgrade-safe persisted state
+1. harden and version the existing local IPC contract for health state and action requests
+2. move service-only privileged writes behind installable service lifecycle management
+3. split the current WPF dashboard from a lighter always-on tray entry point if that improves operator experience
+4. add service installation, health checks, startup policy, and upgrade-safe persisted state

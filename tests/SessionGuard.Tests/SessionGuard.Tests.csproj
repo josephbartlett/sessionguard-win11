@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\SessionGuard.Core\SessionGuard.Core.csproj" />
     <ProjectReference Include="..\..\src\SessionGuard.Infrastructure\SessionGuard.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\SessionGuard.Service\SessionGuard.Service.csproj" />
   </ItemGroup>
 
 </Project>

@@ -4,30 +4,35 @@
 
 SessionGuard MVP uses a layered `WPF + Core + Infrastructure` structure:
 
-- `SessionGuard.App`: presentation, commands, timer-driven refresh, and user-facing actions.
+- `SessionGuard.App`: presentation, tray-aware dashboard behavior, and user-facing actions.
 - `SessionGuard.Core`: models, process matching, restart status evaluation, scan orchestration, and service contracts.
-- `SessionGuard.Infrastructure`: Windows-specific implementations for config loading, file logging, process inventory, registry inspection, and registry-backed mitigation settings.
-- `SessionGuard.Service`: service-hostable background worker that reuses the same coordinator and shared state output.
+- `SessionGuard.Infrastructure`: Windows-specific implementations for config loading, file logging, process inventory, registry inspection, named-pipe IPC, and registry-backed mitigation settings.
+- `SessionGuard.Service`: service-hostable background worker plus named-pipe server that reuses the same coordinator and shared state output.
 
-WPF was chosen over WinUI for the MVP because the priority is a stable desktop monitor with fast local iteration and direct Windows API access. The architecture keeps system-facing logic out of the UI so a service/tray split can be added later.
+WPF was chosen over WinUI for the MVP because the priority is a stable desktop monitor with fast local iteration and direct Windows API access. The architecture keeps system-facing logic out of the UI so the service boundary and future tray shell can evolve without rewriting the core scan logic.
 
 ## Runtime flow
 
-1. The app resolves runtime paths from the repository root or executable location.
-2. The configuration repository loads:
+1. The app and service resolve runtime paths from the repository root or executable location.
+2. The service host owns the authoritative background scan loop and named-pipe control plane when it is running.
+3. The desktop app creates a hybrid control plane:
+   - prefer the service over named pipes
+   - fall back to a local in-process scan path if the service is unavailable
+4. The configuration repository loads:
    - [`config/appsettings.json`](/C:/Users/decoy/sessionguard-win11/config/appsettings.json)
    - [`config/protected-processes.json`](/C:/Users/decoy/sessionguard-win11/config/protected-processes.json)
-3. The coordinator runs a scan:
+5. The coordinator runs a scan:
    - protected-process detection
    - restart signal inspection across multiple providers
    - mitigation state inspection
-4. Core logic aggregates the signals into:
+6. Core logic aggregates the signals into:
    - `Safe`
    - `Restart Pending`
    - `Protected Session Active`
    - `Mitigated / Deferred`
    - `Unknown / Limited Visibility`
-5. The WPF view model updates the dashboard and, when guard mode is enabled, can raise the window when risk transitions to high.
+7. The service or local fallback path persists `state/current-scan.json`, and the WPF view model updates the dashboard.
+8. When guard mode is enabled, the WPF shell can raise the dashboard on a high-risk transition and otherwise stay minimized in the tray.
 
 ## Restart signal inspection
 
@@ -74,20 +79,21 @@ Before writing managed values, the infrastructure layer captures previous values
 - `config/`: source-controlled default runtime config for protected processes and app behavior.
 - `logs/`: local structured logs created on demand.
 - `state/`: local backup state used for mitigation reset behavior.
-  - `current-scan.json`: latest machine-readable scan snapshot for future tray/service work.
+  - `current-scan.json`: latest machine-readable scan snapshot shared by the app and service paths.
 
 The log and state folders are intentionally excluded from source control.
 
-## Service foundation
+## Service and control plane
 
-`SessionGuard.Service` is now present as a Windows service-hostable worker project. It does not introduce a tray app or IPC layer yet, but it already:
+`SessionGuard.Service` is now present as a Windows service-hostable worker project with a local named-pipe server. The current split already provides:
 
 - loads the same root `config/*.json`
 - runs the same multi-provider scan coordinator
 - writes the same `state/current-scan.json`
+- owns mitigation commands when reached through the pipe control plane
 - uses the same file logger and mitigation/state services
 
-That keeps the background path and the desktop path aligned while the fuller `v0.3.0` split is still in progress.
+`SessionGuard.App` currently acts as a tray-aware dashboard client layered over a hybrid control plane. That keeps the background path and the desktop path aligned while full service installation, startup, and dedicated tray-shell packaging are still in progress.
 
 ## Logging
 
@@ -105,5 +111,5 @@ This keeps the MVP auditable without introducing a full telemetry stack.
 
 - Add more signal providers by implementing `IRestartSignalProvider`.
 - Add richer workspace heuristics behind `IProtectedWorkspaceDetector`.
-- Move mitigation logic into a service-hosted implementation without changing core status evaluation.
-- Replace or complement the WPF front end with a tray app while retaining the current core and infrastructure contracts.
+- Harden the named-pipe contract and move more privileged behavior behind the service boundary without changing core status evaluation.
+- Replace or complement the current WPF shell with a dedicated tray app while retaining the current core and infrastructure contracts.

@@ -4,6 +4,12 @@ All notable changes to this project should be recorded here in reverse chronolog
 
 ## Unreleased
 
+- Added a named-pipe control plane shared by the desktop app and service-hostable runtime.
+- Added a tray-aware WPF shell that prefers the service control plane and falls back locally when needed.
+- Added service-owned scan state orchestration and shared snapshot persistence behind the new control plane.
+- Hardened long-running process detection so transient or protected process inspection failures do not break scans.
+- Expanded tests and refreshed docs to match the current service-plus-client architecture.
+
 ## 0.2.0 - 2026-03-11
 
 - Added multiple restart-signal providers for Windows Update Agent, Windows Update UX settings, scheduled task visibility, and deeper registry coverage.

@@ -23,7 +23,9 @@ builder.Services.AddSingleton<IRestartSignalProvider, WindowsUpdateAgentSignalPr
 builder.Services.AddSingleton<IRestartSignalProvider, WindowsUpdateUxSettingsSignalProvider>();
 builder.Services.AddSingleton<IRestartSignalProvider, WindowsUpdateScheduledTaskSignalProvider>();
 builder.Services.AddSingleton<SessionGuardCoordinator>();
+builder.Services.AddSingleton<SessionGuardServiceRuntime>();
 builder.Services.AddHostedService<SessionGuardWorker>();
+builder.Services.AddHostedService<SessionGuardPipeServer>();
 
 var host = builder.Build();
 host.Run();

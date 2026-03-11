@@ -1,21 +1,21 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Windows.Media;
 using System.Windows.Threading;
 using SessionGuard.Core.Configuration;
 using SessionGuard.Core.Models;
 using SessionGuard.Core.Services;
 using SessionGuard.Infrastructure.Environment;
+using Brush = System.Windows.Media.Brush;
+using BrushConverter = System.Windows.Media.BrushConverter;
+using SolidColorBrush = System.Windows.Media.SolidColorBrush;
 
 namespace SessionGuard.App.ViewModels;
 
 public sealed class MainWindowViewModel : ObservableObject, IDisposable
 {
-    private readonly SessionGuardCoordinator _coordinator;
+    private readonly ISessionGuardControlPlane _controlPlane;
     private readonly IConfigurationRepository _configurationRepository;
-    private readonly IMitigationService _mitigationService;
     private readonly IAppLogger _logger;
-    private readonly IScanSnapshotStore _snapshotStore;
     private readonly RuntimePaths _runtimePaths;
     private readonly DispatcherTimer _timer;
     private readonly EventHandler _timerHandler;
@@ -38,13 +38,14 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private bool _shouldStartMinimized;
     private string _currentStatusText = "Unknown / Limited Visibility";
     private string _restartRiskText = "Unknown";
-    private string _protectionModeText = "Read-only";
+    private string _protectionModeText = "Unavailable";
     private string _pendingRestartText = "Not scanned";
     private string _adminAccessText = "Checking";
     private string _lastScanText = "Last scan: not yet run";
     private string _statusSummary = "Waiting for the first scan.";
     private string _signalOverviewText = "Signal overview: not yet scanned";
     private string _providerCoverageText = "Providers: not yet scanned";
+    private string _connectionModeText = "Control plane: not yet determined";
     private string _protectedProcessSummary = "Protected processes: not yet scanned";
     private string _lastActionMessage = "SessionGuard is ready.";
     private string _configurationDirectoryText = string.Empty;
@@ -53,18 +54,14 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private Brush _riskBrush = CreateBrush("#64748B");
 
     public MainWindowViewModel(
-        SessionGuardCoordinator coordinator,
+        ISessionGuardControlPlane controlPlane,
         IConfigurationRepository configurationRepository,
-        IMitigationService mitigationService,
         IAppLogger logger,
-        IScanSnapshotStore snapshotStore,
         RuntimePaths runtimePaths)
     {
-        _coordinator = coordinator;
+        _controlPlane = controlPlane;
         _configurationRepository = configurationRepository;
-        _mitigationService = mitigationService;
         _logger = logger;
-        _snapshotStore = snapshotStore;
         _runtimePaths = runtimePaths;
 
         ProtectedProcesses = new ObservableCollection<ProtectedProcessMatch>();
@@ -73,10 +70,12 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         Recommendations = new ObservableCollection<string>();
 
         _timer = new DispatcherTimer();
-        _timerHandler = async (_, _) => await RefreshAsync();
+        _timerHandler = async (_, _) => await RefreshAsync(initialLoad: false, forceScan: false, explicitGuardMode: null, skipIfBusy: true);
         _timer.Tick += _timerHandler;
 
-        _scanNowCommand = new AsyncRelayCommand(RefreshAsync, () => !IsBusy);
+        _scanNowCommand = new AsyncRelayCommand(
+            () => RefreshAsync(initialLoad: false, forceScan: true, explicitGuardMode: null, skipIfBusy: false),
+            () => !IsBusy);
         _applyMitigationsCommand = new AsyncRelayCommand(ApplyMitigationsAsync, () => !IsBusy);
         _resetMitigationsCommand = new AsyncRelayCommand(ResetMitigationsAsync, () => !IsBusy);
         _openConfigCommand = new RelayCommand(() => OpenPath(_runtimePaths.ConfigDirectory), () => !IsBusy);
@@ -123,7 +122,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
 
             if (_guardModeInitialized && !_suppressGuardModeRefresh)
             {
-                _ = RefreshAsync();
+                _ = RefreshAsync(initialLoad: false, forceScan: false, explicitGuardMode: value, skipIfBusy: false);
             }
         }
     }
@@ -211,6 +210,12 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         private set => SetProperty(ref _providerCoverageText, value);
     }
 
+    public string ConnectionModeText
+    {
+        get => _connectionModeText;
+        private set => SetProperty(ref _connectionModeText, value);
+    }
+
     public string ProtectedProcessSummary
     {
         get => _protectedProcessSummary;
@@ -254,13 +259,13 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             return;
         }
 
-        await RefreshAsync(initialLoad: true);
+        await RefreshAsync(initialLoad: true, forceScan: false, explicitGuardMode: null, skipIfBusy: false);
         _timer.Start();
     }
 
     public async Task RefreshAsync()
     {
-        await RefreshAsync(initialLoad: false);
+        await RefreshAsync(initialLoad: false, forceScan: false, explicitGuardMode: null, skipIfBusy: false);
     }
 
     public void Dispose()
@@ -276,11 +281,22 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         _scanLock.Dispose();
     }
 
-    private async Task RefreshAsync(bool initialLoad)
+    private async Task RefreshAsync(
+        bool initialLoad,
+        bool forceScan,
+        bool? explicitGuardMode,
+        bool skipIfBusy)
     {
-        if (!await _scanLock.WaitAsync(0))
+        if (skipIfBusy)
         {
-            return;
+            if (!await _scanLock.WaitAsync(0))
+            {
+                return;
+            }
+        }
+        else
+        {
+            await _scanLock.WaitAsync();
         }
 
         try
@@ -289,32 +305,37 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             var configuration = await _configurationRepository.LoadAsync();
             ApplyConfiguration(configuration, initialLoad);
 
-            var result = await _coordinator.ScanAsync(GuardModeEnabled);
-            ApplyScanResult(result);
-            await _snapshotStore.PersistAsync(result);
+            SessionControlStatus status = explicitGuardMode.HasValue
+                ? await _controlPlane.SetGuardModeAsync(explicitGuardMode.Value)
+                : forceScan
+                    ? await _controlPlane.ScanNowAsync()
+                    : await _controlPlane.GetStatusAsync();
+
+            ApplyScanResult(status);
 
             if (_warningBehavior.RaiseWindowOnHighRisk &&
                 GuardModeEnabled &&
-                result.RiskLevel == RestartRiskLevel.High &&
+                status.ScanResult.RiskLevel == RestartRiskLevel.High &&
                 _previousRiskLevel != RestartRiskLevel.High)
             {
                 AttentionRequested?.Invoke(this, EventArgs.Empty);
             }
 
-            _previousRiskLevel = result.RiskLevel;
+            _previousRiskLevel = status.ScanResult.RiskLevel;
         }
         catch (Exception exception)
         {
             _logger.Error("view.refresh.failed", exception);
             CurrentStatusText = "Unknown / Limited Visibility";
             RestartRiskText = "Unknown";
-            ProtectionModeText = "Read-only";
+            ProtectionModeText = "Unavailable";
             PendingRestartText = "Scan failed";
-            AdminAccessText = _mitigationService.IsElevated ? "Elevated" : "Read-only";
+            AdminAccessText = "Unavailable";
             LastScanText = $"Last scan failed at {DateTime.Now:t}";
             StatusSummary = "SessionGuard could not complete the scan. Review the configuration files and logs for details.";
             SignalOverviewText = "Signal overview unavailable.";
             ProviderCoverageText = "Providers: scan failed";
+            ConnectionModeText = "Control plane: unavailable";
             ProtectedProcessSummary = "Protected process detection unavailable.";
             LastActionMessage = $"Scan failed: {exception.Message}";
             StatusBrush = CreateBrush("#64748B");
@@ -326,7 +347,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
                 Recommendations,
                 new[]
                 {
-                    "Verify that config/appsettings.json and config/protected-processes.json exist and contain valid JSON.",
+                    "Verify that the service is running or that config/appsettings.json and config/protected-processes.json are still valid.",
                     "Review the latest log file for the underlying exception before retrying."
                 });
         }
@@ -341,11 +362,10 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     {
         try
         {
-            var configuration = await _configurationRepository.LoadAsync();
-            var result = await _mitigationService.ApplyRecommendedAsync(configuration);
+            var result = await _controlPlane.ApplyRecommendedAsync();
             LastActionMessage = result.Message;
             ReplaceItems(ManagedMitigations, result.CurrentStates);
-            await RefreshAsync();
+            await RefreshAsync(initialLoad: false, forceScan: true, explicitGuardMode: null, skipIfBusy: false);
         }
         catch (Exception exception)
         {
@@ -358,11 +378,10 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     {
         try
         {
-            var configuration = await _configurationRepository.LoadAsync();
-            var result = await _mitigationService.ResetManagedAsync(configuration);
+            var result = await _controlPlane.ResetManagedAsync();
             LastActionMessage = result.Message;
             ReplaceItems(ManagedMitigations, result.CurrentStates);
-            await RefreshAsync();
+            await RefreshAsync(initialLoad: false, forceScan: true, explicitGuardMode: null, skipIfBusy: false);
         }
         catch (Exception exception)
         {
@@ -399,8 +418,13 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         }
     }
 
-    private void ApplyScanResult(SessionScanResult result)
+    private void ApplyScanResult(SessionControlStatus status)
     {
+        _suppressGuardModeRefresh = true;
+        GuardModeEnabled = status.GuardModeEnabled;
+        _suppressGuardModeRefresh = false;
+
+        var result = status.ScanResult;
         CurrentStatusText = FormatState(result.State);
         RestartRiskText = FormatRisk(result.RiskLevel);
         ProtectionModeText = FormatProtectionMode(result.ProtectionMode);
@@ -415,6 +439,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         StatusSummary = result.Summary;
         SignalOverviewText = result.SignalOverview.Summary;
         ProviderCoverageText = $"Providers: {result.SignalOverview.ProviderCount} total, {result.SignalOverview.ProvidersWithLimitedVisibility} limited, {result.SignalOverview.ActiveIndicators} active signals";
+        ConnectionModeText = $"Control plane: {status.ConnectionMode}";
         ProtectedProcessSummary = result.ProtectedProcesses.Count == 0
             ? "Protected processes: none detected"
             : $"Protected processes: {string.Join(", ", result.ProtectedProcesses.Select(match => $"{match.DisplayName} x{match.InstanceCount}"))}";

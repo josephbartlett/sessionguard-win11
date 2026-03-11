@@ -85,6 +85,8 @@ Move from a foreground monitor to a continuously available protection architectu
 - tray app plus service communication
 - continuous restart monitoring
 - protection rules
+- named-pipe control plane for status and action requests
+- local fallback when the service boundary is unavailable during development or recovery
 
 ### Architectural changes
 
@@ -92,12 +94,14 @@ Move from a foreground monitor to a continuously available protection architectu
 - add IPC between the tray process and the service
 - move privileged policy writes into the service boundary
 - persist health state for tray rendering and diagnostics
+- distinguish authoritative service-owned state from local fallback state in the UI
 
 ### Risks and limitations
 
 - service installation and lifecycle increase operational complexity
 - IPC and privilege boundaries require careful hardening
 - background monitoring changes deployment and testing requirements
+- hybrid fallback behavior must stay explicit so operators do not confuse local fallback with service-backed protection
 
 ### Acceptance criteria
 
@@ -105,6 +109,7 @@ Move from a foreground monitor to a continuously available protection architectu
 - tray app can read current health state and request safe actions
 - restart monitoring continues after the main window is closed
 - service and tray logs are separated and correlated
+- the UI clearly reports whether it is connected to the service or running in local fallback mode
 
 ## v0.4.0 - Workspace Safety Layer
 
