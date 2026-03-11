@@ -50,7 +50,8 @@ Planned work:
 
 Current status:
 - v0.4.1 added deterministic local UI smoke scenarios and screenshot capture
-- v0.4.2 is the next planned patch to move that validation path into GitHub Actions and tighten repo guidance around it
+- v0.4.2 adds the GitHub Actions validation path, shared repo-owned validation script, and updated repo guidance
+- the remaining step for v0.4.2 is the first pushed workflow run on GitHub Actions
 
 Exit criteria:
 - a Windows GitHub Actions workflow runs the repo-owned validation script

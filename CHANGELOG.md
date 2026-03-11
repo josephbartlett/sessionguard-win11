@@ -4,9 +4,15 @@ All notable changes to this project should be recorded here in reverse chronolog
 
 ## Unreleased
 
+No unreleased changes yet.
+
+## 0.4.2 - 2026-03-11
+
 - Added a repo-owned Windows validation script that runs build, test, and UI smoke through one entry point.
 - Added a GitHub Actions workflow on `windows-latest` to run validation and upload smoke/test artifacts.
 - Updated `AGENTS.md` and the README so UI-affecting changes use the same validation path locally and in CI.
+- Updated the UI smoke script to support configuration selection and CI-friendly no-build execution.
+- Ignored `artifacts/ci/` so local validation runs do not dirty the worktree.
 
 ## 0.4.1 - 2026-03-11
 
