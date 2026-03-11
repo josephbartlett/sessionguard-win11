@@ -52,6 +52,13 @@ This split architecture supports:
 
 ## Migration path from the MVP
 
+Current foundation already in repo:
+
+- `state/current-scan.json` captures the latest aggregated scan result in a machine-readable format
+- core status models already separate raw indicators from user-facing evaluation
+
+Migration path:
+
 1. move signal providers and mitigation writers behind service-hostable abstractions
 2. introduce a small local IPC contract for health state and action requests
 3. downgrade the current WPF window into a tray-aware client

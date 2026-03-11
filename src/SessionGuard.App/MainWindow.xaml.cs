@@ -18,6 +18,7 @@ public partial class MainWindow : Window
 
         var runtimePaths = RuntimePaths.Discover(AppContext.BaseDirectory);
         var logger = new FileAppLogger(runtimePaths);
+        var snapshotStore = new JsonScanSnapshotStore(runtimePaths);
         var configurationRepository = new JsonConfigurationRepository(runtimePaths);
         var mitigationService = new WindowsMitigationService(runtimePaths, logger);
         var coordinator = new SessionGuardCoordinator(
@@ -25,7 +26,10 @@ public partial class MainWindow : Window
             new ProcessInventoryService(),
             new IRestartSignalProvider[]
             {
-                new RegistryRestartSignalProvider()
+                new RegistryRestartSignalProvider(),
+                new WindowsUpdateAgentSignalProvider(),
+                new WindowsUpdateUxSettingsSignalProvider(),
+                new WindowsUpdateScheduledTaskSignalProvider()
             },
             mitigationService,
             logger);
@@ -35,6 +39,7 @@ public partial class MainWindow : Window
             configurationRepository,
             mitigationService,
             logger,
+            snapshotStore,
             runtimePaths);
 
         _viewModel.AttentionRequested += HandleAttentionRequested;

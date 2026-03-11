@@ -9,7 +9,8 @@
 ## Visibility limitations
 
 - Registry indicators are heuristic inputs, not a complete source of truth.
-- The MVP does not yet inspect scheduled restart tasks, Windows Update COM state, or richer orchestration metadata.
+- Windows Update Agent COM, UX settings, and scheduled-task clues improve coverage, but they still do not expose every restart decision path.
+- Smart scheduler predictions and scheduled-task visibility are advisory orchestration clues, not proof that Windows will definitely restart at a specific time.
 - Protected workspace detection is process-name based. It does not know whether a terminal has unsaved work or whether a browser tab matters to the user.
 
 ## Mitigation limitations
@@ -22,7 +23,7 @@
 
 - The app is a full desktop window, not a background tray utility.
 - Desktop notifications are not implemented in the MVP; warning behavior is currently focused on dashboard state and optional window raising.
-- The app does not auto-start or persist a background monitor across sign-in sessions.
+- The app writes `state/current-scan.json` for future integration, but it does not auto-start or persist a background monitor across sign-in sessions.
 
 ## Recovery limitations
 

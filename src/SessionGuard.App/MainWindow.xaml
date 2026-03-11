@@ -68,6 +68,14 @@
                                        Foreground="{StaticResource PrimaryTextBrush}"
                                        Text="{Binding StatusSummary}"
                                        TextWrapping="Wrap" />
+                            <TextBlock Margin="0,10,0,0"
+                                       Foreground="{StaticResource SecondaryTextBrush}"
+                                       Text="{Binding SignalOverviewText}"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Margin="0,6,0,0"
+                                       Foreground="{StaticResource SecondaryTextBrush}"
+                                       Text="{Binding ProviderCoverageText}"
+                                       TextWrapping="Wrap" />
 
                             <UniformGrid Margin="0,18,0,0" Columns="2">
                                 <Border Margin="0,0,10,10"
@@ -231,7 +239,9 @@
                                       IsReadOnly="True"
                                       ItemsSource="{Binding RestartIndicators}">
                                 <DataGrid.Columns>
+                                    <DataGridTextColumn Width="180" Binding="{Binding Provider}" Header="Provider" />
                                     <DataGridTextColumn Width="220" Binding="{Binding Source}" Header="Signal" />
+                                    <DataGridTextColumn Width="140" Binding="{Binding Category}" Header="Category" />
                                     <DataGridCheckBoxColumn Width="90" Binding="{Binding IsActive}" Header="Active" />
                                     <DataGridTextColumn Width="100" Binding="{Binding Confidence}" Header="Confidence" />
                                     <DataGridCheckBoxColumn Width="120" Binding="{Binding LimitedVisibility}" Header="Limited view" />

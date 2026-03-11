@@ -21,15 +21,20 @@ SessionGuard does not guarantee prevention of every OS-driven restart path, and 
 
 - Dashboard showing current status, restart risk, protection mode, pending restart state, protected process matches, mitigation status, and last scan time.
 - Configurable protected process detection from [`config/protected-processes.json`](/C:/Users/decoy/sessionguard-win11/config/protected-processes.json).
-- Restart signal inspection using bounded registry checks for:
-  - Component Based Servicing reboot pending
-  - Windows Update reboot required
-  - pending file rename operations
-  - `UpdateExeVolatile`
+- Restart signal inspection using multiple providers:
+  - bounded registry checks for CBS, Windows Update, and Session Manager reboot clues
+  - Windows Update Agent COM `RebootRequired`
+  - Windows Update UX settings for active hours, pause expiry, restart notifications, and scheduler prediction clues
+  - Task Scheduler visibility for the Windows Update `Scheduled Start` task
+- Aggregated signal coverage that distinguishes:
+  - definitive pending restart signals
+  - ambiguous restart-orchestration activity
+  - limited visibility/provider failures
 - Reversible native mitigation actions:
   - `NoAutoRebootWithLoggedOnUsers`
   - policy-managed active hours (`SetActiveHours`, `ActiveHoursStart`, `ActiveHoursEnd`)
 - Local JSON-line logging under the runtime `logs/` folder.
+- Machine-readable scan snapshot at `state/current-scan.json` as a service/tray foundation.
 - Unit tests for process matching, status aggregation, and configuration parsing.
 
 ## Repo layout
@@ -85,16 +90,19 @@ dotnet test SessionGuard.sln
 - Edit [`config/protected-processes.json`](/C:/Users/decoy/sessionguard-win11/config/protected-processes.json) to add or remove protected processes without rebuilding.
 - Logs are written to `logs/sessionguard-YYYYMMDD.log`.
 - Temporary mitigation backups are written to the local `state/` folder so SessionGuard can restore previous values when resetting managed settings.
+- The latest scan snapshot is written to `state/current-scan.json` for future background-service or tray-client consumption.
 
 ## Manual review checklist
 
 1. Build the solution and launch the app in a normal PowerShell session.
 2. Confirm the dashboard renders current status, risk, restart indicators, protected process matches, and mitigation state.
-3. Start a protected tool such as Windows Terminal or VS Code and confirm the dashboard detects it on the next scan or after pressing `Scan now`.
-4. Edit [`config/protected-processes.json`](/C:/Users/decoy/sessionguard-win11/config/protected-processes.json), save the file, and verify the next scan uses the updated list.
-5. Launch the app from an elevated shell, apply the recommended mitigation, and confirm the mitigation state changes to applied.
-6. Reset managed settings and verify the app reports the reverted state.
-7. Review the latest file under `logs/` and confirm scans, detections, mitigation attempts, and failures are recorded.
+3. Confirm the restart indicator table shows multiple providers and that the pending-restart field can read `Pending`, `Not detected`, or `Ambiguous / review signals` depending on the signal mix.
+4. Start a protected tool such as Windows Terminal or VS Code and confirm the dashboard detects it on the next scan or after pressing `Scan now`.
+5. Edit [`config/protected-processes.json`](/C:/Users/decoy/sessionguard-win11/config/protected-processes.json), save the file, and verify the next scan uses the updated list.
+6. Launch the app from an elevated shell, apply the recommended mitigation, and confirm the mitigation state changes to applied.
+7. Reset managed settings and verify the app reports the reverted state.
+8. Review the latest file under `logs/` and confirm scans, detections, mitigation attempts, and failures are recorded.
+9. Inspect `state/current-scan.json` and confirm the latest dashboard state is serialized for future integration work.
 
 ## What the MVP does not do
 
@@ -102,6 +110,7 @@ dotnet test SessionGuard.sln
 - It does not promise absolute prevention of every automatic restart.
 - It does not inspect unsaved buffers, browser tab counts, or developer session internals.
 - It does not yet run as a background service or tray agent.
+- It only lays service groundwork through a JSON state snapshot; no service or IPC boundary is implemented yet.
 - It does not yet capture or restore workspace snapshots.
 
 ## Further documentation

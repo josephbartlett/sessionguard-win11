@@ -42,12 +42,23 @@ public sealed class SessionGuardCoordinator
             {
                 var providerIndicators = await provider.GetIndicatorsAsync(cancellationToken);
                 indicators.AddRange(providerIndicators);
+                _logger.Info(
+                    "scan.signal_provider.finish",
+                    new
+                    {
+                        provider = provider.Name,
+                        totalSignals = providerIndicators.Count,
+                        activeSignals = providerIndicators.Count(indicator => indicator.IsActive),
+                        limitedVisibilitySignals = providerIndicators.Count(indicator => indicator.LimitedVisibility)
+                    });
             }
             catch (Exception exception)
             {
                 _logger.Warn("scan.signal_provider_failed", new { provider = provider.Name, exception = exception.Message });
                 indicators.Add(new RestartIndicator(
                     provider.Name,
+                    provider.Name,
+                    RestartIndicatorCategory.UpdateOrchestration,
                     false,
                     $"{provider.Name} failed: {exception.Message}",
                     SignalConfidence.Low,
@@ -56,6 +67,7 @@ public sealed class SessionGuardCoordinator
         }
 
         var mitigationStates = await _mitigationService.GetStatesAsync(configuration, cancellationToken);
+        var signalOverview = RestartStatusEvaluator.BuildOverview(indicators);
         var evaluation = RestartStatusEvaluator.Evaluate(indicators, protectedProcesses, mitigationStates);
         var protectionMode = RestartStatusEvaluator.DetermineProtectionMode(
             guardModeEnabled,
@@ -67,15 +79,17 @@ public sealed class SessionGuardCoordinator
             evaluation.State,
             evaluation.RiskLevel,
             protectionMode,
-            indicators.Any(indicator => indicator.IsActive),
+            signalOverview.DefinitivePendingSignals > 0,
+            evaluation.HasAmbiguousSignals,
             protectedProcesses.Count > 0,
             indicators.Any(indicator => indicator.LimitedVisibility),
             _mitigationService.IsElevated,
             evaluation.Summary,
+            signalOverview,
             indicators,
             protectedProcesses,
             mitigationStates,
-            BuildRecommendations(indicators, protectedProcesses, mitigationStates, _mitigationService.IsElevated));
+            BuildRecommendations(signalOverview, protectedProcesses, mitigationStates, _mitigationService.IsElevated));
 
         _logger.Info(
             "scan.finish",
@@ -84,6 +98,9 @@ public sealed class SessionGuardCoordinator
                 result.State,
                 result.RiskLevel,
                 result.RestartPending,
+                result.HasAmbiguousSignals,
+                signalOverview.DefinitivePendingSignals,
+                signalOverview.AmbiguousSignals,
                 protectedProcessCount = result.ProtectedProcesses.Count
             });
 
@@ -91,20 +108,26 @@ public sealed class SessionGuardCoordinator
     }
 
     private static IReadOnlyList<string> BuildRecommendations(
-        IReadOnlyList<RestartIndicator> indicators,
+        RestartSignalOverview signalOverview,
         IReadOnlyList<ProtectedProcessMatch> protectedProcesses,
         IReadOnlyList<ManagedMitigationState> mitigationStates,
         bool isElevated)
     {
         var recommendations = new List<string>();
-        var restartPending = indicators.Any(indicator => indicator.IsActive);
+        var restartPending = signalOverview.DefinitivePendingSignals > 0;
+        var hasAmbiguousSignals = signalOverview.AmbiguousSignals > 0;
         var protectedSessionActive = protectedProcesses.Count > 0;
         var mitigationsApplied = mitigationStates.Any(state => state.IsApplied);
-        var limitedVisibility = indicators.Any(indicator => indicator.LimitedVisibility);
+        var limitedVisibility = signalOverview.LimitedVisibilityIndicators > 0;
 
         if (restartPending && protectedSessionActive)
         {
             recommendations.Add("Keep critical terminals, editors, and browsers open only if you can supervise the machine; otherwise save work and schedule a manual restart.");
+        }
+
+        if (hasAmbiguousSignals)
+        {
+            recommendations.Add("SessionGuard detected Windows Update orchestration activity or low-confidence restart clues. Review the indicator table before assuming the machine is clear.");
         }
 
         if (protectedSessionActive)
@@ -124,7 +147,7 @@ public sealed class SessionGuardCoordinator
 
         if (limitedVisibility)
         {
-            recommendations.Add("Some signals had limited visibility. Treat the dashboard as a best-effort monitor, not a guarantee.");
+            recommendations.Add("Some providers had limited visibility. Treat the dashboard as a best-effort monitor, not a guarantee.");
         }
 
         if (recommendations.Count == 0)

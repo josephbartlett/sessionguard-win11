@@ -10,7 +10,13 @@ public sealed class RestartStatusEvaluatorTests
     {
         var indicators = new[]
         {
-            new RestartIndicator("Windows Update reboot required", true, "Reboot required", SignalConfidence.High)
+            new RestartIndicator(
+                "Windows Update Agent",
+                "Windows Update reboot required",
+                RestartIndicatorCategory.PendingRestart,
+                true,
+                "Reboot required",
+                SignalConfidence.High)
         };
         var protectedProcesses = new[]
         {
@@ -46,5 +52,69 @@ public sealed class RestartStatusEvaluatorTests
 
         Assert.Equal(RestartStateCategory.MitigatedDeferred, evaluation.State);
         Assert.Equal(RestartRiskLevel.Low, evaluation.RiskLevel);
+    }
+
+    [Fact]
+    public void Evaluate_ReturnsUnknownLimitedVisibility_WhenOnlyAmbiguousSignalsExist()
+    {
+        var indicators = new[]
+        {
+            new RestartIndicator(
+                "Windows Update UX settings",
+                "Smart scheduler prediction",
+                RestartIndicatorCategory.UpdateOrchestration,
+                true,
+                "Predicted maintenance window",
+                SignalConfidence.Low)
+        };
+
+        var evaluation = RestartStatusEvaluator.Evaluate(
+            indicators,
+            Array.Empty<ProtectedProcessMatch>(),
+            Array.Empty<ManagedMitigationState>());
+
+        Assert.Equal(RestartStateCategory.UnknownLimitedVisibility, evaluation.State);
+        Assert.Equal(RestartRiskLevel.Elevated, evaluation.RiskLevel);
+        Assert.True(evaluation.HasAmbiguousSignals);
+    }
+
+    [Fact]
+    public void BuildOverview_CountsProviderCoverageAndAmbiguousSignals()
+    {
+        var indicators = new[]
+        {
+            new RestartIndicator(
+                "Windows Update Agent",
+                "WUA reboot required",
+                RestartIndicatorCategory.PendingRestart,
+                false,
+                "No reboot required",
+                SignalConfidence.High),
+            new RestartIndicator(
+                "Windows Update UX settings",
+                "Smart scheduler prediction",
+                RestartIndicatorCategory.UpdateOrchestration,
+                true,
+                "Predicted maintenance window",
+                SignalConfidence.Low),
+            new RestartIndicator(
+                "Registry restart signals",
+                "CBS reboot pending",
+                RestartIndicatorCategory.PendingRestart,
+                false,
+                "Could not read",
+                SignalConfidence.Low,
+                LimitedVisibility: true)
+        };
+
+        var overview = RestartStatusEvaluator.BuildOverview(indicators);
+
+        Assert.Equal(3, overview.TotalIndicators);
+        Assert.Equal(1, overview.ActiveIndicators);
+        Assert.Equal(0, overview.DefinitivePendingSignals);
+        Assert.Equal(1, overview.AmbiguousSignals);
+        Assert.Equal(1, overview.LimitedVisibilityIndicators);
+        Assert.Equal(3, overview.ProviderCount);
+        Assert.Equal(1, overview.ProvidersWithLimitedVisibility);
     }
 }

@@ -15,6 +15,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private readonly IConfigurationRepository _configurationRepository;
     private readonly IMitigationService _mitigationService;
     private readonly IAppLogger _logger;
+    private readonly IScanSnapshotStore _snapshotStore;
     private readonly RuntimePaths _runtimePaths;
     private readonly DispatcherTimer _timer;
     private readonly EventHandler _timerHandler;
@@ -42,6 +43,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private string _adminAccessText = "Checking";
     private string _lastScanText = "Last scan: not yet run";
     private string _statusSummary = "Waiting for the first scan.";
+    private string _signalOverviewText = "Signal overview: not yet scanned";
+    private string _providerCoverageText = "Providers: not yet scanned";
     private string _protectedProcessSummary = "Protected processes: not yet scanned";
     private string _lastActionMessage = "SessionGuard is ready.";
     private string _configurationDirectoryText = string.Empty;
@@ -54,12 +57,14 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         IConfigurationRepository configurationRepository,
         IMitigationService mitigationService,
         IAppLogger logger,
+        IScanSnapshotStore snapshotStore,
         RuntimePaths runtimePaths)
     {
         _coordinator = coordinator;
         _configurationRepository = configurationRepository;
         _mitigationService = mitigationService;
         _logger = logger;
+        _snapshotStore = snapshotStore;
         _runtimePaths = runtimePaths;
 
         ProtectedProcesses = new ObservableCollection<ProtectedProcessMatch>();
@@ -194,6 +199,18 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         private set => SetProperty(ref _statusSummary, value);
     }
 
+    public string SignalOverviewText
+    {
+        get => _signalOverviewText;
+        private set => SetProperty(ref _signalOverviewText, value);
+    }
+
+    public string ProviderCoverageText
+    {
+        get => _providerCoverageText;
+        private set => SetProperty(ref _providerCoverageText, value);
+    }
+
     public string ProtectedProcessSummary
     {
         get => _protectedProcessSummary;
@@ -274,6 +291,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
 
             var result = await _coordinator.ScanAsync(GuardModeEnabled);
             ApplyScanResult(result);
+            await _snapshotStore.PersistAsync(result);
 
             if (_warningBehavior.RaiseWindowOnHighRisk &&
                 GuardModeEnabled &&
@@ -295,6 +313,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             AdminAccessText = _mitigationService.IsElevated ? "Elevated" : "Read-only";
             LastScanText = $"Last scan failed at {DateTime.Now:t}";
             StatusSummary = "SessionGuard could not complete the scan. Review the configuration files and logs for details.";
+            SignalOverviewText = "Signal overview unavailable.";
+            ProviderCoverageText = "Providers: scan failed";
             ProtectedProcessSummary = "Protected process detection unavailable.";
             LastActionMessage = $"Scan failed: {exception.Message}";
             StatusBrush = CreateBrush("#64748B");
@@ -385,9 +405,16 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         RestartRiskText = FormatRisk(result.RiskLevel);
         ProtectionModeText = FormatProtectionMode(result.ProtectionMode);
         PendingRestartText = result.RestartPending ? "Pending" : "Not detected";
+        if (!result.RestartPending && result.HasAmbiguousSignals)
+        {
+            PendingRestartText = "Ambiguous / review signals";
+        }
+
         AdminAccessText = result.IsElevated ? "Elevated" : "Read-only until run as administrator";
         LastScanText = $"Last scan: {result.Timestamp.LocalDateTime:G}";
         StatusSummary = result.Summary;
+        SignalOverviewText = result.SignalOverview.Summary;
+        ProviderCoverageText = $"Providers: {result.SignalOverview.ProviderCount} total, {result.SignalOverview.ProvidersWithLimitedVisibility} limited, {result.SignalOverview.ActiveIndicators} active signals";
         ProtectedProcessSummary = result.ProtectedProcesses.Count == 0
             ? "Protected processes: none detected"
             : $"Protected processes: {string.Join(", ", result.ProtectedProcesses.Select(match => $"{match.DisplayName} x{match.InstanceCount}"))}";

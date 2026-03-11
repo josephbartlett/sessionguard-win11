@@ -18,12 +18,28 @@ public sealed class RegistryRestartSignalProvider : IRestartSignalProvider
                 RegistryHive.LocalMachine,
                 @"SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending",
                 "CBS reboot pending",
+                RestartIndicatorCategory.PendingRestart,
                 "Component Based Servicing reports a pending reboot.",
                 "Component Based Servicing does not report a pending reboot."),
             CheckSubKeyExists(
                 RegistryHive.LocalMachine,
+                @"SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\PackagesPending",
+                "CBS packages pending",
+                RestartIndicatorCategory.PendingRestart,
+                "Component Based Servicing reports packages pending post-reboot processing.",
+                "Component Based Servicing does not report pending packages."),
+            CheckSubKeyExists(
+                RegistryHive.LocalMachine,
+                @"SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\PostRebootReporting",
+                "CBS post reboot reporting",
+                RestartIndicatorCategory.UpdateOrchestration,
+                "Component Based Servicing is still waiting to report post-reboot status.",
+                "Component Based Servicing is not waiting to report post-reboot status."),
+            CheckSubKeyExists(
+                RegistryHive.LocalMachine,
                 @"SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired",
                 "Windows Update reboot required",
+                RestartIndicatorCategory.PendingRestart,
                 "Windows Update reports that a reboot is required.",
                 "Windows Update does not report a required reboot."),
             CheckMultiStringValue(
@@ -31,6 +47,7 @@ public sealed class RegistryRestartSignalProvider : IRestartSignalProvider
                 @"SYSTEM\CurrentControlSet\Control\Session Manager",
                 "PendingFileRenameOperations",
                 "Pending file rename operations",
+                RestartIndicatorCategory.PendingRestart,
                 "Pending file rename operations were detected.",
                 "No pending file rename operations were detected."),
             CheckDwordValue(
@@ -38,6 +55,7 @@ public sealed class RegistryRestartSignalProvider : IRestartSignalProvider
                 @"SOFTWARE\Microsoft\Updates",
                 "UpdateExeVolatile",
                 "UpdateExeVolatile",
+                RestartIndicatorCategory.UpdateOrchestration,
                 "UpdateExeVolatile indicates update work is still in progress.",
                 "UpdateExeVolatile is not set.")
         };
@@ -49,6 +67,7 @@ public sealed class RegistryRestartSignalProvider : IRestartSignalProvider
         RegistryHive hive,
         string subKeyPath,
         string source,
+        RestartIndicatorCategory category,
         string activeSummary,
         string inactiveSummary)
     {
@@ -58,7 +77,9 @@ public sealed class RegistryRestartSignalProvider : IRestartSignalProvider
             using var subKey = baseKey.OpenSubKey(subKeyPath);
 
             return new RestartIndicator(
+                "Registry restart signals",
                 source,
+                category,
                 subKey is not null,
                 subKey is not null ? activeSummary : inactiveSummary,
                 SignalConfidence.High);
@@ -66,7 +87,9 @@ public sealed class RegistryRestartSignalProvider : IRestartSignalProvider
         catch (Exception exception)
         {
             return new RestartIndicator(
+                "Registry restart signals",
                 source,
+                category,
                 false,
                 $"{source} could not be read: {exception.Message}",
                 SignalConfidence.Low,
@@ -79,6 +102,7 @@ public sealed class RegistryRestartSignalProvider : IRestartSignalProvider
         string subKeyPath,
         string valueName,
         string source,
+        RestartIndicatorCategory category,
         string activeSummary,
         string inactiveSummary)
     {
@@ -90,7 +114,9 @@ public sealed class RegistryRestartSignalProvider : IRestartSignalProvider
             var isActive = value is { Length: > 0 };
 
             return new RestartIndicator(
+                "Registry restart signals",
                 source,
+                category,
                 isActive,
                 isActive ? activeSummary : inactiveSummary,
                 SignalConfidence.Medium);
@@ -98,7 +124,9 @@ public sealed class RegistryRestartSignalProvider : IRestartSignalProvider
         catch (Exception exception)
         {
             return new RestartIndicator(
+                "Registry restart signals",
                 source,
+                category,
                 false,
                 $"{source} could not be read: {exception.Message}",
                 SignalConfidence.Low,
@@ -111,6 +139,7 @@ public sealed class RegistryRestartSignalProvider : IRestartSignalProvider
         string subKeyPath,
         string valueName,
         string source,
+        RestartIndicatorCategory category,
         string activeSummary,
         string inactiveSummary)
     {
@@ -128,7 +157,9 @@ public sealed class RegistryRestartSignalProvider : IRestartSignalProvider
             var isActive = numericValue > 0;
 
             return new RestartIndicator(
+                "Registry restart signals",
                 source,
+                category,
                 isActive,
                 isActive ? activeSummary : inactiveSummary,
                 SignalConfidence.Medium);
@@ -136,7 +167,9 @@ public sealed class RegistryRestartSignalProvider : IRestartSignalProvider
         catch (Exception exception)
         {
             return new RestartIndicator(
+                "Registry restart signals",
                 source,
+                category,
                 false,
                 $"{source} could not be read: {exception.Message}",
                 SignalConfidence.Low,
