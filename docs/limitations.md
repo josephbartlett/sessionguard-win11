@@ -23,8 +23,9 @@
 
 - The desktop UI now minimizes to the tray, but it is still primarily a dashboard window rather than a dedicated lightweight tray client.
 - Desktop notifications are not implemented in the MVP; warning behavior is currently focused on dashboard state and optional window raising.
-- The local named-pipe control plane is intentionally simple and not yet versioned for long-term compatibility guarantees.
-- Service installation, auto-start behavior, and a dedicated tray-shell package are not yet part of the shipped workflow.
+- The local named-pipe control plane is now versioned, but compatibility is still only guaranteed within the local SessionGuard release line.
+- Service installation and start or stop scripts are now included, but the workflow is still aimed at local power-user validation rather than enterprise deployment.
+- A dedicated tray-shell package is not yet part of the shipped workflow.
 
 ## Recovery limitations
 

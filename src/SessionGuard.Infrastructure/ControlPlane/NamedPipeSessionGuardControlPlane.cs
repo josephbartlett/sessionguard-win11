@@ -89,7 +89,7 @@ public sealed class NamedPipeSessionGuardControlPlane : ISessionGuardControlPlan
         timeoutCts.CancelAfter(_connectTimeout);
 
         await client.ConnectAsync(timeoutCts.Token);
-        await PipeMessageProtocol.WriteAsync(client, request, cancellationToken);
-        return await PipeMessageProtocol.ReadAsync<SessionControlResponse>(client, cancellationToken);
+        await PipeMessageProtocol.WriteRequestAsync(client, request, cancellationToken);
+        return await PipeMessageProtocol.ReadResponseAsync(client, cancellationToken);
     }
 }

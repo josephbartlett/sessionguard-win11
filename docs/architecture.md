@@ -6,7 +6,7 @@ SessionGuard MVP uses a layered `WPF + Core + Infrastructure` structure:
 
 - `SessionGuard.App`: presentation, tray-aware dashboard behavior, and user-facing actions.
 - `SessionGuard.Core`: models, process matching, restart status evaluation, scan orchestration, and service contracts.
-- `SessionGuard.Infrastructure`: Windows-specific implementations for config loading, file logging, process inventory, registry inspection, named-pipe IPC, and registry-backed mitigation settings.
+- `SessionGuard.Infrastructure`: Windows-specific implementations for config loading, file logging, process inventory, registry inspection, versioned named-pipe IPC, and registry-backed mitigation settings.
 - `SessionGuard.Service`: service-hostable background worker plus named-pipe server that reuses the same coordinator and shared state output.
 
 WPF was chosen over WinUI for the MVP because the priority is a stable desktop monitor with fast local iteration and direct Windows API access. The architecture keeps system-facing logic out of the UI so the service boundary and future tray shell can evolve without rewriting the core scan logic.
@@ -85,13 +85,14 @@ The log and state folders are intentionally excluded from source control.
 
 ## Service and control plane
 
-`SessionGuard.Service` is now present as a Windows service-hostable worker project with a local named-pipe server. The current split already provides:
+`SessionGuard.Service` is now present as a Windows service-hostable worker project with a local named-pipe server and operator scripts. The current split already provides:
 
 - loads the same root `config/*.json`
 - runs the same multi-provider scan coordinator
 - writes the same `state/current-scan.json`
 - owns mitigation commands when reached through the pipe control plane
 - uses the same file logger and mitigation/state services
+- exposes `probe` and `scan-now` console commands for local validation
 
 `SessionGuard.App` currently acts as a tray-aware dashboard client layered over a hybrid control plane. That keeps the background path and the desktop path aligned while full service installation, startup, and dedicated tray-shell packaging are still in progress.
 
@@ -104,6 +105,11 @@ Logging is lightweight JSON-line output and captures:
 - mitigation actions
 - provider failures
 - UI-level action failures
+
+The desktop app and service now write to separate files:
+
+- `logs/sessionguard-app-YYYYMMDD.log`
+- `logs/sessionguard-service-YYYYMMDD.log`
 
 This keeps the MVP auditable without introducing a full telemetry stack.
 

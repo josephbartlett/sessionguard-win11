@@ -30,9 +30,9 @@ public sealed class SessionGuardPipeServer : BackgroundService
             try
             {
                 await server.WaitForConnectionAsync(stoppingToken);
-                var request = await PipeMessageProtocol.ReadAsync<SessionControlRequest>(server, stoppingToken);
+                var request = await PipeMessageProtocol.ReadRequestAsync(server, stoppingToken);
                 var response = await HandleRequestAsync(request, stoppingToken);
-                await PipeMessageProtocol.WriteAsync(server, response, stoppingToken);
+                await PipeMessageProtocol.WriteResponseAsync(server, response, stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {

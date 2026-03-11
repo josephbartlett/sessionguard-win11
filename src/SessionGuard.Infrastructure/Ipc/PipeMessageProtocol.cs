@@ -1,18 +1,67 @@
 using System.Buffers.Binary;
-using System.Text;
 using System.Text.Json;
+using SessionGuard.Core.Models;
 using SessionGuard.Infrastructure.Serialization;
 
 namespace SessionGuard.Infrastructure.Ipc;
 
 public static class PipeMessageProtocol
 {
-    public static async Task WriteAsync<T>(
+    public static Task WriteRequestAsync(
         Stream stream,
-        T value,
+        SessionControlRequest request,
         CancellationToken cancellationToken = default)
     {
-        var payload = JsonSerializer.SerializeToUtf8Bytes(value, SessionGuardJson.Default);
+        return WriteEnvelopeAsync(
+            stream,
+            SessionControlProtocol.RequestPayloadType,
+            request,
+            cancellationToken);
+    }
+
+    public static Task<SessionControlRequest> ReadRequestAsync(
+        Stream stream,
+        CancellationToken cancellationToken = default)
+    {
+        return ReadEnvelopeAsync<SessionControlRequest>(
+            stream,
+            SessionControlProtocol.RequestPayloadType,
+            cancellationToken);
+    }
+
+    public static Task WriteResponseAsync(
+        Stream stream,
+        SessionControlResponse response,
+        CancellationToken cancellationToken = default)
+    {
+        return WriteEnvelopeAsync(
+            stream,
+            SessionControlProtocol.ResponsePayloadType,
+            response,
+            cancellationToken);
+    }
+
+    public static Task<SessionControlResponse> ReadResponseAsync(
+        Stream stream,
+        CancellationToken cancellationToken = default)
+    {
+        return ReadEnvelopeAsync<SessionControlResponse>(
+            stream,
+            SessionControlProtocol.ResponsePayloadType,
+            cancellationToken);
+    }
+
+    private static async Task WriteEnvelopeAsync<T>(
+        Stream stream,
+        string payloadType,
+        T value,
+        CancellationToken cancellationToken)
+    {
+        var envelope = new SessionPipeEnvelope<T>(
+            SessionControlProtocol.Version,
+            payloadType,
+            value);
+        var payload = JsonSerializer.SerializeToUtf8Bytes(envelope, SessionGuardJson.Default);
         var lengthBuffer = new byte[sizeof(int)];
         BinaryPrimitives.WriteInt32LittleEndian(lengthBuffer, payload.Length);
 
@@ -21,9 +70,10 @@ public static class PipeMessageProtocol
         await stream.FlushAsync(cancellationToken);
     }
 
-    public static async Task<T> ReadAsync<T>(
+    private static async Task<T> ReadEnvelopeAsync<T>(
         Stream stream,
-        CancellationToken cancellationToken = default)
+        string expectedPayloadType,
+        CancellationToken cancellationToken)
     {
         var lengthBuffer = new byte[sizeof(int)];
         await ReadExactlyAsync(stream, lengthBuffer, cancellationToken);
@@ -37,7 +87,22 @@ public static class PipeMessageProtocol
         var payload = new byte[payloadLength];
         await ReadExactlyAsync(stream, payload, cancellationToken);
 
-        return JsonSerializer.Deserialize<T>(payload, SessionGuardJson.Default) ??
+        var envelope = JsonSerializer.Deserialize<SessionPipeEnvelope<JsonElement>>(payload, SessionGuardJson.Default) ??
+                       throw new InvalidDataException("Failed to deserialize the pipe envelope.");
+
+        if (!string.Equals(envelope.ProtocolVersion, SessionControlProtocol.Version, StringComparison.Ordinal))
+        {
+            throw new InvalidDataException(
+                $"Unsupported SessionGuard control-plane protocol version '{envelope.ProtocolVersion}'.");
+        }
+
+        if (!string.Equals(envelope.PayloadType, expectedPayloadType, StringComparison.Ordinal))
+        {
+            throw new InvalidDataException(
+                $"Unexpected pipe payload type '{envelope.PayloadType}'. Expected '{expectedPayloadType}'.");
+        }
+
+        return envelope.Payload.Deserialize<T>(SessionGuardJson.Default) ??
                throw new InvalidDataException($"Failed to deserialize pipe payload to {typeof(T).Name}.");
     }
 

@@ -16,6 +16,8 @@ state/
 
 # Packaging
 artifacts/*.zip
+artifacts/publish/
+artifacts/staging/
 
 # OS noise
 Thumbs.db

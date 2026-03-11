@@ -23,7 +23,7 @@ public partial class MainWindow : Window
         InitializeComponent();
 
         var runtimePaths = RuntimePaths.Discover(AppContext.BaseDirectory);
-        var logger = new FileAppLogger(runtimePaths);
+        var logger = new FileAppLogger(runtimePaths, "app");
         var snapshotStore = new JsonScanSnapshotStore(runtimePaths);
         var configurationRepository = new JsonConfigurationRepository(runtimePaths);
         var mitigationService = new WindowsMitigationService(runtimePaths, logger);

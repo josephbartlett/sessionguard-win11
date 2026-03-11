@@ -12,6 +12,7 @@ The repo now includes `SessionGuard.Service`, a background worker/service-host f
 - reuses the same provider stack
 - writes the shared `state/current-scan.json` snapshot
 - exposes a local named-pipe control plane
+- version-checks the current control-plane contract
 - can be run locally from the CLI as a console host
 
 The repo also now includes a tray-aware WPF shell that prefers the service control plane and falls back locally when the service is unavailable.
@@ -43,7 +44,7 @@ This is not the full service split yet. It is the first concrete service-plus-cl
 ## IPC direction
 
 - local named pipes are a reasonable Windows-first starting point
-- IPC contracts should be versioned early
+- IPC contracts are now versioned at the transport envelope and should keep evolving conservatively
 - only the service should write privileged mitigation settings
 - the tray app should not need administrative rights for normal use
 

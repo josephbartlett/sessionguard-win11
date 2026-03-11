@@ -35,9 +35,10 @@ SessionGuard does not guarantee prevention of every OS-driven restart path, and 
   - policy-managed active hours (`SetActiveHours`, `ActiveHoursStart`, `ActiveHoursEnd`)
 - Local JSON-line logging under the runtime `logs/` folder.
 - Tray-aware WPF dashboard behavior that minimizes to the notification area and can reopen the dashboard on demand.
-- Named-pipe control plane between the desktop app and the service-hostable worker, with local fallback if the service is not reachable.
+- Versioned named-pipe control plane between the desktop app and the service-hostable worker, with local fallback if the service is not reachable.
 - Machine-readable scan snapshot at `state/current-scan.json` shared by the desktop app and service path.
-- Unit tests for process matching, status aggregation, and configuration parsing.
+- Separate app and service logs under `logs/`.
+- Unit tests for process matching, status aggregation, configuration parsing, control-plane behavior, and IPC compatibility checks.
 
 ## Repo layout
 
@@ -59,7 +60,7 @@ dotnet build SessionGuard.sln
 Run the background service host locally:
 
 ```powershell
-dotnet run --project src/SessionGuard.Service/SessionGuard.Service.csproj
+dotnet run --project src/SessionGuard.Service/SessionGuard.Service.csproj -- console
 ```
 
 Run the desktop app in non-elevated mode:
@@ -89,6 +90,38 @@ Run tests:
 dotnet test SessionGuard.sln
 ```
 
+Package the release ZIP:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/package-release.ps1
+```
+
+## Service operations
+
+Publish the service executable and copy config defaults next to it:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/service/Publish-SessionGuardService.ps1
+```
+
+Install the Windows Service from an elevated PowerShell session:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/service/Install-SessionGuardService.ps1
+```
+
+Query service status and control-plane reachability:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/service/Get-SessionGuardServiceStatus.ps1
+```
+
+Probe the running service directly from the service executable:
+
+```powershell
+src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe probe
+```
+
 ## Admin vs non-admin behavior
 
 - Non-elevated mode supports full monitoring, dashboard updates, config changes, and logging.
@@ -99,7 +132,8 @@ dotnet test SessionGuard.sln
 
 - Edit [`config/appsettings.json`](/C:/Users/decoy/sessionguard-win11/config/appsettings.json) to change scan interval, warning behavior, active hours defaults, and UI preferences.
 - Edit [`config/protected-processes.json`](/C:/Users/decoy/sessionguard-win11/config/protected-processes.json) to add or remove protected processes without rebuilding.
-- Logs are written to `logs/sessionguard-YYYYMMDD.log`.
+- App logs are written to `logs/sessionguard-app-YYYYMMDD.log`.
+- Service logs are written to `logs/sessionguard-service-YYYYMMDD.log`.
 - Temporary mitigation backups are written to the local `state/` folder so SessionGuard can restore previous values when resetting managed settings.
 - The latest scan snapshot is written to `state/current-scan.json` for future background-service or tray-client consumption.
 
@@ -114,15 +148,16 @@ dotnet test SessionGuard.sln
 7. Reset managed settings and verify the app reports the reverted state.
 8. Review the latest file under `logs/` and confirm scans, detections, mitigation attempts, and failures are recorded.
 9. Run the service project, then launch the desktop app and confirm the dashboard reports `Control plane: Service`.
-10. Minimize or close the dashboard window and confirm SessionGuard remains available in the notification area.
-11. Inspect `state/current-scan.json` and confirm the latest status is serialized by the service or local fallback path.
+10. Run `src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe probe` and confirm it prints JSON status while the service path is running.
+11. Minimize or close the dashboard window and confirm SessionGuard remains available in the notification area.
+12. Inspect `state/current-scan.json` and confirm the latest status is serialized by the service or local fallback path.
 
 ## What the MVP does not do
 
 - It does not disable Windows Update.
 - It does not promise absolute prevention of every automatic restart.
 - It does not inspect unsaved buffers, browser tab counts, or developer session internals.
-- It now includes a service-hostable worker, named-pipe IPC, and tray-aware window behavior, but it is not yet packaged as an installed Windows Service plus dedicated tray shell.
+- It now includes a service-hostable worker, versioned named-pipe IPC, tray-aware window behavior, and local install/start/stop scripts, but it is not yet a hardened enterprise deployment package or dedicated tray-only shell.
 - It does not yet capture or restore workspace snapshots.
 
 ## Further documentation
@@ -132,3 +167,4 @@ dotnet test SessionGuard.sln
 - Limitations: [`docs/limitations.md`](/C:/Users/decoy/sessionguard-win11/docs/limitations.md)
 - Roadmap: [`docs/roadmap.md`](/C:/Users/decoy/sessionguard-win11/docs/roadmap.md)
 - Future service design: [`docs/future-service-architecture.md`](/C:/Users/decoy/sessionguard-win11/docs/future-service-architecture.md)
+- Release notes: [`docs/releases/v0.3.0.md`](/C:/Users/decoy/sessionguard-win11/docs/releases/v0.3.0.md)

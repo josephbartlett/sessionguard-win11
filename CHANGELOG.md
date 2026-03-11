@@ -4,9 +4,14 @@ All notable changes to this project should be recorded here in reverse chronolog
 
 ## Unreleased
 
-- Added a named-pipe control plane shared by the desktop app and service-hostable runtime.
+## 0.3.0 - 2026-03-11
+
+- Added a versioned named-pipe control plane shared by the desktop app and service-hostable runtime.
 - Added a tray-aware WPF shell that prefers the service control plane and falls back locally when needed.
 - Added service-owned scan state orchestration and shared snapshot persistence behind the new control plane.
+- Added separate app and service log files for clearer operational diagnostics.
+- Added service publish, install, start, stop, status, and uninstall scripts for local Windows Service validation.
+- Added release metadata, release notes, and packaging automation for the 0.3.0 milestone.
 - Hardened long-running process detection so transient or protected process inspection failures do not break scans.
 - Expanded tests and refreshed docs to match the current service-plus-client architecture.
 

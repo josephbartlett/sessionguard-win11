@@ -14,10 +14,12 @@ public sealed class FileAppLogger : IAppLogger
 
     private readonly object _syncRoot = new();
     private readonly RuntimePaths _paths;
+    private readonly string _componentName;
 
-    public FileAppLogger(RuntimePaths paths)
+    public FileAppLogger(RuntimePaths paths, string componentName = "app")
     {
         _paths = paths;
+        _componentName = NormalizeComponentName(componentName);
     }
 
     public string LogDirectory => _paths.LogDirectory;
@@ -42,6 +44,7 @@ public sealed class FileAppLogger : IAppLogger
         var payload = new Dictionary<string, object?>
         {
             ["timestamp"] = DateTimeOffset.Now,
+            ["component"] = _componentName,
             ["level"] = level,
             ["message"] = message,
             ["context"] = context,
@@ -49,11 +52,24 @@ public sealed class FileAppLogger : IAppLogger
         };
 
         var line = JsonSerializer.Serialize(payload, SerializerOptions) + System.Environment.NewLine;
-        var filePath = Path.Combine(_paths.LogDirectory, $"sessionguard-{DateTime.Now:yyyyMMdd}.log");
+        var filePath = Path.Combine(_paths.LogDirectory, $"sessionguard-{_componentName}-{DateTime.Now:yyyyMMdd}.log");
 
         lock (_syncRoot)
         {
             File.AppendAllText(filePath, line, Encoding.UTF8);
         }
+    }
+
+    private static string NormalizeComponentName(string componentName)
+    {
+        if (string.IsNullOrWhiteSpace(componentName))
+        {
+            return "app";
+        }
+
+        return componentName
+            .Trim()
+            .ToLowerInvariant()
+            .Replace(' ', '-');
     }
 }

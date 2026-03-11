@@ -41,7 +41,7 @@ Provide a local desktop utility that makes restart risk visible, detects whether
 
 - honest about Windows platform limits
 - safe and reversible changes
-- user-mode first, service-ready later
+- user-mode first with a service-backed path as the product matures
 - minimal UI, high signal
 - auditable behavior through logs and docs
 

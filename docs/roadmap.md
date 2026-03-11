@@ -87,6 +87,7 @@ Move from a foreground monitor to a continuously available protection architectu
 - protection rules
 - named-pipe control plane for status and action requests
 - local fallback when the service boundary is unavailable during development or recovery
+- publish and service-management scripts for local installation and verification
 
 ### Architectural changes
 
@@ -95,6 +96,7 @@ Move from a foreground monitor to a continuously available protection architectu
 - move privileged policy writes into the service boundary
 - persist health state for tray rendering and diagnostics
 - distinguish authoritative service-owned state from local fallback state in the UI
+- version the IPC transport before the service contract spreads further
 
 ### Risks and limitations
 
@@ -110,6 +112,7 @@ Move from a foreground monitor to a continuously available protection architectu
 - restart monitoring continues after the main window is closed
 - service and tray logs are separated and correlated
 - the UI clearly reports whether it is connected to the service or running in local fallback mode
+- local install, start, stop, and status operations are documented and scriptable
 
 ## v0.4.0 - Workspace Safety Layer
 

@@ -1,26 +1,29 @@
+using System.Text;
+using System.Text.Json;
 using SessionGuard.Core.Models;
 using SessionGuard.Infrastructure.Ipc;
+using SessionGuard.Infrastructure.Serialization;
 
 namespace SessionGuard.Tests;
 
 public sealed class PipeMessageProtocolTests
 {
     [Fact]
-    public async Task WriteAndReadAsync_RoundTripsControlRequest()
+    public async Task WriteAndReadRequestAsync_RoundTripsControlRequest()
     {
         await using var stream = new MemoryStream();
         var request = new SessionControlRequest(SessionControlCommandType.SetGuardMode, GuardModeEnabled: true);
 
-        await PipeMessageProtocol.WriteAsync(stream, request);
+        await PipeMessageProtocol.WriteRequestAsync(stream, request);
         stream.Position = 0;
 
-        var roundTripped = await PipeMessageProtocol.ReadAsync<SessionControlRequest>(stream);
+        var roundTripped = await PipeMessageProtocol.ReadRequestAsync(stream);
 
         Assert.Equal(request, roundTripped);
     }
 
     [Fact]
-    public async Task WriteAndReadAsync_RoundTripsControlResponse()
+    public async Task WriteAndReadResponseAsync_RoundTripsControlResponse()
     {
         await using var stream = new MemoryStream();
         var response = new SessionControlResponse(
@@ -83,10 +86,10 @@ public sealed class PipeMessageProtocolTests
                         @"HKLM\Software\Test")
                 }));
 
-        await PipeMessageProtocol.WriteAsync(stream, response);
+        await PipeMessageProtocol.WriteResponseAsync(stream, response);
         stream.Position = 0;
 
-        var roundTripped = await PipeMessageProtocol.ReadAsync<SessionControlResponse>(stream);
+        var roundTripped = await PipeMessageProtocol.ReadResponseAsync(stream);
 
         Assert.True(roundTripped.Success);
         Assert.Equal("Scan completed.", roundTripped.Message);
@@ -95,5 +98,48 @@ public sealed class PipeMessageProtocolTests
         Assert.Equal(RestartStateCategory.MitigatedDeferred, roundTripped.Status.ScanResult.State);
         Assert.NotNull(roundTripped.MitigationResult);
         Assert.Single(roundTripped.MitigationResult!.CurrentStates);
+    }
+
+    [Fact]
+    public async Task ReadRequestAsync_RejectsUnsupportedProtocolVersion()
+    {
+        await using var stream = new MemoryStream();
+        await WriteRawEnvelopeAsync(
+            stream,
+            new SessionPipeEnvelope<SessionControlRequest>(
+                "99.0",
+                SessionControlProtocol.RequestPayloadType,
+                new SessionControlRequest(SessionControlCommandType.GetStatus)));
+        stream.Position = 0;
+
+        var exception = await Assert.ThrowsAsync<InvalidDataException>(() => PipeMessageProtocol.ReadRequestAsync(stream));
+
+        Assert.Contains("protocol version", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ReadResponseAsync_RejectsUnexpectedPayloadType()
+    {
+        await using var stream = new MemoryStream();
+        await WriteRawEnvelopeAsync(
+            stream,
+            new SessionPipeEnvelope<SessionControlResponse>(
+                SessionControlProtocol.Version,
+                SessionControlProtocol.RequestPayloadType,
+                new SessionControlResponse(true, "ok")));
+        stream.Position = 0;
+
+        var exception = await Assert.ThrowsAsync<InvalidDataException>(() => PipeMessageProtocol.ReadResponseAsync(stream));
+
+        Assert.Contains("Unexpected pipe payload type", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static async Task WriteRawEnvelopeAsync<T>(Stream stream, SessionPipeEnvelope<T> envelope)
+    {
+        var payload = JsonSerializer.SerializeToUtf8Bytes(envelope, SessionGuardJson.Default);
+        var lengthPrefix = BitConverter.GetBytes(payload.Length);
+        await stream.WriteAsync(lengthPrefix);
+        await stream.WriteAsync(payload);
+        await stream.FlushAsync();
     }
 }
