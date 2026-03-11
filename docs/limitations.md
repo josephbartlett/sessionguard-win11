@@ -21,9 +21,9 @@
 
 ## UX limitations
 
-- The app is a full desktop window, not a background tray utility.
+- The desktop UI is still a full window, not a tray utility.
 - Desktop notifications are not implemented in the MVP; warning behavior is currently focused on dashboard state and optional window raising.
-- The app writes `state/current-scan.json` for future integration, but it does not auto-start or persist a background monitor across sign-in sessions.
+- A service-hostable worker project now exists, but service installation, auto-start behavior, and tray coordination are not yet part of the shipped workflow.
 
 ## Recovery limitations
 

@@ -42,6 +42,7 @@ SessionGuard does not guarantee prevention of every OS-driven restart path, and 
 - [`src/SessionGuard.App`](/C:/Users/decoy/sessionguard-win11/src/SessionGuard.App) contains the WPF desktop UI and view models.
 - [`src/SessionGuard.Core`](/C:/Users/decoy/sessionguard-win11/src/SessionGuard.Core) contains pure models, matching logic, status evaluation, and orchestration contracts.
 - [`src/SessionGuard.Infrastructure`](/C:/Users/decoy/sessionguard-win11/src/SessionGuard.Infrastructure) contains Windows-specific config, logging, registry inspection, and mitigation code.
+- [`src/SessionGuard.Service`](/C:/Users/decoy/sessionguard-win11/src/SessionGuard.Service) contains the service-hostable background worker foundation.
 - [`tests/SessionGuard.Tests`](/C:/Users/decoy/sessionguard-win11/tests/SessionGuard.Tests) contains the unit tests.
 - [`docs`](/C:/Users/decoy/sessionguard-win11/docs) contains product, architecture, limitations, roadmap, and future-service notes.
 
@@ -57,6 +58,12 @@ Run the desktop app in non-elevated mode:
 
 ```powershell
 dotnet run --project src/SessionGuard.App/SessionGuard.App.csproj
+```
+
+Run the background worker locally:
+
+```powershell
+dotnet run --project src/SessionGuard.Service/SessionGuard.Service.csproj
 ```
 
 Run the desktop app in an elevated PowerShell session to test mitigation actions:
@@ -103,14 +110,14 @@ dotnet test SessionGuard.sln
 7. Reset managed settings and verify the app reports the reverted state.
 8. Review the latest file under `logs/` and confirm scans, detections, mitigation attempts, and failures are recorded.
 9. Inspect `state/current-scan.json` and confirm the latest dashboard state is serialized for future integration work.
+10. Run the service project and confirm it also updates `state/current-scan.json` without the WPF window running.
 
 ## What the MVP does not do
 
 - It does not disable Windows Update.
 - It does not promise absolute prevention of every automatic restart.
 - It does not inspect unsaved buffers, browser tab counts, or developer session internals.
-- It does not yet run as a background service or tray agent.
-- It only lays service groundwork through a JSON state snapshot; no service or IPC boundary is implemented yet.
+- It now includes a service-hostable worker, but there is still no tray shell or IPC boundary.
 - It does not yet capture or restore workspace snapshots.
 
 ## Further documentation

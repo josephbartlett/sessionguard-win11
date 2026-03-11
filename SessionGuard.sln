@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SessionGuard.Infrastructure
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SessionGuard.Tests", "tests\SessionGuard.Tests\SessionGuard.Tests.csproj", "{0280B961-AE21-45B2-8E04-1AA04C7476BE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SessionGuard.Service", "src\SessionGuard.Service\SessionGuard.Service.csproj", "{1BCC2E68-2A86-4D69-A877-4D7474BEE9CF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -71,6 +73,18 @@ Global
 		{0280B961-AE21-45B2-8E04-1AA04C7476BE}.Release|x64.Build.0 = Release|Any CPU
 		{0280B961-AE21-45B2-8E04-1AA04C7476BE}.Release|x86.ActiveCfg = Release|Any CPU
 		{0280B961-AE21-45B2-8E04-1AA04C7476BE}.Release|x86.Build.0 = Release|Any CPU
+		{1BCC2E68-2A86-4D69-A877-4D7474BEE9CF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1BCC2E68-2A86-4D69-A877-4D7474BEE9CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1BCC2E68-2A86-4D69-A877-4D7474BEE9CF}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1BCC2E68-2A86-4D69-A877-4D7474BEE9CF}.Debug|x64.Build.0 = Debug|Any CPU
+		{1BCC2E68-2A86-4D69-A877-4D7474BEE9CF}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1BCC2E68-2A86-4D69-A877-4D7474BEE9CF}.Debug|x86.Build.0 = Debug|Any CPU
+		{1BCC2E68-2A86-4D69-A877-4D7474BEE9CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1BCC2E68-2A86-4D69-A877-4D7474BEE9CF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1BCC2E68-2A86-4D69-A877-4D7474BEE9CF}.Release|x64.ActiveCfg = Release|Any CPU
+		{1BCC2E68-2A86-4D69-A877-4D7474BEE9CF}.Release|x64.Build.0 = Release|Any CPU
+		{1BCC2E68-2A86-4D69-A877-4D7474BEE9CF}.Release|x86.ActiveCfg = Release|Any CPU
+		{1BCC2E68-2A86-4D69-A877-4D7474BEE9CF}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -80,5 +94,6 @@ Global
 		{8ACF20C4-2DF5-4857-96F5-2A7820118C8A} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{B5B3EAA2-EB1C-41FD-AD5F-738E5E5FFF1B} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{0280B961-AE21-45B2-8E04-1AA04C7476BE} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{1BCC2E68-2A86-4D69-A877-4D7474BEE9CF} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal

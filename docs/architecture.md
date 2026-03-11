@@ -7,6 +7,7 @@ SessionGuard MVP uses a layered `WPF + Core + Infrastructure` structure:
 - `SessionGuard.App`: presentation, commands, timer-driven refresh, and user-facing actions.
 - `SessionGuard.Core`: models, process matching, restart status evaluation, scan orchestration, and service contracts.
 - `SessionGuard.Infrastructure`: Windows-specific implementations for config loading, file logging, process inventory, registry inspection, and registry-backed mitigation settings.
+- `SessionGuard.Service`: service-hostable background worker that reuses the same coordinator and shared state output.
 
 WPF was chosen over WinUI for the MVP because the priority is a stable desktop monitor with fast local iteration and direct Windows API access. The architecture keeps system-facing logic out of the UI so a service/tray split can be added later.
 
@@ -76,6 +77,17 @@ Before writing managed values, the infrastructure layer captures previous values
   - `current-scan.json`: latest machine-readable scan snapshot for future tray/service work.
 
 The log and state folders are intentionally excluded from source control.
+
+## Service foundation
+
+`SessionGuard.Service` is now present as a Windows service-hostable worker project. It does not introduce a tray app or IPC layer yet, but it already:
+
+- loads the same root `config/*.json`
+- runs the same multi-provider scan coordinator
+- writes the same `state/current-scan.json`
+- uses the same file logger and mitigation/state services
+
+That keeps the background path and the desktop path aligned while the fuller `v0.3.0` split is still in progress.
 
 ## Logging
 

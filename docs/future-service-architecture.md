@@ -4,6 +4,17 @@
 
 Evolve SessionGuard from a foreground desktop monitor into a split architecture with a background Windows Service and a lighter user shell.
 
+## Current status
+
+The repo now includes `SessionGuard.Service`, a background worker/service-host foundation that:
+
+- reuses the shared scan coordinator
+- reuses the same provider stack
+- writes the shared `state/current-scan.json` snapshot
+- can be run locally from the CLI as a console host
+
+This is not the full service split yet. It is the first concrete background component.
+
 ## Proposed components
 
 ### Windows Service
@@ -56,6 +67,7 @@ Current foundation already in repo:
 
 - `state/current-scan.json` captures the latest aggregated scan result in a machine-readable format
 - core status models already separate raw indicators from user-facing evaluation
+- `SessionGuard.Service` already hosts the scan loop outside the WPF app
 
 Migration path:
 

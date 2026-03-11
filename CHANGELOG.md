@@ -7,6 +7,7 @@ All notable changes to this project should be recorded here in reverse chronolog
 - Added multiple restart-signal providers for Windows Update Agent, Windows Update UX settings, scheduled task visibility, and deeper registry coverage.
 - Added aggregated signal analysis to distinguish definitive pending reboot state from ambiguous orchestration activity and limited visibility.
 - Added a machine-readable `state/current-scan.json` snapshot as service/tray groundwork.
+- Added `SessionGuard.Service`, a service-hostable background worker that reuses the shared scan coordinator and snapshot output.
 - Updated the dashboard and docs to show provider-level signal coverage and improved restart awareness.
 
 ## 0.1.1 - 2026-03-11
