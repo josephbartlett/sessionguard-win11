@@ -439,7 +439,9 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         StatusSummary = result.Summary;
         SignalOverviewText = result.SignalOverview.Summary;
         ProviderCoverageText = $"Providers: {result.SignalOverview.ProviderCount} total, {result.SignalOverview.ProvidersWithLimitedVisibility} limited, {result.SignalOverview.ActiveIndicators} active signals";
-        ConnectionModeText = $"Control plane: {status.ConnectionMode}";
+        ConnectionModeText = status.IsRemote
+            ? "Control plane: Service (background service is authoritative)"
+            : "Control plane: Local fallback (the dashboard is scanning in-process because the service is unavailable)";
         ProtectedProcessSummary = result.ProtectedProcesses.Count == 0
             ? "Protected processes: none detected"
             : $"Protected processes: {string.Join(", ", result.ProtectedProcesses.Select(match => $"{match.DisplayName} x{match.InstanceCount}"))}";

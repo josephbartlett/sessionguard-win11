@@ -18,7 +18,8 @@ Planned work:
 Current status:
 - service health snapshot persistence is now part of the stabilization work
 - repo-external published-layout validation is now part of the stabilization work
-- the next stabilization slice should focus on clean-machine install validation and additional script coverage
+- install-readiness validation and script coverage are now part of the stabilization work
+- the 0.3.x stabilization exit criteria are satisfied on this branch; next planned feature work is v0.4.0
 
 Exit criteria:
 - service startup and failure states are visible through status tooling

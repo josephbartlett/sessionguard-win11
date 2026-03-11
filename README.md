@@ -110,6 +110,12 @@ Install the Windows Service from an elevated PowerShell session:
 powershell -ExecutionPolicy Bypass -File scripts/service/Install-SessionGuardService.ps1
 ```
 
+Validate install readiness without modifying the machine:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/service/Install-SessionGuardService.ps1 -ValidateOnly
+```
+
 Query service status and control-plane reachability:
 
 ```powershell
@@ -163,9 +169,10 @@ src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe probe
 9. Run the service project, then launch the desktop app and confirm the dashboard reports `Control plane: Service`.
 10. Run `src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe probe` and confirm it prints JSON status while the service path is running.
 11. Run `powershell -ExecutionPolicy Bypass -File scripts/service/Get-SessionGuardServiceStatus.ps1` and confirm it reports both control-plane reachability and health snapshot details.
-12. Run `powershell -ExecutionPolicy Bypass -File scripts/service/Validate-SessionGuardPublishedLayout.ps1` and confirm the published layout works outside the repo root.
-13. Minimize or close the dashboard window and confirm SessionGuard remains available in the notification area.
-14. Inspect `state/current-scan.json` and `state/service-health.json` and confirm the latest status is serialized by the service or local fallback path.
+12. Run `powershell -ExecutionPolicy Bypass -File scripts/service/Install-SessionGuardService.ps1 -ValidateOnly` and confirm it reports install readiness or a clear elevation requirement without changing the machine.
+13. Run `powershell -ExecutionPolicy Bypass -File scripts/service/Validate-SessionGuardPublishedLayout.ps1` and confirm the published layout works outside the repo root.
+14. Minimize or close the dashboard window and confirm SessionGuard remains available in the notification area.
+15. Inspect `state/current-scan.json` and `state/service-health.json` and confirm the latest status is serialized by the service or local fallback path.
 
 ## What the MVP does not do
 
