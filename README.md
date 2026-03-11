@@ -100,6 +100,12 @@ Run the deterministic UI smoke and screenshot pass:
 powershell -ExecutionPolicy Bypass -File scripts/ui/Run-UiSmoke.ps1
 ```
 
+Run the repo-owned Windows validation flow that CI uses:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/ci/Invoke-WindowsValidation.ps1
+```
+
 Package the release ZIP:
 
 ```powershell
@@ -167,27 +173,29 @@ src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe probe
 - When workspace-risk heuristics are active, advisory metadata is also written to `state/workspace-snapshot.json`.
 - The service health snapshot is written to `state/service-health.json` so status tooling can show startup, scan, and control-plane health without scraping logs.
 - UI smoke screenshots and the smoke summary are written to `artifacts/ui/smoke/`.
+- CI-oriented validation outputs, including test results and UI smoke artifacts, are written to `artifacts/ci/windows-validation/`.
 
 ## Manual review checklist
 
 1. Run `powershell -ExecutionPolicy Bypass -File scripts/ui/Run-UiSmoke.ps1`.
-2. Inspect the screenshots under `artifacts/ui/smoke/` and confirm the scenarios render without clipped text, broken layout, or missing sections.
-3. Build the solution and launch the app in a normal PowerShell session.
-4. Confirm the dashboard renders current status, risk, workspace safety signals, restart indicators, protected process matches, and mitigation state.
-5. Confirm the restart indicator table shows multiple providers and that the pending-restart field can read `Pending`, `Not detected`, or `Ambiguous / review signals` depending on the signal mix.
-6. Start a protected tool such as Windows Terminal or VS Code and confirm the dashboard detects it on the next scan or after pressing `Scan now`.
-7. Edit [`config/protected-processes.json`](/C:/Users/decoy/sessionguard-win11/config/protected-processes.json), save the file, and verify the next scan uses the updated list.
-8. Launch the app from an elevated shell, apply the recommended mitigation, and confirm the mitigation state changes to applied.
-9. Reset managed settings and verify the app reports the reverted state.
-10. Review the latest file under `logs/` and confirm scans, detections, mitigation attempts, and failures are recorded.
-11. Run the service project, then launch the desktop app and confirm the dashboard reports `Control plane: Service`.
-12. Run `src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe probe` and confirm it prints JSON status while the service path is running.
-13. Run `powershell -ExecutionPolicy Bypass -File scripts/service/Get-SessionGuardServiceStatus.ps1` and confirm it reports both control-plane reachability and health snapshot details.
-14. Run `powershell -ExecutionPolicy Bypass -File scripts/service/Install-SessionGuardService.ps1 -ValidateOnly` and confirm it reports install readiness or a clear elevation requirement without changing the machine.
-15. Run `powershell -ExecutionPolicy Bypass -File scripts/service/Validate-SessionGuardPublishedLayout.ps1` and confirm the published layout works outside the repo root.
-16. Minimize or close the dashboard window and confirm SessionGuard remains available in the notification area.
-17. Start a protected terminal, browser, or editor session and confirm the workspace safety table explains why the session is considered risky.
-18. Inspect `state/current-scan.json`, `state/workspace-snapshot.json`, and `state/service-health.json` and confirm the latest status is serialized by the service or local fallback path.
+2. Run `powershell -ExecutionPolicy Bypass -File scripts/ci/Invoke-WindowsValidation.ps1` if you want the same validation flow used by GitHub Actions.
+3. Inspect the screenshots under `artifacts/ui/smoke/` or `artifacts/ci/windows-validation/ui-smoke/` and confirm the scenarios render without clipped text, broken layout, or missing sections.
+4. Build the solution and launch the app in a normal PowerShell session.
+5. Confirm the dashboard renders current status, risk, workspace safety signals, restart indicators, protected process matches, and mitigation state.
+6. Confirm the restart indicator table shows multiple providers and that the pending-restart field can read `Pending`, `Not detected`, or `Ambiguous / review signals` depending on the signal mix.
+7. Start a protected tool such as Windows Terminal or VS Code and confirm the dashboard detects it on the next scan or after pressing `Scan now`.
+8. Edit [`config/protected-processes.json`](/C:/Users/decoy/sessionguard-win11/config/protected-processes.json), save the file, and verify the next scan uses the updated list.
+9. Launch the app from an elevated shell, apply the recommended mitigation, and confirm the mitigation state changes to applied.
+10. Reset managed settings and verify the app reports the reverted state.
+11. Review the latest file under `logs/` and confirm scans, detections, mitigation attempts, and failures are recorded.
+12. Run the service project, then launch the desktop app and confirm the dashboard reports `Control plane: Service`.
+13. Run `src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe probe` and confirm it prints JSON status while the service path is running.
+14. Run `powershell -ExecutionPolicy Bypass -File scripts/service/Get-SessionGuardServiceStatus.ps1` and confirm it reports both control-plane reachability and health snapshot details.
+15. Run `powershell -ExecutionPolicy Bypass -File scripts/service/Install-SessionGuardService.ps1 -ValidateOnly` and confirm it reports install readiness or a clear elevation requirement without changing the machine.
+16. Run `powershell -ExecutionPolicy Bypass -File scripts/service/Validate-SessionGuardPublishedLayout.ps1` and confirm the published layout works outside the repo root.
+17. Minimize or close the dashboard window and confirm SessionGuard remains available in the notification area.
+18. Start a protected terminal, browser, or editor session and confirm the workspace safety table explains why the session is considered risky.
+19. Inspect `state/current-scan.json`, `state/workspace-snapshot.json`, and `state/service-health.json` and confirm the latest status is serialized by the service or local fallback path.
 
 ## What the MVP does not do
 

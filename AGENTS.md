@@ -107,7 +107,10 @@ Short summary of the release.
 - Run `dotnet build SessionGuard.sln` after meaningful code changes.
 - Run `dotnet test SessionGuard.sln` when core logic, configuration loading, or status evaluation changes.
 - For UI or startup changes, verify the desktop app launches and shows a top-level window.
+- For UI-affecting, startup, or release-readiness changes, run `powershell -ExecutionPolicy Bypass -File scripts/ci/Invoke-WindowsValidation.ps1` when practical; at minimum, run `powershell -ExecutionPolicy Bypass -File scripts/ui/Run-UiSmoke.ps1`.
+- Review the generated screenshots under `artifacts/ui/smoke/` or `artifacts/ci/windows-validation/ui-smoke/` after UI smoke changes instead of assuming the dashboard still looks correct.
 - If a feature requires elevation, verify both elevated and non-elevated behavior and document the difference.
+- Keep GitHub Actions workflow logic thin. Prefer putting validation steps in repo-owned scripts and calling those scripts from `.github/workflows/`.
 
 ## Documentation rules
 

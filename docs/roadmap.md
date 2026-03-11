@@ -37,6 +37,26 @@ Current status:
 - Phase 4 validation and release-hardening work is now complete on this branch
 - the remaining release step is tag-and-push approval plus final release notes handoff
 
+### 0.4.x Validation Hardening
+
+Purpose:
+Reduce manual release review by making the same Windows validation path runnable both locally and in GitHub Actions.
+
+Planned work:
+- add a repo-owned Windows validation script that runs build, test, and UI smoke together
+- add a GitHub Actions workflow on `windows-latest`
+- publish UI smoke screenshots, summary data, and test results as CI artifacts
+- keep UI validation instructions and repo rules aligned with the CI entry point
+
+Current status:
+- v0.4.1 added deterministic local UI smoke scenarios and screenshot capture
+- v0.4.2 is the next planned patch to move that validation path into GitHub Actions and tighten repo guidance around it
+
+Exit criteria:
+- a Windows GitHub Actions workflow runs the repo-owned validation script
+- the workflow uploads smoke screenshots and summary artifacts on every run
+- local documentation and AGENTS guidance point to the same validation entry point
+
 ## v0.1.0 - MVP Desktop Monitor
 
 ### Purpose
