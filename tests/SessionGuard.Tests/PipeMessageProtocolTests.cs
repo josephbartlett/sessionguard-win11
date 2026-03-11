@@ -41,6 +41,7 @@ public sealed class PipeMessageProtocolTests
                     LimitedVisibility: false,
                     IsElevated: true,
                     Summary: "Managed mitigations are applied.",
+                    WorkspaceStateSnapshot.None(DateTimeOffset.Parse("2026-03-11T09:35:00-05:00")),
                     new RestartSignalOverview(1, 1, 0, 0, 0, 1, 0, "No restart pending."),
                     new[]
                     {

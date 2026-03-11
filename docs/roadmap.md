@@ -30,6 +30,12 @@ Exit criteria:
 
 See [`docs/plans/v0.4.0-workspace-safety-plan.md`](/C:/Users/decoy/sessionguard-win11/docs/plans/v0.4.0-workspace-safety-plan.md) for the concrete implementation phases, dependencies, and acceptance gates.
 
+Current status:
+- Phase 1 workspace models and heuristics are now implemented on this branch
+- Phase 2 advisory workspace snapshot persistence is now implemented on this branch
+- Phase 3 dashboard rendering for workspace-risk summaries is now implemented on this branch
+- Phase 4 validation and release-hardening work remains open before a `v0.4.0` tag
+
 ## v0.1.0 - MVP Desktop Monitor
 
 ### Purpose
@@ -150,10 +156,10 @@ Improve the product’s understanding of what makes a session unsafe to restart 
 
 ### Key features
 
-- workspace snapshot foundation
+- advisory workspace snapshot foundation
 - process and session awareness improvements
-- browser and terminal recovery hints
-- richer per-process disruption scoring
+- browser, terminal, editor, and local-runtime heuristic grouping
+- richer per-group disruption explanations and confidence reporting
 
 ### Architectural changes
 
@@ -172,6 +178,7 @@ Improve the product’s understanding of what makes a session unsafe to restart 
 - the app can distinguish generic protected tools from higher-risk live workspaces
 - snapshot metadata can be created without breaking the current MVP flows
 - the UI explains why a workspace was considered risky
+- automated tests cover the first heuristic rules and snapshot persistence
 
 ## v0.5.0 - Policy Engine
 

@@ -31,9 +31,12 @@ public sealed class SessionGuardCoordinator
         _logger.Info("scan.start", new { guardModeEnabled });
 
         var configuration = await _configurationRepository.LoadAsync(cancellationToken);
-        var protectedProcesses = await _workspaceDetector.GetActiveMatchesAsync(
+        var timestamp = DateTimeOffset.Now;
+        var workspaceObservation = await _workspaceDetector.GetWorkspaceObservationAsync(
             configuration.ProtectedProcesses.ProcessNames,
             cancellationToken);
+        var workspace = WorkspaceRiskAnalyzer.Analyze(workspaceObservation, timestamp);
+        var protectedProcesses = workspaceObservation.ProtectedProcesses;
 
         var indicators = new List<RestartIndicator>();
         foreach (var provider in _signalProviders)
@@ -68,28 +71,29 @@ public sealed class SessionGuardCoordinator
 
         var mitigationStates = await _mitigationService.GetStatesAsync(configuration, cancellationToken);
         var signalOverview = RestartStatusEvaluator.BuildOverview(indicators);
-        var evaluation = RestartStatusEvaluator.Evaluate(indicators, protectedProcesses, mitigationStates);
+        var evaluation = RestartStatusEvaluator.Evaluate(indicators, workspace, mitigationStates);
         var protectionMode = RestartStatusEvaluator.DetermineProtectionMode(
             guardModeEnabled,
             mitigationStates.Any(state => state.IsApplied),
             _mitigationService.IsElevated);
 
         var result = new SessionScanResult(
-            DateTimeOffset.Now,
+            timestamp,
             evaluation.State,
             evaluation.RiskLevel,
             protectionMode,
             signalOverview.DefinitivePendingSignals > 0,
             evaluation.HasAmbiguousSignals,
-            protectedProcesses.Count > 0,
+            workspace.HasRisk,
             indicators.Any(indicator => indicator.LimitedVisibility),
             _mitigationService.IsElevated,
             evaluation.Summary,
+            workspace,
             signalOverview,
             indicators,
             protectedProcesses,
             mitigationStates,
-            BuildRecommendations(signalOverview, protectedProcesses, mitigationStates, _mitigationService.IsElevated));
+            BuildRecommendations(signalOverview, workspace, mitigationStates, _mitigationService.IsElevated));
 
         _logger.Info(
             "scan.finish",
@@ -101,7 +105,9 @@ public sealed class SessionGuardCoordinator
                 result.HasAmbiguousSignals,
                 signalOverview.DefinitivePendingSignals,
                 signalOverview.AmbiguousSignals,
-                protectedProcessCount = result.ProtectedProcesses.Count
+                protectedProcessCount = result.ProtectedProcesses.Count,
+                workspaceRiskItems = result.Workspace.RiskItems.Count,
+                workspaceHighestSeverity = result.Workspace.HighestSeverity
             });
 
         return result;
@@ -109,14 +115,14 @@ public sealed class SessionGuardCoordinator
 
     private static IReadOnlyList<string> BuildRecommendations(
         RestartSignalOverview signalOverview,
-        IReadOnlyList<ProtectedProcessMatch> protectedProcesses,
+        WorkspaceStateSnapshot workspace,
         IReadOnlyList<ManagedMitigationState> mitigationStates,
         bool isElevated)
     {
         var recommendations = new List<string>();
         var restartPending = signalOverview.DefinitivePendingSignals > 0;
         var hasAmbiguousSignals = signalOverview.AmbiguousSignals > 0;
-        var protectedSessionActive = protectedProcesses.Count > 0;
+        var protectedSessionActive = workspace.HasRisk;
         var mitigationsApplied = mitigationStates.Any(state => state.IsApplied);
         var limitedVisibility = signalOverview.LimitedVisibilityIndicators > 0;
 
@@ -132,7 +138,17 @@ public sealed class SessionGuardCoordinator
 
         if (protectedSessionActive)
         {
-            recommendations.Add("Protected processes are active. SessionGuard is surfacing risk only; it does not snapshot or recover workspace state in this MVP.");
+            recommendations.Add("Workspace-risk heuristics are active. SessionGuard is surfacing advisory risk and lightweight metadata only; it does not snapshot unsaved buffers or recover workspace state.");
+        }
+
+        if (workspace.RiskItems.Any(item => item.Category == WorkspaceCategory.LocalDevServer))
+        {
+            recommendations.Add("Local runtime processes suggest a dev server or long-running task may be active. Confirm whether you need to keep the machine supervised before stepping away.");
+        }
+
+        if (workspace.RiskItems.Any(item => item.Category == WorkspaceCategory.Browser))
+        {
+            recommendations.Add("Browser risk is inferred from running processes only. Review your own session persistence settings before relying on restart recovery.");
         }
 
         if (!mitigationsApplied)

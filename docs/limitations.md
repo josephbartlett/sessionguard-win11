@@ -11,7 +11,8 @@
 - Registry indicators are heuristic inputs, not a complete source of truth.
 - Windows Update Agent COM, UX settings, and scheduled-task clues improve coverage, but they still do not expose every restart decision path.
 - Smart scheduler predictions and scheduled-task visibility are advisory orchestration clues, not proof that Windows will definitely restart at a specific time.
-- Protected workspace detection is process-name based. It does not know whether a terminal has unsaved work or whether a browser tab matters to the user.
+- Protected workspace detection is still process-name based. It does not know whether a terminal has unsaved work, whether a browser tab matters to the user, or whether a runtime process is truly serving a critical workload.
+- Local dev-server style runtime detection is intentionally conservative and may produce false positives for short-lived scripts or background tools that are not truly restart-sensitive.
 
 ## Mitigation limitations
 
@@ -29,7 +30,7 @@
 
 ## Recovery limitations
 
-- No workspace snapshotting
+- Only advisory workspace metadata snapshotting
 - No process relaunch orchestration
 - No browser or editor recovery integration
 - No approval workflow for restarts

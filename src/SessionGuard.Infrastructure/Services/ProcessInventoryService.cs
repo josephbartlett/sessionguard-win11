@@ -7,7 +7,7 @@ namespace SessionGuard.Infrastructure.Services;
 
 public sealed class ProcessInventoryService : IProtectedWorkspaceDetector
 {
-    public Task<IReadOnlyList<ProtectedProcessMatch>> GetActiveMatchesAsync(
+    public Task<WorkspaceProcessObservation> GetWorkspaceObservationAsync(
         IReadOnlyCollection<string> protectedProcesses,
         CancellationToken cancellationToken = default)
     {
@@ -31,6 +31,8 @@ public sealed class ProcessInventoryService : IProtectedWorkspaceDetector
             }
         }
 
-        return Task.FromResult(ProcessMatcher.MatchProcesses(protectedProcesses, runningProcessNames));
+        return Task.FromResult(new WorkspaceProcessObservation(
+            ProcessMatcher.MatchProcesses(protectedProcesses, runningProcessNames),
+            ProcessMatcher.SummarizeProcesses(runningProcessNames)));
     }
 }

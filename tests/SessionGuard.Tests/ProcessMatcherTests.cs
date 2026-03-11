@@ -29,4 +29,29 @@ public sealed class ProcessMatcherTests
         Assert.Equal("pwsh.exe", match.DisplayName);
         Assert.Equal(2, match.InstanceCount);
     }
+
+    [Fact]
+    public void SummarizeProcesses_GroupsAndCanonicalizesRunningProcesses()
+    {
+        var processes = ProcessMatcher.SummarizeProcesses(
+            new[] { "pwsh", "PWSH.exe", "node", "node.exe", "chrome" });
+
+        Assert.Collection(
+            processes,
+            process =>
+            {
+                Assert.Equal("chrome.exe", process.DisplayName);
+                Assert.Equal(1, process.InstanceCount);
+            },
+            process =>
+            {
+                Assert.Equal("node.exe", process.DisplayName);
+                Assert.Equal(2, process.InstanceCount);
+            },
+            process =>
+            {
+                Assert.Equal("pwsh.exe", process.DisplayName);
+                Assert.Equal(2, process.InstanceCount);
+            });
+    }
 }

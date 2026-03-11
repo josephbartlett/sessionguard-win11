@@ -69,6 +69,23 @@ public sealed class ServiceHealthReporterTests
                 LimitedVisibility: false,
                 IsElevated: false,
                 Summary: "Protected tools are active while restart indicators are present.",
+                new WorkspaceStateSnapshot(
+                    DateTimeOffset.Parse("2026-03-11T09:40:00-05:00"),
+                    HasRisk: true,
+                    WorkspaceRiskSeverity.High,
+                    WorkspaceConfidence.High,
+                    "Workspace-risk heuristics flagged high-impact activity: Terminal and shell sessions.",
+                    new[]
+                    {
+                        new WorkspaceRiskItem(
+                            "Terminal and shell sessions",
+                            WorkspaceCategory.TerminalShell,
+                            WorkspaceRiskSeverity.High,
+                            WorkspaceConfidence.High,
+                            1,
+                            "Interactive shell detected.",
+                            new[] { "pwsh.exe" })
+                    }),
                 new RestartSignalOverview(1, 1, 1, 0, 0, 1, 0, "1 definitive pending-restart signal detected."),
                 new[]
                 {

@@ -36,12 +36,12 @@ public static class RestartStatusEvaluator
 
     public static StatusEvaluation Evaluate(
         IReadOnlyList<RestartIndicator> indicators,
-        IReadOnlyList<ProtectedProcessMatch> protectedProcesses,
+        WorkspaceStateSnapshot workspace,
         IReadOnlyList<ManagedMitigationState> mitigations)
     {
         var restartPending = indicators.Any(IsDefinitivePendingSignal);
         var hasAmbiguousSignals = indicators.Any(IsAmbiguousSignal);
-        var protectedSessionActive = protectedProcesses.Count > 0;
+        var protectedSessionActive = workspace.HasRisk;
         var limitedVisibility = indicators.Any(indicator => indicator.LimitedVisibility);
         var mitigated = mitigations.Any(mitigation => mitigation.IsApplied);
 
@@ -50,7 +50,7 @@ public static class RestartStatusEvaluator
             return new StatusEvaluation(
                 RestartStateCategory.ProtectedSessionActive,
                 RestartRiskLevel.High,
-                "Definitive pending reboot signals are active while protected tools are running.",
+                $"Definitive pending reboot signals are active while workspace-risk heuristics report active sessions. {workspace.Summary}",
                 hasAmbiguousSignals);
         }
 
@@ -59,7 +59,7 @@ public static class RestartStatusEvaluator
             return new StatusEvaluation(
                 RestartStateCategory.ProtectedSessionActive,
                 RestartRiskLevel.High,
-                "Protected tools are running while Windows Update orchestration activity is visible, but the app cannot confirm a definitive pending reboot yet.",
+                $"Workspace-risk heuristics report active sessions while Windows Update orchestration activity is visible, but the app cannot confirm a definitive pending reboot yet. {workspace.Summary}",
                 hasAmbiguousSignals);
         }
 
@@ -68,7 +68,7 @@ public static class RestartStatusEvaluator
             return new StatusEvaluation(
                 RestartStateCategory.ProtectedSessionActive,
                 RestartRiskLevel.Elevated,
-                "Protected tools are active. A restart would still be disruptive even without a confirmed pending reboot.",
+                $"Workspace-risk heuristics report active sessions. A restart would still be disruptive even without a confirmed pending reboot. {workspace.Summary}",
                 hasAmbiguousSignals);
         }
 

@@ -4,7 +4,7 @@ namespace SessionGuard.Core.Services;
 
 public interface IProtectedWorkspaceDetector
 {
-    Task<IReadOnlyList<ProtectedProcessMatch>> GetActiveMatchesAsync(
+    Task<WorkspaceProcessObservation> GetWorkspaceObservationAsync(
         IReadOnlyCollection<string> protectedProcesses,
         CancellationToken cancellationToken = default);
 }

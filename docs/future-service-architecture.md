@@ -61,7 +61,7 @@ This split architecture supports:
 
 - continuous restart monitoring even when the dashboard window is closed
 - restart approval windows
-- workspace snapshot metadata
+- advisory workspace snapshot metadata, which now exists locally in the current branch
 - richer browser and terminal heuristics
 - policy-driven behavior across multiple user sessions
 
@@ -80,3 +80,4 @@ Migration path:
 2. move service-only privileged writes behind installable service lifecycle management
 3. split the current WPF dashboard from a lighter always-on tray entry point if that improves operator experience
 4. add service installation, health checks, startup policy, and upgrade-safe persisted state
+5. evolve the current advisory workspace snapshot into richer recovery-aware metadata without overstating what can actually be restored

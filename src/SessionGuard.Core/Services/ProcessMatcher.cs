@@ -38,6 +38,24 @@ public static class ProcessMatcher
             .ToArray();
     }
 
+    public static IReadOnlyList<ObservedProcessInfo> SummarizeProcesses(IEnumerable<string> runningProcesses)
+    {
+        return runningProcesses
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Select(name => new
+            {
+                Key = NormalizeExecutableName(name),
+                DisplayName = CanonicalizeDisplayName(name)
+            })
+            .Where(item => !string.IsNullOrWhiteSpace(item.Key))
+            .GroupBy(item => item.Key, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(group => new ObservedProcessInfo(
+                group.First().DisplayName,
+                group.Count()))
+            .ToArray();
+    }
+
     public static string CanonicalizeDisplayName(string name)
     {
         if (string.IsNullOrWhiteSpace(name))

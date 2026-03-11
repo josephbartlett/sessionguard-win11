@@ -18,12 +18,25 @@ public sealed class RestartStatusEvaluatorTests
                 "Reboot required",
                 SignalConfidence.High)
         };
-        var protectedProcesses = new[]
-        {
-            new ProtectedProcessMatch("WindowsTerminal.exe", 1)
-        };
+        var workspace = new WorkspaceStateSnapshot(
+            DateTimeOffset.Parse("2026-03-11T09:20:00-05:00"),
+            HasRisk: true,
+            WorkspaceRiskSeverity.High,
+            WorkspaceConfidence.High,
+            "Workspace-risk heuristics flagged high-impact activity: Terminal and shell sessions.",
+            new[]
+            {
+                new WorkspaceRiskItem(
+                    "Terminal and shell sessions",
+                    WorkspaceCategory.TerminalShell,
+                    WorkspaceRiskSeverity.High,
+                    WorkspaceConfidence.High,
+                    1,
+                    "Interactive shell detected.",
+                    new[] { "WindowsTerminal.exe" })
+            });
 
-        var evaluation = RestartStatusEvaluator.Evaluate(indicators, protectedProcesses, Array.Empty<ManagedMitigationState>());
+        var evaluation = RestartStatusEvaluator.Evaluate(indicators, workspace, Array.Empty<ManagedMitigationState>());
 
         Assert.Equal(RestartStateCategory.ProtectedSessionActive, evaluation.State);
         Assert.Equal(RestartRiskLevel.High, evaluation.RiskLevel);
@@ -47,7 +60,7 @@ public sealed class RestartStatusEvaluatorTests
 
         var evaluation = RestartStatusEvaluator.Evaluate(
             Array.Empty<RestartIndicator>(),
-            Array.Empty<ProtectedProcessMatch>(),
+            WorkspaceStateSnapshot.None(DateTimeOffset.Parse("2026-03-11T09:25:00-05:00")),
             mitigations);
 
         Assert.Equal(RestartStateCategory.MitigatedDeferred, evaluation.State);
@@ -70,7 +83,7 @@ public sealed class RestartStatusEvaluatorTests
 
         var evaluation = RestartStatusEvaluator.Evaluate(
             indicators,
-            Array.Empty<ProtectedProcessMatch>(),
+            WorkspaceStateSnapshot.None(DateTimeOffset.Parse("2026-03-11T09:30:00-05:00")),
             Array.Empty<ManagedMitigationState>());
 
         Assert.Equal(RestartStateCategory.UnknownLimitedVisibility, evaluation.State);

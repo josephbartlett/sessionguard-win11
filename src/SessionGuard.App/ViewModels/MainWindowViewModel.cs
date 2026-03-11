@@ -47,6 +47,9 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private string _providerCoverageText = "Providers: not yet scanned";
     private string _connectionModeText = "Control plane: not yet determined";
     private string _protectedProcessSummary = "Protected processes: not yet scanned";
+    private string _workspaceSummaryText = "Workspace safety: not yet scanned";
+    private string _workspaceConfidenceText = "Workspace confidence: not yet scanned";
+    private string _workspaceSnapshotText = "Workspace snapshot: not yet scanned";
     private string _lastActionMessage = "SessionGuard is ready.";
     private string _configurationDirectoryText = string.Empty;
     private string _logDirectoryText = string.Empty;
@@ -65,6 +68,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         _runtimePaths = runtimePaths;
 
         ProtectedProcesses = new ObservableCollection<ProtectedProcessMatch>();
+        WorkspaceRiskItems = new ObservableCollection<WorkspaceRiskItem>();
         RestartIndicators = new ObservableCollection<RestartIndicator>();
         ManagedMitigations = new ObservableCollection<ManagedMitigationState>();
         Recommendations = new ObservableCollection<string>();
@@ -86,6 +90,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     public event EventHandler? AttentionRequested;
 
     public ObservableCollection<ProtectedProcessMatch> ProtectedProcesses { get; }
+
+    public ObservableCollection<WorkspaceRiskItem> WorkspaceRiskItems { get; }
 
     public ObservableCollection<RestartIndicator> RestartIndicators { get; }
 
@@ -222,6 +228,24 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         private set => SetProperty(ref _protectedProcessSummary, value);
     }
 
+    public string WorkspaceSummaryText
+    {
+        get => _workspaceSummaryText;
+        private set => SetProperty(ref _workspaceSummaryText, value);
+    }
+
+    public string WorkspaceConfidenceText
+    {
+        get => _workspaceConfidenceText;
+        private set => SetProperty(ref _workspaceConfidenceText, value);
+    }
+
+    public string WorkspaceSnapshotText
+    {
+        get => _workspaceSnapshotText;
+        private set => SetProperty(ref _workspaceSnapshotText, value);
+    }
+
     public string LastActionMessage
     {
         get => _lastActionMessage;
@@ -337,10 +361,14 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             ProviderCoverageText = "Providers: scan failed";
             ConnectionModeText = "Control plane: unavailable";
             ProtectedProcessSummary = "Protected process detection unavailable.";
+            WorkspaceSummaryText = "Workspace safety detection unavailable.";
+            WorkspaceConfidenceText = "Workspace confidence: unavailable";
+            WorkspaceSnapshotText = "Workspace snapshot: unavailable";
             LastActionMessage = $"Scan failed: {exception.Message}";
             StatusBrush = CreateBrush("#64748B");
             RiskBrush = CreateBrush("#64748B");
             ReplaceItems(ProtectedProcesses, Array.Empty<ProtectedProcessMatch>());
+            ReplaceItems(WorkspaceRiskItems, Array.Empty<WorkspaceRiskItem>());
             ReplaceItems(RestartIndicators, Array.Empty<RestartIndicator>());
             ReplaceItems(ManagedMitigations, Array.Empty<ManagedMitigationState>());
             ReplaceItems(
@@ -445,10 +473,16 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         ProtectedProcessSummary = result.ProtectedProcesses.Count == 0
             ? "Protected processes: none detected"
             : $"Protected processes: {string.Join(", ", result.ProtectedProcesses.Select(match => $"{match.DisplayName} x{match.InstanceCount}"))}";
+        WorkspaceSummaryText = result.Workspace.Summary;
+        WorkspaceConfidenceText = $"Workspace confidence: {FormatWorkspaceConfidence(result.Workspace.Confidence)}";
+        WorkspaceSnapshotText = result.Workspace.HasRisk
+            ? "Workspace snapshot: advisory metadata written to state/workspace-snapshot.json"
+            : "Workspace snapshot: no advisory snapshot written";
         StatusBrush = CreateBrush(GetStatusColor(result.State));
         RiskBrush = CreateBrush(GetRiskColor(result.RiskLevel));
 
         ReplaceItems(ProtectedProcesses, result.ProtectedProcesses);
+        ReplaceItems(WorkspaceRiskItems, result.Workspace.RiskItems);
         ReplaceItems(RestartIndicators, result.Indicators);
         ReplaceItems(ManagedMitigations, result.Mitigations);
         ReplaceItems(Recommendations, result.Recommendations);
@@ -531,6 +565,17 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             ProtectionMode.ManagedMitigationsApplied => "Managed mitigations applied",
             ProtectionMode.LimitedReadOnly => "Read-only",
             _ => "Read-only"
+        };
+    }
+
+    private static string FormatWorkspaceConfidence(WorkspaceConfidence confidence)
+    {
+        return confidence switch
+        {
+            WorkspaceConfidence.Low => "Low",
+            WorkspaceConfidence.Medium => "Medium",
+            WorkspaceConfidence.High => "High",
+            _ => "Unknown"
         };
     }
 

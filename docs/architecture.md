@@ -23,6 +23,7 @@ WPF was chosen over WinUI for the MVP because the priority is a stable desktop m
    - [`config/protected-processes.json`](/C:/Users/decoy/sessionguard-win11/config/protected-processes.json)
 5. The coordinator runs a scan:
    - protected-process detection
+   - workspace-risk heuristic analysis using protected-tool matches plus bounded runtime-process clues
    - restart signal inspection across multiple providers
    - mitigation state inspection
 6. Core logic aggregates the signals into:
@@ -31,7 +32,7 @@ WPF was chosen over WinUI for the MVP because the priority is a stable desktop m
    - `Protected Session Active`
    - `Mitigated / Deferred`
    - `Unknown / Limited Visibility`
-7. The service or local fallback path persists `state/current-scan.json`, and the WPF view model updates the dashboard.
+7. The service or local fallback path persists `state/current-scan.json`; when workspace risk is present it also writes `state/workspace-snapshot.json`, and the WPF view model updates the dashboard.
 8. When guard mode is enabled, the WPF shell can raise the dashboard on a high-risk transition and otherwise stay minimized in the tray.
 
 ## Restart signal inspection
@@ -63,6 +64,27 @@ Core aggregation now distinguishes:
 
 These signals are useful but incomplete. SessionGuard treats them as best-effort indicators and surfaces limited visibility when reads fail.
 
+## Workspace safety model
+
+`SessionGuard.Core` now has a distinct workspace-risk layer separate from restart-state inspection.
+
+The current heuristics are intentionally bounded:
+
+- terminals and shells are treated as high-risk interactive context
+- editors and IDEs are treated as elevated disruption risk
+- browsers are treated as elevated disruption risk with medium confidence because tab or session importance is not knowable from process names alone
+- local dev-server style runtimes are treated as advisory-to-high disruption risk depending on whether interactive tools are also present
+- other configured protected tools are still honored as operator-defined protected context even when SessionGuard cannot infer richer semantics
+
+The output is a `WorkspaceStateSnapshot` that includes:
+
+- summary text
+- highest severity
+- confidence
+- grouped risk items with process lists and explicit reasons
+
+This keeps the new behavior explainable and testable without claiming recovery capabilities the product does not yet have.
+
 ## Mitigation model
 
 SessionGuard only manages reversible, native Windows settings:
@@ -80,6 +102,7 @@ Before writing managed values, the infrastructure layer captures previous values
 - `logs/`: local structured logs created on demand.
 - `state/`: local backup state used for mitigation reset behavior.
   - `current-scan.json`: latest machine-readable scan snapshot shared by the app and service paths.
+  - `workspace-snapshot.json`: advisory workspace-risk metadata written only when heuristics detect risky activity.
   - `service-health.json`: service lifecycle and diagnostics snapshot for startup, scan, and pipe health.
 
 The log and state folders are intentionally excluded from source control.
@@ -120,5 +143,6 @@ This keeps the MVP auditable without introducing a full telemetry stack.
 
 - Add more signal providers by implementing `IRestartSignalProvider`.
 - Add richer workspace heuristics behind `IProtectedWorkspaceDetector`.
+- Extend the current workspace heuristic model into richer snapshot metadata and future recovery hints without changing restart-signal providers.
 - Harden the named-pipe contract and move more privileged behavior behind the service boundary without changing core status evaluation.
 - Replace or complement the current WPF shell with a dedicated tray app while retaining the current core and infrastructure contracts.

@@ -6,10 +6,11 @@ The MVP is intentionally bounded:
 
 - It inspects plausible restart and reboot-required signals that are accessible from user mode.
 - It detects whether a protected workspace is active based on a configurable process list.
+- It now derives advisory workspace-risk heuristics for terminals, editors, browsers, and local dev-server style runtimes.
 - It can apply a small set of reversible native mitigation settings when the app is run with administrative rights.
 - It logs what it observed and what it attempted so the behavior stays auditable.
 
-SessionGuard does not guarantee prevention of every OS-driven restart path, and it does not snapshot or recover user workspaces in this version.
+SessionGuard does not guarantee prevention of every OS-driven restart path, and it does not snapshot or recover unsaved user workspaces in this version.
 
 ## Why this stack
 
@@ -19,7 +20,7 @@ SessionGuard does not guarantee prevention of every OS-driven restart path, and 
 
 ## MVP capabilities
 
-- Dashboard showing current status, restart risk, protection mode, pending restart state, protected process matches, mitigation status, and last scan time.
+- Dashboard showing current status, restart risk, protection mode, pending restart state, protected process matches, workspace safety signals, mitigation status, and last scan time.
 - Configurable protected process detection from [`config/protected-processes.json`](/C:/Users/decoy/sessionguard-win11/config/protected-processes.json).
 - Restart signal inspection using multiple providers:
   - bounded registry checks for CBS, Windows Update, and Session Manager reboot clues
@@ -37,8 +38,9 @@ SessionGuard does not guarantee prevention of every OS-driven restart path, and 
 - Tray-aware WPF dashboard behavior that minimizes to the notification area and can reopen the dashboard on demand.
 - Versioned named-pipe control plane between the desktop app and the service-hostable worker, with local fallback if the service is not reachable.
 - Machine-readable scan snapshot at `state/current-scan.json` shared by the desktop app and service path.
+- Advisory workspace metadata snapshot at `state/workspace-snapshot.json` when workspace-risk heuristics are active.
 - Separate app and service logs under `logs/`.
-- Unit tests for process matching, status aggregation, configuration parsing, control-plane behavior, and IPC compatibility checks.
+- Unit tests for process matching, workspace heuristics, status aggregation, snapshot persistence, control-plane behavior, and IPC compatibility checks.
 
 ## Repo layout
 
@@ -154,12 +156,13 @@ src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe probe
 - Service logs are written to `logs/sessionguard-service-YYYYMMDD.log`.
 - Temporary mitigation backups are written to the local `state/` folder so SessionGuard can restore previous values when resetting managed settings.
 - The latest scan snapshot is written to `state/current-scan.json` for future background-service or tray-client consumption.
+- When workspace-risk heuristics are active, advisory metadata is also written to `state/workspace-snapshot.json`.
 - The service health snapshot is written to `state/service-health.json` so status tooling can show startup, scan, and control-plane health without scraping logs.
 
 ## Manual review checklist
 
 1. Build the solution and launch the app in a normal PowerShell session.
-2. Confirm the dashboard renders current status, risk, restart indicators, protected process matches, and mitigation state.
+2. Confirm the dashboard renders current status, risk, workspace safety signals, restart indicators, protected process matches, and mitigation state.
 3. Confirm the restart indicator table shows multiple providers and that the pending-restart field can read `Pending`, `Not detected`, or `Ambiguous / review signals` depending on the signal mix.
 4. Start a protected tool such as Windows Terminal or VS Code and confirm the dashboard detects it on the next scan or after pressing `Scan now`.
 5. Edit [`config/protected-processes.json`](/C:/Users/decoy/sessionguard-win11/config/protected-processes.json), save the file, and verify the next scan uses the updated list.
@@ -172,15 +175,17 @@ src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe probe
 12. Run `powershell -ExecutionPolicy Bypass -File scripts/service/Install-SessionGuardService.ps1 -ValidateOnly` and confirm it reports install readiness or a clear elevation requirement without changing the machine.
 13. Run `powershell -ExecutionPolicy Bypass -File scripts/service/Validate-SessionGuardPublishedLayout.ps1` and confirm the published layout works outside the repo root.
 14. Minimize or close the dashboard window and confirm SessionGuard remains available in the notification area.
-15. Inspect `state/current-scan.json` and `state/service-health.json` and confirm the latest status is serialized by the service or local fallback path.
+15. Start a protected terminal, browser, or editor session and confirm the workspace safety table explains why the session is considered risky.
+16. Inspect `state/current-scan.json`, `state/workspace-snapshot.json`, and `state/service-health.json` and confirm the latest status is serialized by the service or local fallback path.
 
 ## What the MVP does not do
 
 - It does not disable Windows Update.
 - It does not promise absolute prevention of every automatic restart.
 - It does not inspect unsaved buffers, browser tab counts, or developer session internals.
+- It now writes advisory workspace metadata, but that metadata is local only and does not capture enough detail to restore sessions.
 - It now includes a service-hostable worker, versioned named-pipe IPC, tray-aware window behavior, and local install/start/stop scripts, but it is not yet a hardened enterprise deployment package or dedicated tray-only shell.
-- It does not yet capture or restore workspace snapshots.
+- It does not yet capture full recovery snapshots or restore workspace state.
 
 ## Further documentation
 

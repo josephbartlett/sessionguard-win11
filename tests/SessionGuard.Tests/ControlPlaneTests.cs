@@ -103,7 +103,14 @@ public sealed class ControlPlaneTests
         return new SessionGuardServiceRuntime(
             new SessionGuardCoordinator(
                 configurationRepository,
-                new StubWorkspaceDetector(new[] { new ProtectedProcessMatch("pwsh.exe", 1) }),
+                new StubWorkspaceDetector(
+                    new WorkspaceProcessObservation(
+                        new[] { new ProtectedProcessMatch("pwsh.exe", 1) },
+                        new[]
+                        {
+                            new ObservedProcessInfo("pwsh.exe", 1),
+                            new ObservedProcessInfo("node.exe", 1)
+                        })),
                 new IRestartSignalProvider[]
                 {
                     new StubRestartSignalProvider(
@@ -141,6 +148,7 @@ public sealed class ControlPlaneTests
             LimitedVisibility: false,
             IsElevated: false,
             Summary: "Safe",
+            WorkspaceStateSnapshot.None(DateTimeOffset.Parse("2026-03-11T09:45:00-05:00")),
             new RestartSignalOverview(0, 0, 0, 0, 0, 0, 0, "No signals."),
             Array.Empty<RestartIndicator>(),
             Array.Empty<ProtectedProcessMatch>(),
@@ -206,17 +214,17 @@ public sealed class ControlPlaneTests
 
     private sealed class StubWorkspaceDetector : IProtectedWorkspaceDetector
     {
-        private readonly IReadOnlyList<ProtectedProcessMatch> _matches;
+        private readonly WorkspaceProcessObservation _observation;
 
-        public StubWorkspaceDetector(IReadOnlyList<ProtectedProcessMatch> matches)
+        public StubWorkspaceDetector(WorkspaceProcessObservation observation)
         {
-            _matches = matches;
+            _observation = observation;
         }
 
-        public Task<IReadOnlyList<ProtectedProcessMatch>> GetActiveMatchesAsync(
+        public Task<WorkspaceProcessObservation> GetWorkspaceObservationAsync(
             IReadOnlyCollection<string> protectedProcesses,
             CancellationToken cancellationToken = default)
-            => Task.FromResult(_matches);
+            => Task.FromResult(_observation);
     }
 
     private sealed class StubRestartSignalProvider : IRestartSignalProvider
