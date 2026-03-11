@@ -34,7 +34,7 @@ public sealed class PipeMessageProtocolTests
                     DateTimeOffset.Now,
                     RestartStateCategory.MitigatedDeferred,
                     RestartRiskLevel.Low,
-                    ProtectionMode.ManagedMitigationsApplied,
+                    ProtectionMode.PolicyApprovalWindow,
                     RestartPending: false,
                     HasAmbiguousSignals: false,
                     ProtectedSessionActive: false,
@@ -42,6 +42,28 @@ public sealed class PipeMessageProtocolTests
                     IsElevated: true,
                     Summary: "Managed mitigations are applied.",
                     WorkspaceStateSnapshot.None(DateTimeOffset.Parse("2026-03-11T09:35:00-05:00")),
+                    new PolicyEvaluation(
+                        PolicyDecisionType.ApprovalActive,
+                        HasBlockingRules: false,
+                        RequiresApproval: false,
+                        ApprovalActive: true,
+                        ApprovalExpiresAt: DateTimeOffset.Parse("2026-03-11T10:35:00-05:00"),
+                        RecommendedApprovalWindowMinutes: 60,
+                        "A temporary policy approval window is active until 3/11/2026 10:35:00 AM.",
+                        new[]
+                        {
+                            new PolicyRuleMatch(
+                                "approval-required-restart-pending",
+                                "Approval required for restart-pending states",
+                                PolicyRuleKind.ApprovalRequired,
+                                PolicyRuleOutcome.Approved,
+                                30,
+                                "A temporary restart approval window is active until 3/11/2026 10:35:00 AM.")
+                        },
+                        new[]
+                        {
+                            "Approval required for restart-pending states: A temporary restart approval window is active until 3/11/2026 10:35:00 AM."
+                        }),
                     new RestartSignalOverview(1, 1, 0, 0, 0, 1, 0, "No restart pending."),
                     new[]
                     {
@@ -85,7 +107,20 @@ public sealed class PipeMessageProtocolTests
                         "8",
                         "8",
                         @"HKLM\Software\Test")
-                }));
+                }),
+            new PolicyApprovalCommandResult(
+                true,
+                "Granted approval",
+                new PolicyEvaluation(
+                    PolicyDecisionType.ApprovalActive,
+                    HasBlockingRules: false,
+                    RequiresApproval: false,
+                    ApprovalActive: true,
+                    ApprovalExpiresAt: DateTimeOffset.Parse("2026-03-11T10:35:00-05:00"),
+                    RecommendedApprovalWindowMinutes: 60,
+                    "A temporary policy approval window is active until 3/11/2026 10:35:00 AM.",
+                    Array.Empty<PolicyRuleMatch>(),
+                    Array.Empty<string>())));
 
         await PipeMessageProtocol.WriteResponseAsync(stream, response);
         stream.Position = 0;
@@ -99,6 +134,8 @@ public sealed class PipeMessageProtocolTests
         Assert.Equal(RestartStateCategory.MitigatedDeferred, roundTripped.Status.ScanResult.State);
         Assert.NotNull(roundTripped.MitigationResult);
         Assert.Single(roundTripped.MitigationResult!.CurrentStates);
+        Assert.NotNull(roundTripped.PolicyResult);
+        Assert.True(roundTripped.PolicyResult!.Policy.ApprovalActive);
     }
 
     [Fact]

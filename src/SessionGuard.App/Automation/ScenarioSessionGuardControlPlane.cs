@@ -45,6 +45,22 @@ internal sealed class ScenarioSessionGuardControlPlane : ISessionGuardControlPla
             _scenario.Status.ScanResult.Mitigations));
     }
 
+    public Task<PolicyApprovalCommandResult> GrantRestartApprovalAsync(CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(new PolicyApprovalCommandResult(
+            Success: false,
+            "UI smoke scenarios are read-only. Policy approval is disabled in scenario mode.",
+            _scenario.Status.ScanResult.Policy));
+    }
+
+    public Task<PolicyApprovalCommandResult> ClearRestartApprovalAsync(CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(new PolicyApprovalCommandResult(
+            Success: false,
+            "UI smoke scenarios are read-only. Policy approval is disabled in scenario mode.",
+            _scenario.Status.ScanResult.Policy));
+    }
+
     private SessionControlStatus BuildStatus()
     {
         return _scenario.Status with { GuardModeEnabled = _guardModeEnabled };

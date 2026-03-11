@@ -58,6 +58,22 @@ Exit criteria:
 - the workflow uploads smoke screenshots and summary artifacts on every run
 - local documentation and AGENTS guidance point to the same validation entry point
 
+### v0.5.0 Execution Detail
+
+Purpose:
+Turn restart guidance into deterministic, user-configurable policy behavior without claiming that SessionGuard can control every Windows restart path.
+
+Current status:
+- the branch now includes a separate `config/policies.json` schema
+- policy rules are now evaluated in the coordinator and surfaced in the dashboard
+- temporary approval windows are now persisted locally and exposed through the control plane
+- the WPF dashboard now exposes policy decision, matched rules, and approval grant or clear actions
+
+Exit criteria:
+- users can define multiple policy rules with deterministic ordering
+- the dashboard can explain which rule changed the displayed policy state
+- temporary restart approval windows are visible, persisted, and reversible
+
 ## v0.1.0 - MVP Desktop Monitor
 
 ### Purpose

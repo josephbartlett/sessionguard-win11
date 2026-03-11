@@ -8,6 +8,7 @@ public sealed class LocalSessionGuardControlPlane : ISessionGuardControlPlane
     private readonly SessionGuardCoordinator _coordinator;
     private readonly IConfigurationRepository _configurationRepository;
     private readonly IMitigationService _mitigationService;
+    private readonly IPolicyApprovalStore _policyApprovalStore;
     private readonly IScanSnapshotStore _snapshotStore;
     private readonly SemaphoreSlim _gate = new(1, 1);
 
@@ -17,11 +18,13 @@ public sealed class LocalSessionGuardControlPlane : ISessionGuardControlPlane
         SessionGuardCoordinator coordinator,
         IConfigurationRepository configurationRepository,
         IMitigationService mitigationService,
+        IPolicyApprovalStore policyApprovalStore,
         IScanSnapshotStore snapshotStore)
     {
         _coordinator = coordinator;
         _configurationRepository = configurationRepository;
         _mitigationService = mitigationService;
+        _policyApprovalStore = policyApprovalStore;
         _snapshotStore = snapshotStore;
     }
 
@@ -52,6 +55,53 @@ public sealed class LocalSessionGuardControlPlane : ISessionGuardControlPlane
         return await _mitigationService.ResetManagedAsync(configuration, cancellationToken);
     }
 
+    public async Task<PolicyApprovalCommandResult> GrantRestartApprovalAsync(CancellationToken cancellationToken = default)
+    {
+        await _gate.WaitAsync(cancellationToken);
+
+        try
+        {
+            var configuration = await _configurationRepository.LoadAsync(cancellationToken);
+            var baselineStatus = await ScanLockedAsync(configuration, forceReloadGuardMode: false, explicitGuardMode: null, cancellationToken);
+            var windowMinutes = baselineStatus.ScanResult.Policy.RecommendedApprovalWindowMinutes > 0
+                ? baselineStatus.ScanResult.Policy.RecommendedApprovalWindowMinutes
+                : configuration.Policies.DefaultApprovalWindowMinutes;
+            await _policyApprovalStore.GrantAsync(
+                DateTimeOffset.Now,
+                TimeSpan.FromMinutes(windowMinutes),
+                cancellationToken);
+            var status = await ScanLockedAsync(configuration, forceReloadGuardMode: false, explicitGuardMode: null, cancellationToken);
+            return new PolicyApprovalCommandResult(
+                true,
+                $"Granted a temporary restart approval window for {windowMinutes} minute(s).",
+                status.ScanResult.Policy);
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    public async Task<PolicyApprovalCommandResult> ClearRestartApprovalAsync(CancellationToken cancellationToken = default)
+    {
+        await _gate.WaitAsync(cancellationToken);
+
+        try
+        {
+            var configuration = await _configurationRepository.LoadAsync(cancellationToken);
+            await _policyApprovalStore.ClearAsync(cancellationToken);
+            var status = await ScanLockedAsync(configuration, forceReloadGuardMode: false, explicitGuardMode: null, cancellationToken);
+            return new PolicyApprovalCommandResult(
+                true,
+                "Cleared the temporary restart approval window.",
+                status.ScanResult.Policy);
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
     private async Task<SessionControlStatus> ScanInternalAsync(
         bool forceReloadGuardMode,
         bool? explicitGuardMode,
@@ -62,29 +112,37 @@ public sealed class LocalSessionGuardControlPlane : ISessionGuardControlPlane
         try
         {
             var configuration = await _configurationRepository.LoadAsync(cancellationToken);
-
-            if (_guardModeEnabled is null || forceReloadGuardMode)
-            {
-                _guardModeEnabled = configuration.AppSettings.GuardModeEnabledByDefault;
-            }
-
-            if (explicitGuardMode.HasValue)
-            {
-                _guardModeEnabled = explicitGuardMode.Value;
-            }
-
-            var result = await _coordinator.ScanAsync(_guardModeEnabled ?? configuration.AppSettings.GuardModeEnabledByDefault, cancellationToken);
-            await _snapshotStore.PersistAsync(result, cancellationToken);
-
-            return new SessionControlStatus(
-                result,
-                _guardModeEnabled ?? configuration.AppSettings.GuardModeEnabledByDefault,
-                "Local fallback",
-                IsRemote: false);
+            return await ScanLockedAsync(configuration, forceReloadGuardMode, explicitGuardMode, cancellationToken);
         }
         finally
         {
             _gate.Release();
         }
+    }
+
+    private async Task<SessionControlStatus> ScanLockedAsync(
+        Core.Configuration.RuntimeConfiguration configuration,
+        bool forceReloadGuardMode,
+        bool? explicitGuardMode,
+        CancellationToken cancellationToken)
+    {
+        if (_guardModeEnabled is null || forceReloadGuardMode)
+        {
+            _guardModeEnabled = configuration.AppSettings.GuardModeEnabledByDefault;
+        }
+
+        if (explicitGuardMode.HasValue)
+        {
+            _guardModeEnabled = explicitGuardMode.Value;
+        }
+
+        var result = await _coordinator.ScanAsync(_guardModeEnabled ?? configuration.AppSettings.GuardModeEnabledByDefault, cancellationToken);
+        await _snapshotStore.PersistAsync(result, cancellationToken);
+
+        return new SessionControlStatus(
+            result,
+            _guardModeEnabled ?? configuration.AppSettings.GuardModeEnabledByDefault,
+            "Local fallback",
+            IsRemote: false);
     }
 }

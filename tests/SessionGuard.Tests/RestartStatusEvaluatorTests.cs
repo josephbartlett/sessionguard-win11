@@ -130,4 +130,46 @@ public sealed class RestartStatusEvaluatorTests
         Assert.Equal(3, overview.ProviderCount);
         Assert.Equal(1, overview.ProvidersWithLimitedVisibility);
     }
+
+    [Fact]
+    public void DetermineProtectionMode_ReturnsPolicyGuard_WhenPolicyBlocksRestart()
+    {
+        var mode = RestartStatusEvaluator.DetermineProtectionMode(
+            guardModeEnabled: true,
+            mitigationsApplied: true,
+            isElevated: true,
+            new PolicyEvaluation(
+                PolicyDecisionType.RestartBlocked,
+                HasBlockingRules: true,
+                RequiresApproval: false,
+                ApprovalActive: false,
+                ApprovalExpiresAt: null,
+                RecommendedApprovalWindowMinutes: 60,
+                "Blocked",
+                Array.Empty<PolicyRuleMatch>(),
+                Array.Empty<string>()));
+
+        Assert.Equal(ProtectionMode.PolicyGuardActive, mode);
+    }
+
+    [Fact]
+    public void DetermineProtectionMode_ReturnsApprovalWindow_WhenApprovalIsActive()
+    {
+        var mode = RestartStatusEvaluator.DetermineProtectionMode(
+            guardModeEnabled: false,
+            mitigationsApplied: false,
+            isElevated: false,
+            new PolicyEvaluation(
+                PolicyDecisionType.ApprovalActive,
+                HasBlockingRules: false,
+                RequiresApproval: false,
+                ApprovalActive: true,
+                ApprovalExpiresAt: DateTimeOffset.Parse("2026-03-11T10:30:00-05:00"),
+                RecommendedApprovalWindowMinutes: 60,
+                "Approved",
+                Array.Empty<PolicyRuleMatch>(),
+                Array.Empty<string>()));
+
+        Assert.Equal(ProtectionMode.PolicyApprovalWindow, mode);
+    }
 }

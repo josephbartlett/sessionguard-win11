@@ -57,6 +57,8 @@ internal static class Program
 
             VerifyRequiredElement(window, UiSmokeAutomationIds.ScanNowButton);
             VerifyRequiredElement(window, UiSmokeAutomationIds.WindowsUpdateOptionsButton);
+            VerifyRequiredElement(window, UiSmokeAutomationIds.PolicyDecisionText);
+            VerifyRequiredElement(window, UiSmokeAutomationIds.PolicyRulesGrid);
             VerifyRequiredElement(window, UiSmokeAutomationIds.ProtectedProcessesGrid);
             VerifyRequiredElement(window, UiSmokeAutomationIds.WorkspaceRiskGrid);
             VerifyRequiredElement(window, UiSmokeAutomationIds.RestartIndicatorsGrid);

@@ -76,6 +76,20 @@ public sealed class ControlPlaneTests
         Assert.Equal(2, snapshotStore.Persisted.Count);
     }
 
+    [Fact]
+    public async Task ServiceRuntime_GrantRestartApproval_UpdatesPolicyState()
+    {
+        var snapshotStore = new RecordingSnapshotStore();
+        var runtime = CreateRuntime(snapshotStore);
+
+        var result = await runtime.GrantRestartApprovalAsync();
+        var status = await runtime.GetStatusAsync();
+
+        Assert.True(result.Success);
+        Assert.True(status.ScanResult.Policy.ApprovalActive);
+        Assert.Equal(PolicyDecisionType.ApprovalActive, status.ScanResult.Policy.Decision);
+    }
+
     private static SessionGuardServiceRuntime CreateRuntime(RecordingSnapshotStore snapshotStore)
     {
         var configuration = new RuntimeConfiguration(
@@ -88,12 +102,30 @@ public sealed class ControlPlaneTests
             {
                 ProcessNames = new[] { "pwsh.exe" }
             }.Normalize(),
+            new PolicyConfiguration
+            {
+                DefaultApprovalWindowMinutes = 45,
+                Rules = new[]
+                {
+                    new PolicyRuleDefinition
+                    {
+                        Id = "approval-required-restart-pending",
+                        Title = "Approval required for restart-pending states",
+                        Kind = PolicyRuleKind.ApprovalRequired,
+                        MatchWhenRestartPendingOnly = true,
+                        MinimumRiskLevel = RestartRiskLevel.Elevated,
+                        ApprovalWindowMinutes = 45
+                    }
+                }
+            }.Normalize(),
             "config",
             "config\\appsettings.json",
-            "config\\protected-processes.json");
+            "config\\protected-processes.json",
+            "config\\policies.json");
         var logger = new RecordingLogger();
         var configurationRepository = new StubConfigurationRepository(configuration);
         var mitigationService = new StubMitigationService();
+        var approvalStore = new InMemoryPolicyApprovalStore();
         var runtimeRoot = Path.Combine(Path.GetTempPath(), "SessionGuard.Tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(runtimeRoot);
         var healthReporter = new SessionGuardServiceHealthReporter(
@@ -127,9 +159,11 @@ public sealed class ControlPlaneTests
                         })
                 },
                 mitigationService,
+                approvalStore,
                 logger),
             configurationRepository,
             mitigationService,
+            approvalStore,
             snapshotStore,
             healthReporter,
             logger);
@@ -149,6 +183,7 @@ public sealed class ControlPlaneTests
             IsElevated: false,
             Summary: "Safe",
             WorkspaceStateSnapshot.None(DateTimeOffset.Parse("2026-03-11T09:45:00-05:00")),
+            PolicyEvaluation.None,
             new RestartSignalOverview(0, 0, 0, 0, 0, 0, 0, "No signals."),
             Array.Empty<RestartIndicator>(),
             Array.Empty<ProtectedProcessMatch>(),
@@ -172,6 +207,12 @@ public sealed class ControlPlaneTests
 
         public Task<MitigationCommandResult> ResetManagedAsync(CancellationToken cancellationToken = default)
             => Task.FromException<MitigationCommandResult>(new InvalidOperationException("Service unavailable"));
+
+        public Task<PolicyApprovalCommandResult> GrantRestartApprovalAsync(CancellationToken cancellationToken = default)
+            => Task.FromException<PolicyApprovalCommandResult>(new InvalidOperationException("Service unavailable"));
+
+        public Task<PolicyApprovalCommandResult> ClearRestartApprovalAsync(CancellationToken cancellationToken = default)
+            => Task.FromException<PolicyApprovalCommandResult>(new InvalidOperationException("Service unavailable"));
     }
 
     private sealed class StubControlPlane : ISessionGuardControlPlane
@@ -195,6 +236,12 @@ public sealed class ControlPlaneTests
 
         public Task<MitigationCommandResult> ResetManagedAsync(CancellationToken cancellationToken = default)
             => Task.FromResult(new MitigationCommandResult(true, false, "ok", Array.Empty<ManagedMitigationState>()));
+
+        public Task<PolicyApprovalCommandResult> GrantRestartApprovalAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult(new PolicyApprovalCommandResult(true, "ok", _status.ScanResult.Policy));
+
+        public Task<PolicyApprovalCommandResult> ClearRestartApprovalAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult(new PolicyApprovalCommandResult(true, "ok", _status.ScanResult.Policy));
     }
 
     private sealed class StubConfigurationRepository : IConfigurationRepository
@@ -264,6 +311,33 @@ public sealed class ControlPlaneTests
         public Task PersistAsync(SessionScanResult result, CancellationToken cancellationToken = default)
         {
             Persisted.Add(result);
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class InMemoryPolicyApprovalStore : IPolicyApprovalStore
+    {
+        private PolicyApprovalState _state = PolicyApprovalState.None;
+
+        public Task<PolicyApprovalState> GetCurrentAsync(DateTimeOffset now, CancellationToken cancellationToken = default)
+        {
+            if (_state.IsActive && _state.ExpiresAt.HasValue && _state.ExpiresAt.Value <= now)
+            {
+                _state = PolicyApprovalState.None;
+            }
+
+            return Task.FromResult(_state);
+        }
+
+        public Task<PolicyApprovalState> GrantAsync(DateTimeOffset now, TimeSpan duration, CancellationToken cancellationToken = default)
+        {
+            _state = new PolicyApprovalState(true, now, now.Add(duration), (int)duration.TotalMinutes);
+            return Task.FromResult(_state);
+        }
+
+        public Task ClearAsync(CancellationToken cancellationToken = default)
+        {
+            _state = PolicyApprovalState.None;
             return Task.CompletedTask;
         }
     }

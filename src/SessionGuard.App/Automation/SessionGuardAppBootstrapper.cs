@@ -30,6 +30,7 @@ internal static class SessionGuardAppBootstrapper
             configurationRepository = new JsonConfigurationRepository(runtimePaths);
             var snapshotStore = new JsonScanSnapshotStore(runtimePaths);
             var mitigationService = new WindowsMitigationService(runtimePaths, logger);
+            var policyApprovalStore = new FilePolicyApprovalStore(runtimePaths, logger);
             var coordinator = new SessionGuardCoordinator(
                 configurationRepository,
                 new ProcessInventoryService(),
@@ -41,12 +42,14 @@ internal static class SessionGuardAppBootstrapper
                     new WindowsUpdateScheduledTaskSignalProvider()
                 },
                 mitigationService,
+                policyApprovalStore,
                 logger);
 
             var localControlPlane = new LocalSessionGuardControlPlane(
                 coordinator,
                 configurationRepository,
                 mitigationService,
+                policyApprovalStore,
                 snapshotStore);
             var remoteControlPlane = new NamedPipeSessionGuardControlPlane();
             controlPlane = new HybridSessionGuardControlPlane(

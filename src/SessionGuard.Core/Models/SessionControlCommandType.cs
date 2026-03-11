@@ -7,5 +7,7 @@ public enum SessionControlCommandType
     ScanNow,
     SetGuardMode,
     ApplyMitigations,
-    ResetMitigations
+    ResetMitigations,
+    GrantRestartApproval,
+    ClearRestartApproval
 }

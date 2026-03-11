@@ -54,6 +54,7 @@ public static class UiSmokeScenarioCatalog
             IsElevated: false,
             Summary: "No protected processes or pending restart indicators were detected during the latest scan.",
             workspace,
+            PolicyEvaluation.None,
             new RestartSignalOverview(1, 0, 0, 0, 0, 1, 0, "No restart or orchestration activity was detected by the configured providers."),
             new[]
             {
@@ -82,6 +83,7 @@ public static class UiSmokeScenarioCatalog
                 [UiSmokeAutomationIds.RestartRiskText] = "Low",
                 [UiSmokeAutomationIds.PendingRestartText] = "Not detected",
                 [UiSmokeAutomationIds.ConnectionModeText] = "Control plane: Service (background service is authoritative)",
+                [UiSmokeAutomationIds.PolicyDecisionText] = "Policy decision: No active constraints",
                 [UiSmokeAutomationIds.WorkspaceSummaryText] = workspace.Summary
             });
     }
@@ -94,7 +96,7 @@ public static class UiSmokeScenarioCatalog
             timestamp,
             RestartStateCategory.RestartPending,
             RestartRiskLevel.Elevated,
-            ProtectionMode.MonitorOnly,
+            ProtectionMode.PolicyGuardActive,
             RestartPending: true,
             HasAmbiguousSignals: false,
             ProtectedSessionActive: false,
@@ -102,6 +104,7 @@ public static class UiSmokeScenarioCatalog
             IsElevated: false,
             Summary: "Windows restart indicators were detected. Review mitigation settings before leaving the machine unattended.",
             workspace,
+            CreateApprovalRequiredPolicy(timestamp, 45),
             new RestartSignalOverview(2, 2, 2, 0, 0, 2, 0, "2 definitive pending-restart signal(s) detected across 2 provider(s)."),
             new[]
             {
@@ -137,6 +140,8 @@ public static class UiSmokeScenarioCatalog
                 [UiSmokeAutomationIds.RestartRiskText] = "Elevated",
                 [UiSmokeAutomationIds.PendingRestartText] = "Pending",
                 [UiSmokeAutomationIds.ConnectionModeText] = "Control plane: Service (background service is authoritative)",
+                [UiSmokeAutomationIds.PolicyDecisionText] = "Policy decision: Approval required",
+                [UiSmokeAutomationIds.PolicyApprovalText] = "Policy approval: required before restart (45 minute default window)",
                 [UiSmokeAutomationIds.StatusSummaryText] = scanResult.Summary
             });
     }
@@ -181,7 +186,7 @@ public static class UiSmokeScenarioCatalog
             timestamp,
             RestartStateCategory.ProtectedSessionActive,
             RestartRiskLevel.High,
-            ProtectionMode.GuardModeActive,
+            ProtectionMode.PolicyGuardActive,
             RestartPending: true,
             HasAmbiguousSignals: true,
             ProtectedSessionActive: true,
@@ -189,6 +194,7 @@ public static class UiSmokeScenarioCatalog
             IsElevated: false,
             Summary: "Definitive pending reboot signals are active while workspace-risk heuristics report active sessions. Workspace-risk heuristics flagged high-impact activity: Editor and IDE sessions, Terminal and shell sessions, Browser sessions.",
             workspace,
+            CreateBlockedPolicy(timestamp),
             new RestartSignalOverview(3, 3, 1, 2, 0, 3, 0, "1 definitive pending-restart signal(s) detected across 3 provider(s)."),
             new[]
             {
@@ -249,6 +255,7 @@ public static class UiSmokeScenarioCatalog
                 [UiSmokeAutomationIds.CurrentStatusText] = "Protected Session Active",
                 [UiSmokeAutomationIds.RestartRiskText] = "High",
                 [UiSmokeAutomationIds.ConnectionModeText] = "Control plane: Service (background service is authoritative)",
+                [UiSmokeAutomationIds.PolicyDecisionText] = "Policy decision: Restart blocked by policy",
                 [UiSmokeAutomationIds.WorkspaceSummaryText] = workspace.Summary,
                 [UiSmokeAutomationIds.WorkspaceConfidenceText] = "Workspace confidence: High"
             });
@@ -278,7 +285,7 @@ public static class UiSmokeScenarioCatalog
             timestamp,
             RestartStateCategory.UnknownLimitedVisibility,
             RestartRiskLevel.Elevated,
-            ProtectionMode.LimitedReadOnly,
+            ProtectionMode.PolicyGuardActive,
             RestartPending: false,
             HasAmbiguousSignals: true,
             ProtectedSessionActive: true,
@@ -286,6 +293,7 @@ public static class UiSmokeScenarioCatalog
             IsElevated: false,
             Summary: "Windows Update orchestration activity or low-confidence restart clues were detected, but a definitive pending reboot was not confirmed.",
             workspace,
+            CreateBlockedPolicy(timestamp),
             new RestartSignalOverview(2, 2, 0, 1, 1, 2, 1, "1 restart-related signal(s) need interpretation, but no definitive pending reboot was confirmed."),
             new[]
             {
@@ -326,6 +334,7 @@ public static class UiSmokeScenarioCatalog
                 [UiSmokeAutomationIds.CurrentStatusText] = "Unknown / Limited Visibility",
                 [UiSmokeAutomationIds.PendingRestartText] = "Ambiguous / review signals",
                 [UiSmokeAutomationIds.ConnectionModeText] = "Control plane: Local fallback (the dashboard is scanning in-process because the service is unavailable)",
+                [UiSmokeAutomationIds.PolicyDecisionText] = "Policy decision: Restart blocked by policy",
                 [UiSmokeAutomationIds.WorkspaceConfidenceText] = "Workspace confidence: Medium"
             });
     }
@@ -359,7 +368,7 @@ public static class UiSmokeScenarioCatalog
             timestamp,
             RestartStateCategory.MitigatedDeferred,
             RestartRiskLevel.Low,
-            ProtectionMode.ManagedMitigationsApplied,
+            ProtectionMode.PolicyApprovalWindow,
             RestartPending: false,
             HasAmbiguousSignals: false,
             ProtectedSessionActive: false,
@@ -367,6 +376,7 @@ public static class UiSmokeScenarioCatalog
             IsElevated: true,
             Summary: "Recommended native restart mitigations are already applied.",
             workspace,
+            CreateApprovalActivePolicy(timestamp),
             new RestartSignalOverview(1, 1, 0, 0, 0, 1, 0, "No restart pending."),
             new[]
             {
@@ -392,9 +402,97 @@ public static class UiSmokeScenarioCatalog
             new Dictionary<string, string>(StringComparer.Ordinal)
             {
                 [UiSmokeAutomationIds.CurrentStatusText] = "Mitigated / Deferred",
-                [UiSmokeAutomationIds.ProtectionModeText] = "Managed mitigations applied",
+                [UiSmokeAutomationIds.ProtectionModeText] = "Policy approval window active",
                 [UiSmokeAutomationIds.AdminAccessText] = "Elevated",
+                [UiSmokeAutomationIds.PolicyDecisionText] = "Policy decision: Approval window active",
                 [UiSmokeAutomationIds.ConnectionModeText] = "Control plane: Service (background service is authoritative)"
+            });
+    }
+
+    private static PolicyEvaluation CreateBlockedPolicy(DateTimeOffset timestamp)
+    {
+        return new PolicyEvaluation(
+            PolicyDecisionType.RestartBlocked,
+            HasBlockingRules: true,
+            RequiresApproval: false,
+            ApprovalActive: false,
+            ApprovalExpiresAt: null,
+            RecommendedApprovalWindowMinutes: 60,
+            "Policy rules are blocking restart right now: Never restart while terminals are running, Business-hours restart window.",
+            new[]
+            {
+                new PolicyRuleMatch(
+                    "block-terminal-sessions",
+                    "Never restart while terminals are running",
+                    PolicyRuleKind.ProcessBlock,
+                    PolicyRuleOutcome.Blocked,
+                    10,
+                    "2 matching process instance(s) detected: WindowsTerminal.exe x1, pwsh.exe x1."),
+                new PolicyRuleMatch(
+                    "restart-window-business-hours",
+                    "Business-hours restart window",
+                    PolicyRuleKind.RestartWindow,
+                    PolicyRuleOutcome.Blocked,
+                    20,
+                    $"Current local time {timestamp.LocalDateTime:dddd HH:mm} is outside the allowed restart window (Saturday, Sunday, 09:00-17:00).")
+            },
+            new[]
+            {
+                "Never restart while terminals are running: 2 matching process instance(s) detected: WindowsTerminal.exe x1, pwsh.exe x1.",
+                $"Business-hours restart window: Current local time {timestamp.LocalDateTime:dddd HH:mm} is outside the allowed restart window (Saturday, Sunday, 09:00-17:00)."
+            });
+    }
+
+    private static PolicyEvaluation CreateApprovalRequiredPolicy(DateTimeOffset timestamp, int windowMinutes)
+    {
+        return new PolicyEvaluation(
+            PolicyDecisionType.ApprovalRequired,
+            HasBlockingRules: false,
+            RequiresApproval: true,
+            ApprovalActive: false,
+            ApprovalExpiresAt: null,
+            RecommendedApprovalWindowMinutes: windowMinutes,
+            "Policy rules require a temporary approval window before a supervised restart: Approval required for restart-pending states.",
+            new[]
+            {
+                new PolicyRuleMatch(
+                    "approval-required-restart-pending",
+                    "Approval required for restart-pending states",
+                    PolicyRuleKind.ApprovalRequired,
+                    PolicyRuleOutcome.ApprovalRequired,
+                    30,
+                    $"Risk level Elevated meets the approval threshold Elevated. Grant a supervised approval window for {windowMinutes} minute(s) before restarting.")
+            },
+            new[]
+            {
+                $"Approval required for restart-pending states: Risk level Elevated meets the approval threshold Elevated. Grant a supervised approval window for {windowMinutes} minute(s) before restarting."
+            });
+    }
+
+    private static PolicyEvaluation CreateApprovalActivePolicy(DateTimeOffset timestamp)
+    {
+        var expiry = timestamp.AddMinutes(60);
+        return new PolicyEvaluation(
+            PolicyDecisionType.ApprovalActive,
+            HasBlockingRules: false,
+            RequiresApproval: false,
+            ApprovalActive: true,
+            ApprovalExpiresAt: expiry,
+            RecommendedApprovalWindowMinutes: 60,
+            $"A temporary policy approval window is active until {expiry.LocalDateTime:G}.",
+            new[]
+            {
+                new PolicyRuleMatch(
+                    "approval-required-restart-pending",
+                    "Approval required for restart-pending states",
+                    PolicyRuleKind.ApprovalRequired,
+                    PolicyRuleOutcome.Approved,
+                    30,
+                    $"A temporary restart approval window is active until {expiry.LocalDateTime:G}.")
+            },
+            new[]
+            {
+                $"Approval required for restart-pending states: A temporary restart approval window is active until {expiry.LocalDateTime:G}."
             });
     }
 

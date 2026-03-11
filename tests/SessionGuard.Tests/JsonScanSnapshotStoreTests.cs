@@ -56,6 +56,7 @@ public sealed class JsonScanSnapshotStoreTests
             IsElevated: false,
             Summary: "Safe",
             workspace,
+            PolicyEvaluation.None,
             new RestartSignalOverview(0, 0, 0, 0, 0, 0, 0, "No signals."),
             Array.Empty<RestartIndicator>(),
             Array.Empty<ProtectedProcessMatch>(),

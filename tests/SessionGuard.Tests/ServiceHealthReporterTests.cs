@@ -86,6 +86,28 @@ public sealed class ServiceHealthReporterTests
                             "Interactive shell detected.",
                             new[] { "pwsh.exe" })
                     }),
+                new PolicyEvaluation(
+                    PolicyDecisionType.RestartBlocked,
+                    HasBlockingRules: true,
+                    RequiresApproval: false,
+                    ApprovalActive: false,
+                    ApprovalExpiresAt: null,
+                    RecommendedApprovalWindowMinutes: 60,
+                    "Policy rules are blocking restart right now: Never restart while terminals are running.",
+                    new[]
+                    {
+                        new PolicyRuleMatch(
+                            "block-terminal-sessions",
+                            "Never restart while terminals are running",
+                            PolicyRuleKind.ProcessBlock,
+                            PolicyRuleOutcome.Blocked,
+                            10,
+                            "1 matching process instance(s) detected: pwsh.exe x1.")
+                    },
+                    new[]
+                    {
+                        "Never restart while terminals are running: 1 matching process instance(s) detected: pwsh.exe x1."
+                    }),
                 new RestartSignalOverview(1, 1, 1, 0, 0, 1, 0, "1 definitive pending-restart signal detected."),
                 new[]
                 {

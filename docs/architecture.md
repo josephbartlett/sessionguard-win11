@@ -22,11 +22,13 @@ WPF was chosen over WinUI for the MVP because the priority is a stable desktop m
 5. The configuration repository loads:
    - [`config/appsettings.json`](/C:/Users/decoy/sessionguard-win11/config/appsettings.json)
    - [`config/protected-processes.json`](/C:/Users/decoy/sessionguard-win11/config/protected-processes.json)
+   - [`config/policies.json`](/C:/Users/decoy/sessionguard-win11/config/policies.json)
 6. The coordinator runs a scan:
    - protected-process detection
    - workspace-risk heuristic analysis using protected-tool matches plus bounded runtime-process clues
    - restart signal inspection across multiple providers
    - mitigation state inspection
+   - policy evaluation against restart windows, process or workspace blocking rules, and any active temporary approval window
 7. Core logic aggregates the signals into:
    - `Safe`
    - `Restart Pending`
@@ -86,6 +88,37 @@ The output is a `WorkspaceStateSnapshot` that includes:
 
 This keeps the new behavior explainable and testable without claiming recovery capabilities the product does not yet have.
 
+## Policy engine
+
+`SessionGuard.Core` now includes a distinct policy-evaluation layer that is separate from raw restart-state detection and separate from mitigation writes.
+
+The current policy schema supports:
+
+- restart-window rules
+- process-block rules
+- workspace-category block rules
+- approval-required rules
+
+The policy configuration is stored in `config/policies.json` instead of inside `appsettings.json`. That keeps static app behavior, protected-process defaults, and operator policy rules separate.
+
+At scan time, the coordinator evaluates policy rules against:
+
+- the aggregated restart state and risk level
+- the current workspace snapshot
+- the currently observed running-process summary
+- the persisted approval window state, if one exists
+
+The output is a `PolicyEvaluation` that includes:
+
+- current policy decision
+- whether restart is blocked right now
+- whether a temporary approval window is required
+- whether a temporary approval window is active
+- matched rules with deterministic priority ordering
+- evaluation trace text explaining why each matched rule fired
+
+Temporary approval windows are persisted locally in `state/policy-approval.json`. This allows the service or the local fallback path to survive process restarts without losing the operator's active approval window immediately.
+
 ## Mitigation model
 
 SessionGuard only manages reversible, native Windows settings:
@@ -100,10 +133,12 @@ Before writing managed values, the infrastructure layer captures previous values
 ## Configuration and state paths
 
 - `config/`: source-controlled default runtime config for protected processes and app behavior.
+- `config/policies.json`: source-controlled default rule definitions for restart windows, blocking rules, and approval requirements.
 - `logs/`: local structured logs created on demand.
 - `state/`: local backup state used for mitigation reset behavior.
   - `current-scan.json`: latest machine-readable scan snapshot shared by the app and service paths.
   - `workspace-snapshot.json`: advisory workspace-risk metadata written only when heuristics detect risky activity.
+  - `policy-approval.json`: temporary approval-window state used by the policy engine.
   - `service-health.json`: service lifecycle and diagnostics snapshot for startup, scan, and pipe health.
 
 The log and state folders are intentionally excluded from source control.
@@ -147,6 +182,7 @@ The repo now includes a deterministic UI smoke path for WPF review:
 - `SessionGuard.App` can boot in scenario mode with tray behavior disabled
 - `tests/SessionGuard.UiSmoke` launches the real app executable, validates named UI elements through Windows UI Automation, and captures screenshots
 - `scripts/ui/Run-UiSmoke.ps1` builds the solution and writes screenshots to `artifacts/ui/smoke`
+- the scenario catalog now covers policy decision states so UI smoke can catch policy-card regressions as well as the older restart and workspace views
 
 This gives the repo a repeatable way to catch layout regressions, missing controls, and obviously bad UI states before a human manual pass.
 

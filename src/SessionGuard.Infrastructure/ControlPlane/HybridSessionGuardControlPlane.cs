@@ -56,6 +56,20 @@ public sealed class HybridSessionGuardControlPlane : ISessionGuardControlPlane
             local => local.ResetManagedAsync(cancellationToken));
     }
 
+    public Task<PolicyApprovalCommandResult> GrantRestartApprovalAsync(CancellationToken cancellationToken = default)
+    {
+        return ExecuteWithFallbackAsync(
+            remote => remote.GrantRestartApprovalAsync(cancellationToken),
+            local => local.GrantRestartApprovalAsync(cancellationToken));
+    }
+
+    public Task<PolicyApprovalCommandResult> ClearRestartApprovalAsync(CancellationToken cancellationToken = default)
+    {
+        return ExecuteWithFallbackAsync(
+            remote => remote.ClearRestartApprovalAsync(cancellationToken),
+            local => local.ClearRestartApprovalAsync(cancellationToken));
+    }
+
     private async Task<T> ExecuteWithFallbackAsync<T>(
         Func<ISessionGuardControlPlane, Task<T>> remoteAction,
         Func<ISessionGuardControlPlane, Task<T>> localAction)

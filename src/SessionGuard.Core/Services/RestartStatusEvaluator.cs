@@ -118,8 +118,19 @@ public static class RestartStatusEvaluator
     public static ProtectionMode DetermineProtectionMode(
         bool guardModeEnabled,
         bool mitigationsApplied,
-        bool isElevated)
+        bool isElevated,
+        PolicyEvaluation policy)
     {
+        if (policy.Decision is PolicyDecisionType.RestartBlocked or PolicyDecisionType.ApprovalRequired)
+        {
+            return ProtectionMode.PolicyGuardActive;
+        }
+
+        if (policy.Decision == PolicyDecisionType.ApprovalActive)
+        {
+            return ProtectionMode.PolicyApprovalWindow;
+        }
+
         if (mitigationsApplied)
         {
             return ProtectionMode.ManagedMitigationsApplied;

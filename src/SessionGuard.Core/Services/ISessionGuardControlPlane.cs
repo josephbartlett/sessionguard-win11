@@ -13,4 +13,8 @@ public interface ISessionGuardControlPlane
     Task<MitigationCommandResult> ApplyRecommendedAsync(CancellationToken cancellationToken = default);
 
     Task<MitigationCommandResult> ResetManagedAsync(CancellationToken cancellationToken = default);
+
+    Task<PolicyApprovalCommandResult> GrantRestartApprovalAsync(CancellationToken cancellationToken = default);
+
+    Task<PolicyApprovalCommandResult> ClearRestartApprovalAsync(CancellationToken cancellationToken = default);
 }

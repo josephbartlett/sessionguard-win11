@@ -1,0 +1,63 @@
+{
+  "enabled": true,
+  "defaultApprovalWindowMinutes": 60,
+  "rules": [
+    {
+      "id": "block-terminal-sessions",
+      "title": "Never restart while terminals are running",
+      "description": "Block supervised restarts when terminal shells are still open.",
+      "enabled": true,
+      "priority": 10,
+      "kind": "ProcessBlock",
+      "matchWhenRestartPendingOnly": true,
+      "processNames": [
+        "WindowsTerminal.exe",
+        "pwsh.exe",
+        "powershell.exe",
+        "cmd.exe",
+        "wsl.exe"
+      ],
+      "minimumInstances": 1
+    },
+    {
+      "id": "block-dev-workspaces",
+      "title": "Never restart while editor or local-server work is active",
+      "description": "Block supervised restarts when SessionGuard detects IDE or local-runtime workspace risk.",
+      "enabled": true,
+      "priority": 20,
+      "kind": "WorkspaceCategoryBlock",
+      "matchWhenRestartPendingOnly": true,
+      "workspaceCategories": [
+        "EditorOrIde",
+        "LocalDevServer"
+      ],
+      "minimumInstances": 1
+    },
+    {
+      "id": "restart-window-weekend",
+      "title": "Allow supervised restarts during a weekend window",
+      "description": "Only allow a supervised restart during the configured weekend window.",
+      "enabled": true,
+      "priority": 30,
+      "kind": "RestartWindow",
+      "matchWhenRestartPendingOnly": true,
+      "days": [
+        "Saturday",
+        "Sunday"
+      ],
+      "startHour": 9,
+      "endHour": 17
+    },
+    {
+      "id": "approval-required-restart-pending",
+      "title": "Require approval when restart pressure is active",
+      "description": "Require a temporary approval window before a supervised restart when restart-pending pressure is already present.",
+      "enabled": true,
+      "priority": 40,
+      "kind": "ApprovalRequired",
+      "matchWhenRestartPendingOnly": true,
+      "minimumRiskLevel": "Elevated",
+      "approvalWindowMinutes": 60
+    }
+  ]
+}

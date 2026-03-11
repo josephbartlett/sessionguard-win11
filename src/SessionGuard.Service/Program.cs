@@ -37,6 +37,12 @@ static async Task<bool> TryHandleUtilityCommandAsync(string[] args)
         case "scan-now":
             Environment.ExitCode = await ExecuteControlPlaneCommandAsync(forceScan: true);
             return true;
+        case "approve-restart":
+            Environment.ExitCode = await ExecuteApprovalCommandAsync(clearApproval: false);
+            return true;
+        case "clear-approval":
+            Environment.ExitCode = await ExecuteApprovalCommandAsync(clearApproval: true);
+            return true;
         case "health":
             Environment.ExitCode = await ExecuteHealthCommandAsync();
             return true;
@@ -89,6 +95,26 @@ static async Task<int> ExecuteHealthCommandAsync()
     return 0;
 }
 
+static async Task<int> ExecuteApprovalCommandAsync(bool clearApproval)
+{
+    var controlPlane = new NamedPipeSessionGuardControlPlane(TimeSpan.FromSeconds(2));
+
+    try
+    {
+        var result = clearApproval
+            ? await controlPlane.ClearRestartApprovalAsync()
+            : await controlPlane.GrantRestartApprovalAsync();
+
+        Console.WriteLine(JsonSerializer.Serialize(result, SessionGuardJson.Indented));
+        return 0;
+    }
+    catch (Exception exception)
+    {
+        Console.Error.WriteLine($"SessionGuard policy approval command failed: {exception.Message}");
+        return 2;
+    }
+}
+
 static string[] GetHostArguments(string[] args)
 {
     return args.Length > 0 && IsHostRunCommand(args[0])
@@ -118,6 +144,7 @@ static IHost BuildHost(string[] args)
     builder.Services.AddSingleton<IScanSnapshotStore, JsonScanSnapshotStore>();
     builder.Services.AddSingleton<IConfigurationRepository, JsonConfigurationRepository>();
     builder.Services.AddSingleton<IMitigationService, WindowsMitigationService>();
+    builder.Services.AddSingleton<IPolicyApprovalStore, FilePolicyApprovalStore>();
     builder.Services.AddSingleton<SessionGuardServiceHealthReporter>();
     builder.Services.AddSingleton<IProtectedWorkspaceDetector, ProcessInventoryService>();
     builder.Services.AddSingleton<IRestartSignalProvider, RegistryRestartSignalProvider>();
@@ -138,5 +165,7 @@ static void PrintHelp()
     Console.WriteLine("  run | console   Run the host in console mode.");
     Console.WriteLine("  probe | status  Query the service control plane and print the current status JSON.");
     Console.WriteLine("  scan-now        Ask the running service to scan immediately and print the resulting status JSON.");
+    Console.WriteLine("  approve-restart Grant a temporary restart approval window through the running service.");
+    Console.WriteLine("  clear-approval  Clear the temporary restart approval window through the running service.");
     Console.WriteLine("  health          Print the latest persisted service health snapshot JSON.");
 }

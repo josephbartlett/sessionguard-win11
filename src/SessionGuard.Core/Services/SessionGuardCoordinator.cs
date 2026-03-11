@@ -8,6 +8,7 @@ public sealed class SessionGuardCoordinator
     private readonly IProtectedWorkspaceDetector _workspaceDetector;
     private readonly IReadOnlyList<IRestartSignalProvider> _signalProviders;
     private readonly IMitigationService _mitigationService;
+    private readonly IPolicyApprovalStore _policyApprovalStore;
     private readonly IAppLogger _logger;
 
     public SessionGuardCoordinator(
@@ -15,12 +16,14 @@ public sealed class SessionGuardCoordinator
         IProtectedWorkspaceDetector workspaceDetector,
         IEnumerable<IRestartSignalProvider> signalProviders,
         IMitigationService mitigationService,
+        IPolicyApprovalStore policyApprovalStore,
         IAppLogger logger)
     {
         _configurationRepository = configurationRepository;
         _workspaceDetector = workspaceDetector;
         _signalProviders = signalProviders.ToArray();
         _mitigationService = mitigationService;
+        _policyApprovalStore = policyApprovalStore;
         _logger = logger;
     }
 
@@ -32,6 +35,7 @@ public sealed class SessionGuardCoordinator
 
         var configuration = await _configurationRepository.LoadAsync(cancellationToken);
         var timestamp = DateTimeOffset.Now;
+        var approvalState = await _policyApprovalStore.GetCurrentAsync(timestamp, cancellationToken);
         var workspaceObservation = await _workspaceDetector.GetWorkspaceObservationAsync(
             configuration.ProtectedProcesses.ProcessNames,
             cancellationToken);
@@ -72,10 +76,25 @@ public sealed class SessionGuardCoordinator
         var mitigationStates = await _mitigationService.GetStatesAsync(configuration, cancellationToken);
         var signalOverview = RestartStatusEvaluator.BuildOverview(indicators);
         var evaluation = RestartStatusEvaluator.Evaluate(indicators, workspace, mitigationStates);
+        var policy = PolicyEvaluator.Evaluate(
+            configuration.Policies,
+            approvalState,
+            new PolicyEvaluationContext(
+                timestamp,
+                evaluation.State,
+                evaluation.RiskLevel,
+                signalOverview.DefinitivePendingSignals > 0,
+                workspace,
+                protectedProcesses,
+                workspaceObservation.RunningProcesses));
         var protectionMode = RestartStatusEvaluator.DetermineProtectionMode(
             guardModeEnabled,
             mitigationStates.Any(state => state.IsApplied),
-            _mitigationService.IsElevated);
+            _mitigationService.IsElevated,
+            policy);
+        var summary = policy.Decision == PolicyDecisionType.None
+            ? evaluation.Summary
+            : $"{evaluation.Summary} {policy.Summary}";
 
         var result = new SessionScanResult(
             timestamp,
@@ -87,13 +106,14 @@ public sealed class SessionGuardCoordinator
             workspace.HasRisk,
             indicators.Any(indicator => indicator.LimitedVisibility),
             _mitigationService.IsElevated,
-            evaluation.Summary,
+            summary,
             workspace,
+            policy,
             signalOverview,
             indicators,
             protectedProcesses,
             mitigationStates,
-            BuildRecommendations(signalOverview, workspace, mitigationStates, _mitigationService.IsElevated));
+            BuildRecommendations(signalOverview, workspace, mitigationStates, _mitigationService.IsElevated, policy));
 
         _logger.Info(
             "scan.finish",
@@ -107,7 +127,9 @@ public sealed class SessionGuardCoordinator
                 signalOverview.AmbiguousSignals,
                 protectedProcessCount = result.ProtectedProcesses.Count,
                 workspaceRiskItems = result.Workspace.RiskItems.Count,
-                workspaceHighestSeverity = result.Workspace.HighestSeverity
+                workspaceHighestSeverity = result.Workspace.HighestSeverity,
+                policyDecision = result.Policy.Decision,
+                policyMatchedRules = result.Policy.MatchedRules.Count
             });
 
         return result;
@@ -117,7 +139,8 @@ public sealed class SessionGuardCoordinator
         RestartSignalOverview signalOverview,
         WorkspaceStateSnapshot workspace,
         IReadOnlyList<ManagedMitigationState> mitigationStates,
-        bool isElevated)
+        bool isElevated,
+        PolicyEvaluation policy)
     {
         var recommendations = new List<string>();
         var restartPending = signalOverview.DefinitivePendingSignals > 0;
@@ -149,6 +172,21 @@ public sealed class SessionGuardCoordinator
         if (workspace.RiskItems.Any(item => item.Category == WorkspaceCategory.Browser))
         {
             recommendations.Add("Browser risk is inferred from running processes only. Review your own session persistence settings before relying on restart recovery.");
+        }
+
+        if (policy.HasBlockingRules)
+        {
+            recommendations.Add("Policy rules are actively blocking restart right now. Review the matched rules before approving or scheduling any restart.");
+        }
+
+        if (policy.RequiresApproval && !policy.ApprovalActive)
+        {
+            recommendations.Add($"Policy requires a supervised approval window before restart. Grant one from the dashboard to allow a manual restart for {policy.RecommendedApprovalWindowMinutes} minute(s).");
+        }
+
+        if (policy.ApprovalActive && policy.ApprovalExpiresAt.HasValue)
+        {
+            recommendations.Add($"A temporary restart approval window is active until {policy.ApprovalExpiresAt.Value.LocalDateTime:G}. Blocking rules still win if they are active.");
         }
 
         if (!mitigationsApplied)

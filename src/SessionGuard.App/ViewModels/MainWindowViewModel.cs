@@ -23,7 +23,10 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private readonly AsyncRelayCommand _scanNowCommand;
     private readonly AsyncRelayCommand _applyMitigationsCommand;
     private readonly AsyncRelayCommand _resetMitigationsCommand;
+    private readonly AsyncRelayCommand _grantRestartApprovalCommand;
+    private readonly AsyncRelayCommand _clearRestartApprovalCommand;
     private readonly RelayCommand _openConfigCommand;
+    private readonly RelayCommand _openPoliciesCommand;
     private readonly RelayCommand _openLogsCommand;
     private readonly RelayCommand _openWindowsUpdateSettingsCommand;
 
@@ -46,13 +49,18 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private string _signalOverviewText = "Signal overview: not yet scanned";
     private string _providerCoverageText = "Providers: not yet scanned";
     private string _connectionModeText = "Control plane: not yet determined";
+    private string _policyDecisionText = "Policy engine: not yet scanned";
+    private string _policySummaryText = "Policy summary: not yet scanned";
+    private string _policyApprovalText = "Policy approval: not yet scanned";
     private string _protectedProcessSummary = "Protected processes: not yet scanned";
     private string _workspaceSummaryText = "Workspace safety: not yet scanned";
     private string _workspaceConfidenceText = "Workspace confidence: not yet scanned";
     private string _workspaceSnapshotText = "Workspace snapshot: not yet scanned";
     private string _lastActionMessage = "SessionGuard is ready.";
     private string _configurationDirectoryText = string.Empty;
+    private string _policyDirectoryText = string.Empty;
     private string _logDirectoryText = string.Empty;
+    private string _policiesPath = string.Empty;
     private Brush _statusBrush = CreateBrush("#64748B");
     private Brush _riskBrush = CreateBrush("#64748B");
 
@@ -68,6 +76,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         _runtimePaths = runtimePaths;
 
         ProtectedProcesses = new ObservableCollection<ProtectedProcessMatch>();
+        MatchedPolicyRules = new ObservableCollection<PolicyRuleMatch>();
         WorkspaceRiskItems = new ObservableCollection<WorkspaceRiskItem>();
         RestartIndicators = new ObservableCollection<RestartIndicator>();
         ManagedMitigations = new ObservableCollection<ManagedMitigationState>();
@@ -82,7 +91,10 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             () => !IsBusy);
         _applyMitigationsCommand = new AsyncRelayCommand(ApplyMitigationsAsync, () => !IsBusy);
         _resetMitigationsCommand = new AsyncRelayCommand(ResetMitigationsAsync, () => !IsBusy);
+        _grantRestartApprovalCommand = new AsyncRelayCommand(GrantRestartApprovalAsync, () => !IsBusy);
+        _clearRestartApprovalCommand = new AsyncRelayCommand(ClearRestartApprovalAsync, () => !IsBusy);
         _openConfigCommand = new RelayCommand(() => OpenPath(_runtimePaths.ConfigDirectory), () => !IsBusy);
+        _openPoliciesCommand = new RelayCommand(() => OpenPath(_policiesPath), () => !IsBusy && !string.IsNullOrWhiteSpace(_policiesPath));
         _openLogsCommand = new RelayCommand(() => OpenPath(_runtimePaths.LogDirectory), () => !IsBusy);
         _openWindowsUpdateSettingsCommand = new RelayCommand(OpenWindowsUpdateSettings, () => !IsBusy);
     }
@@ -90,6 +102,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     public event EventHandler? AttentionRequested;
 
     public ObservableCollection<ProtectedProcessMatch> ProtectedProcesses { get; }
+
+    public ObservableCollection<PolicyRuleMatch> MatchedPolicyRules { get; }
 
     public ObservableCollection<WorkspaceRiskItem> WorkspaceRiskItems { get; }
 
@@ -105,7 +119,13 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
 
     public AsyncRelayCommand ResetMitigationsCommand => _resetMitigationsCommand;
 
+    public AsyncRelayCommand GrantRestartApprovalCommand => _grantRestartApprovalCommand;
+
+    public AsyncRelayCommand ClearRestartApprovalCommand => _clearRestartApprovalCommand;
+
     public RelayCommand OpenConfigCommand => _openConfigCommand;
+
+    public RelayCommand OpenPoliciesCommand => _openPoliciesCommand;
 
     public RelayCommand OpenLogsCommand => _openLogsCommand;
 
@@ -143,7 +163,10 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
                 _scanNowCommand.RaiseCanExecuteChanged();
                 _applyMitigationsCommand.RaiseCanExecuteChanged();
                 _resetMitigationsCommand.RaiseCanExecuteChanged();
+                _grantRestartApprovalCommand.RaiseCanExecuteChanged();
+                _clearRestartApprovalCommand.RaiseCanExecuteChanged();
                 _openConfigCommand.RaiseCanExecuteChanged();
+                _openPoliciesCommand.RaiseCanExecuteChanged();
                 _openLogsCommand.RaiseCanExecuteChanged();
                 _openWindowsUpdateSettingsCommand.RaiseCanExecuteChanged();
             }
@@ -222,6 +245,24 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         private set => SetProperty(ref _connectionModeText, value);
     }
 
+    public string PolicyDecisionText
+    {
+        get => _policyDecisionText;
+        private set => SetProperty(ref _policyDecisionText, value);
+    }
+
+    public string PolicySummaryText
+    {
+        get => _policySummaryText;
+        private set => SetProperty(ref _policySummaryText, value);
+    }
+
+    public string PolicyApprovalText
+    {
+        get => _policyApprovalText;
+        private set => SetProperty(ref _policyApprovalText, value);
+    }
+
     public string ProtectedProcessSummary
     {
         get => _protectedProcessSummary;
@@ -256,6 +297,12 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     {
         get => _configurationDirectoryText;
         private set => SetProperty(ref _configurationDirectoryText, value);
+    }
+
+    public string PolicyDirectoryText
+    {
+        get => _policyDirectoryText;
+        private set => SetProperty(ref _policyDirectoryText, value);
     }
 
     public string LogDirectoryText
@@ -360,6 +407,9 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             SignalOverviewText = "Signal overview unavailable.";
             ProviderCoverageText = "Providers: scan failed";
             ConnectionModeText = "Control plane: unavailable";
+            PolicyDecisionText = "Policy engine: unavailable";
+            PolicySummaryText = "Policy summary unavailable.";
+            PolicyApprovalText = "Policy approval unavailable.";
             ProtectedProcessSummary = "Protected process detection unavailable.";
             WorkspaceSummaryText = "Workspace safety detection unavailable.";
             WorkspaceConfidenceText = "Workspace confidence: unavailable";
@@ -368,6 +418,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             StatusBrush = CreateBrush("#64748B");
             RiskBrush = CreateBrush("#64748B");
             ReplaceItems(ProtectedProcesses, Array.Empty<ProtectedProcessMatch>());
+            ReplaceItems(MatchedPolicyRules, Array.Empty<PolicyRuleMatch>());
             ReplaceItems(WorkspaceRiskItems, Array.Empty<WorkspaceRiskItem>());
             ReplaceItems(RestartIndicators, Array.Empty<RestartIndicator>());
             ReplaceItems(ManagedMitigations, Array.Empty<ManagedMitigationState>());
@@ -418,13 +469,45 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         }
     }
 
+    private async Task GrantRestartApprovalAsync()
+    {
+        try
+        {
+            var result = await _controlPlane.GrantRestartApprovalAsync();
+            LastActionMessage = result.Message;
+            await RefreshAsync(initialLoad: false, forceScan: true, explicitGuardMode: null, skipIfBusy: false);
+        }
+        catch (Exception exception)
+        {
+            _logger.Error("view.policy_approval.grant.failed", exception);
+            LastActionMessage = $"Failed to grant restart approval: {exception.Message}";
+        }
+    }
+
+    private async Task ClearRestartApprovalAsync()
+    {
+        try
+        {
+            var result = await _controlPlane.ClearRestartApprovalAsync();
+            LastActionMessage = result.Message;
+            await RefreshAsync(initialLoad: false, forceScan: true, explicitGuardMode: null, skipIfBusy: false);
+        }
+        catch (Exception exception)
+        {
+            _logger.Error("view.policy_approval.clear.failed", exception);
+            LastActionMessage = $"Failed to clear restart approval: {exception.Message}";
+        }
+    }
+
     private void ApplyConfiguration(RuntimeConfiguration configuration, bool initialLoad)
     {
         var settings = configuration.AppSettings;
         _warningBehavior = settings.WarningBehavior;
         ShowDetailedSignals = settings.UiPreferences.ShowDetailedSignals;
         ConfigurationDirectoryText = $"Config: {configuration.ConfigurationDirectory}";
+        PolicyDirectoryText = $"Policies: {configuration.PoliciesPath}";
         LogDirectoryText = $"Logs: {_logger.LogDirectory}";
+        _policiesPath = configuration.PoliciesPath;
 
         var nextInterval = TimeSpan.FromSeconds(settings.ScanIntervalSeconds);
         if (_timer.Interval != nextInterval)
@@ -470,6 +553,9 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         ConnectionModeText = status.IsRemote
             ? "Control plane: Service (background service is authoritative)"
             : "Control plane: Local fallback (the dashboard is scanning in-process because the service is unavailable)";
+        PolicyDecisionText = $"Policy decision: {FormatPolicyDecision(result.Policy.Decision)}";
+        PolicySummaryText = result.Policy.Summary;
+        PolicyApprovalText = BuildPolicyApprovalText(result.Policy);
         ProtectedProcessSummary = result.ProtectedProcesses.Count == 0
             ? "Protected processes: none detected"
             : $"Protected processes: {string.Join(", ", result.ProtectedProcesses.Select(match => $"{match.DisplayName} x{match.InstanceCount}"))}";
@@ -482,6 +568,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         RiskBrush = CreateBrush(GetRiskColor(result.RiskLevel));
 
         ReplaceItems(ProtectedProcesses, result.ProtectedProcesses);
+        ReplaceItems(MatchedPolicyRules, result.Policy.MatchedRules);
         ReplaceItems(WorkspaceRiskItems, result.Workspace.RiskItems);
         ReplaceItems(RestartIndicators, result.Indicators);
         ReplaceItems(ManagedMitigations, result.Mitigations);
@@ -562,10 +649,39 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         {
             ProtectionMode.MonitorOnly => "Monitor only",
             ProtectionMode.GuardModeActive => "Guard mode active",
+            ProtectionMode.PolicyGuardActive => "Policy guard active",
+            ProtectionMode.PolicyApprovalWindow => "Policy approval window active",
             ProtectionMode.ManagedMitigationsApplied => "Managed mitigations applied",
             ProtectionMode.LimitedReadOnly => "Read-only",
             _ => "Read-only"
         };
+    }
+
+    private static string FormatPolicyDecision(PolicyDecisionType decision)
+    {
+        return decision switch
+        {
+            PolicyDecisionType.None => "No active constraints",
+            PolicyDecisionType.RestartBlocked => "Restart blocked by policy",
+            PolicyDecisionType.ApprovalRequired => "Approval required",
+            PolicyDecisionType.ApprovalActive => "Approval window active",
+            _ => "Unknown"
+        };
+    }
+
+    private static string BuildPolicyApprovalText(PolicyEvaluation policy)
+    {
+        if (policy.ApprovalActive && policy.ApprovalExpiresAt.HasValue)
+        {
+            return $"Policy approval: active until {policy.ApprovalExpiresAt.Value.LocalDateTime:G}";
+        }
+
+        if (policy.RequiresApproval)
+        {
+            return $"Policy approval: required before restart ({policy.RecommendedApprovalWindowMinutes} minute default window)";
+        }
+
+        return "Policy approval: not required";
     }
 
     private static string FormatWorkspaceConfidence(WorkspaceConfidence confidence)

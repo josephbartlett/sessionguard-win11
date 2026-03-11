@@ -12,6 +12,7 @@ public sealed record SessionScanResult(
     bool IsElevated,
     string Summary,
     WorkspaceStateSnapshot Workspace,
+    PolicyEvaluation Policy,
     RestartSignalOverview SignalOverview,
     IReadOnlyList<RestartIndicator> Indicators,
     IReadOnlyList<ProtectedProcessMatch> ProtectedProcesses,

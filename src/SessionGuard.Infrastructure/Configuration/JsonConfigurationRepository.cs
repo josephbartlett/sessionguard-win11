@@ -21,6 +21,7 @@ public sealed class JsonConfigurationRepository : IConfigurationRepository
     {
         var appSettingsPath = Path.Combine(_paths.ConfigDirectory, "appsettings.json");
         var protectedProcessesPath = Path.Combine(_paths.ConfigDirectory, "protected-processes.json");
+        var policiesPath = Path.Combine(_paths.ConfigDirectory, "policies.json");
 
         if (!File.Exists(appSettingsPath))
         {
@@ -45,12 +46,25 @@ public sealed class JsonConfigurationRepository : IConfigurationRepository
                                           SessionGuardJson.Default,
                                           cancellationToken) ??
                                       new ProtectedProcessCatalog();
+        PolicyConfiguration policies = new();
+
+        if (File.Exists(policiesPath))
+        {
+            await using var policyStream = File.OpenRead(policiesPath);
+            policies = await JsonSerializer.DeserializeAsync<PolicyConfiguration>(
+                           policyStream,
+                           SessionGuardJson.Default,
+                           cancellationToken) ??
+                       new PolicyConfiguration();
+        }
 
         return new RuntimeConfiguration(
             appSettings.Normalize(),
             protectedProcessCatalog.Normalize(),
+            policies.Normalize(),
             _paths.ConfigDirectory,
             appSettingsPath,
-            protectedProcessesPath);
+            protectedProcessesPath,
+            policiesPath);
     }
 }

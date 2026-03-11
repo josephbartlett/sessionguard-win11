@@ -4,4 +4,5 @@ public sealed record SessionControlResponse(
     bool Success,
     string Message,
     SessionControlStatus? Status = null,
-    MitigationCommandResult? MitigationResult = null);
+    MitigationCommandResult? MitigationResult = null,
+    PolicyApprovalCommandResult? PolicyResult = null);

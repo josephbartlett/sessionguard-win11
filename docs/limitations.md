@@ -24,6 +24,14 @@
 - SessionGuard only manages a small set of Windows Update restart-related policy values.
 - Reset behavior restores previously observed values when SessionGuard backed them up, but it does not infer organization-managed intent beyond those saved values.
 
+## Policy engine limitations
+
+- Policy rules are evaluated by SessionGuard, not enforced by Windows itself. They are meant to guide safe restart behavior and approval handling inside the product, not to guarantee OS-level compliance.
+- The current rule set is intentionally local and single-machine. There is no shared approval authority, multi-user coordination, or signed policy distribution model yet.
+- Temporary approval windows are stored locally in `state/policy-approval.json`. They survive app and service restarts, but they are not audited beyond local logs and local state.
+- Process-block rules still depend on user-mode process visibility. If a critical process is hidden by permissions, short-lived, or outside the configured rule inputs, the rule can miss it.
+- Restart-window rules currently use the local machine clock and local time zone without a separate organizational calendar or maintenance-window service.
+
 ## UX limitations
 
 - The desktop UI now minimizes to the tray, but it is still primarily a dashboard window rather than a dedicated lightweight tray client.
@@ -37,7 +45,6 @@
 - Only advisory workspace metadata snapshotting
 - No process relaunch orchestration
 - No browser or editor recovery integration
-- No approval workflow for restarts
 
 ## Practical reading of the MVP
 

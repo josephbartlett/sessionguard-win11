@@ -49,6 +49,20 @@ public sealed class NamedPipeSessionGuardControlPlane : ISessionGuardControlPlan
             cancellationToken);
     }
 
+    public Task<PolicyApprovalCommandResult> GrantRestartApprovalAsync(CancellationToken cancellationToken = default)
+    {
+        return ExecuteForPolicyAsync(
+            new SessionControlRequest(SessionControlCommandType.GrantRestartApproval),
+            cancellationToken);
+    }
+
+    public Task<PolicyApprovalCommandResult> ClearRestartApprovalAsync(CancellationToken cancellationToken = default)
+    {
+        return ExecuteForPolicyAsync(
+            new SessionControlRequest(SessionControlCommandType.ClearRestartApproval),
+            cancellationToken);
+    }
+
     private async Task<SessionControlStatus> ExecuteForStatusAsync(
         SessionControlRequest request,
         CancellationToken cancellationToken)
@@ -73,6 +87,19 @@ public sealed class NamedPipeSessionGuardControlPlane : ISessionGuardControlPlan
         }
 
         return response.MitigationResult;
+    }
+
+    private async Task<PolicyApprovalCommandResult> ExecuteForPolicyAsync(
+        SessionControlRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await SendAsync(request, cancellationToken);
+        if (!response.Success || response.PolicyResult is null)
+        {
+            throw new InvalidOperationException(response.Message);
+        }
+
+        return response.PolicyResult;
     }
 
     private async Task<SessionControlResponse> SendAsync(

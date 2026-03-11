@@ -79,6 +79,14 @@ public sealed class SessionGuardPipeServer : BackgroundService
                 true,
                 "Mitigation reset completed.",
                 MitigationResult: await _runtime.ResetMitigationsAsync(cancellationToken)),
+            SessionControlCommandType.GrantRestartApproval => new SessionControlResponse(
+                true,
+                "Policy approval granted.",
+                PolicyResult: await _runtime.GrantRestartApprovalAsync(cancellationToken)),
+            SessionControlCommandType.ClearRestartApproval => new SessionControlResponse(
+                true,
+                "Policy approval cleared.",
+                PolicyResult: await _runtime.ClearRestartApprovalAsync(cancellationToken)),
             SessionControlCommandType.SetGuardMode => new SessionControlResponse(false, "Guard mode value was not supplied."),
             _ => new SessionControlResponse(false, $"Unsupported command: {request.CommandType}.")
         };

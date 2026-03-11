@@ -51,7 +51,7 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Grid.Column="0">
-                    <Border Style="{StaticResource CardBorderStyle}">
+                    <Border Margin="0,16,0,0" Style="{StaticResource CardBorderStyle}">
                         <StackPanel>
                             <TextBlock FontSize="14"
                                        FontWeight="SemiBold"
@@ -207,6 +207,9 @@
                                         Command="{Binding OpenConfigCommand}"
                                         Content="Open config" />
                                 <Button Style="{StaticResource SecondaryActionButtonStyle}"
+                                        Command="{Binding OpenPoliciesCommand}"
+                                        Content="Open policies" />
+                                <Button Style="{StaticResource SecondaryActionButtonStyle}"
                                         Command="{Binding OpenLogsCommand}"
                                         Content="Open logs" />
                             </WrapPanel>
@@ -234,6 +237,10 @@
                                        TextWrapping="Wrap" />
                             <TextBlock Margin="0,4,0,0"
                                        Foreground="{StaticResource SecondaryTextBrush}"
+                                       Text="{Binding PolicyDirectoryText}"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Margin="0,4,0,0"
+                                       Foreground="{StaticResource SecondaryTextBrush}"
                                        Text="{Binding LogDirectoryText}"
                                        TextWrapping="Wrap" />
                         </StackPanel>
@@ -241,6 +248,70 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="2">
+                    <Border Style="{StaticResource CardBorderStyle}">
+                        <StackPanel>
+                            <TextBlock FontSize="14"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource SecondaryTextBrush}"
+                                       Text="Policy engine" />
+                            <TextBlock Margin="0,12,0,0"
+                                       Foreground="{StaticResource PrimaryTextBrush}"
+                                       AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.PolicyDecisionText}"
+                                       Text="{Binding PolicyDecisionText}"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Margin="0,8,0,0"
+                                       Foreground="{StaticResource PrimaryTextBrush}"
+                                       AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.PolicySummaryText}"
+                                       Text="{Binding PolicySummaryText}"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Margin="0,8,0,0"
+                                       Foreground="{StaticResource SecondaryTextBrush}"
+                                       AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.PolicyApprovalText}"
+                                       Text="{Binding PolicyApprovalText}"
+                                       TextWrapping="Wrap" />
+
+                            <WrapPanel Margin="0,12,0,0">
+                                <Button Style="{StaticResource PrimaryActionButtonStyle}"
+                                        AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.GrantApprovalButton}"
+                                        Command="{Binding GrantRestartApprovalCommand}"
+                                        Content="Grant approval window" />
+                                <Button Style="{StaticResource SecondaryActionButtonStyle}"
+                                        AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.ClearApprovalButton}"
+                                        Command="{Binding ClearRestartApprovalCommand}"
+                                        Content="Clear approval" />
+                            </WrapPanel>
+
+                            <DataGrid Margin="0,14,0,0"
+                                      AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.PolicyRulesGrid}"
+                                      AutoGenerateColumns="False"
+                                      CanUserAddRows="False"
+                                      HeadersVisibility="Column"
+                                      IsReadOnly="True"
+                                      MinRowHeight="34"
+                                      ItemsSource="{Binding MatchedPolicyRules}">
+                                <DataGrid.Columns>
+                                    <DataGridTemplateColumn Width="230" Header="Rule">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Title}" TextWrapping="Wrap" />
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTextColumn Width="120" Binding="{Binding KindLabel}" Header="Type" />
+                                    <DataGridTextColumn Width="120" Binding="{Binding OutcomeLabel}" Header="Outcome" />
+                                    <DataGridTextColumn Width="70" Binding="{Binding Priority}" Header="Priority" />
+                                    <DataGridTemplateColumn Width="*" Header="Why it matched">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Reason}" TextWrapping="Wrap" />
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </StackPanel>
+                    </Border>
+
                     <Border Style="{StaticResource CardBorderStyle}">
                         <StackPanel>
                             <TextBlock FontSize="14"

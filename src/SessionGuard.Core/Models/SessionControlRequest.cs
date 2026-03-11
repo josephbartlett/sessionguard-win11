@@ -2,4 +2,5 @@ namespace SessionGuard.Core.Models;
 
 public sealed record SessionControlRequest(
     SessionControlCommandType CommandType,
-    bool? GuardModeEnabled = null);
+    bool? GuardModeEnabled = null,
+    int? ApprovalWindowMinutes = null);
