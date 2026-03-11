@@ -1,5 +1,6 @@
 using System.Text.Json;
 using SessionGuard.Core.Configuration;
+using SessionGuard.Core.Models;
 using SessionGuard.Core.Services;
 using SessionGuard.Infrastructure.Environment;
 using SessionGuard.Infrastructure.Serialization;
@@ -47,24 +48,45 @@ public sealed class JsonConfigurationRepository : IConfigurationRepository
                                           cancellationToken) ??
                                       new ProtectedProcessCatalog();
         PolicyConfiguration policies = new();
+        PolicyValidationReport policyValidation = PolicyValidationReport.None;
 
         if (File.Exists(policiesPath))
         {
-            await using var policyStream = File.OpenRead(policiesPath);
-            policies = await JsonSerializer.DeserializeAsync<PolicyConfiguration>(
-                           policyStream,
-                           SessionGuardJson.Default,
-                           cancellationToken) ??
-                       new PolicyConfiguration();
+            try
+            {
+                await using var policyStream = File.OpenRead(policiesPath);
+                policies = await JsonSerializer.DeserializeAsync<PolicyConfiguration>(
+                               policyStream,
+                               SessionGuardJson.Default,
+                               cancellationToken) ??
+                           new PolicyConfiguration();
+                policies = policies.Normalize();
+                policyValidation = PolicyConfigurationValidator.Validate(policies, policiesPath);
+            }
+            catch (JsonException exception)
+            {
+                policies = new PolicyConfiguration
+                {
+                    Enabled = false
+                }.Normalize();
+                policyValidation = PolicyConfigurationValidator.BuildLoadFailure(policiesPath, exception.Message);
+            }
+        }
+        else
+        {
+            policies = policies.Normalize();
         }
 
         return new RuntimeConfiguration(
             appSettings.Normalize(),
             protectedProcessCatalog.Normalize(),
-            policies.Normalize(),
+            policies,
             _paths.ConfigDirectory,
             appSettingsPath,
             protectedProcessesPath,
-            policiesPath);
+            policiesPath)
+        {
+            PolicyValidation = policyValidation
+        };
     }
 }

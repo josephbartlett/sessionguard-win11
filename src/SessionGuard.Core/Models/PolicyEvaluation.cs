@@ -11,6 +11,8 @@ public sealed record PolicyEvaluation(
     IReadOnlyList<PolicyRuleMatch> MatchedRules,
     IReadOnlyList<string> EvaluationTrace)
 {
+    public PolicyValidationReport Validation { get; init; } = PolicyValidationReport.None;
+
     public static PolicyEvaluation None { get; } = new(
         PolicyDecisionType.None,
         HasBlockingRules: false,

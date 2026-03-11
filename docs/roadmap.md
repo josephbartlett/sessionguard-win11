@@ -64,16 +64,33 @@ Purpose:
 Turn restart guidance into deterministic, user-configurable policy behavior without claiming that SessionGuard can control every Windows restart path.
 
 Current status:
-- the branch now includes a separate `config/policies.json` schema
-- policy rules are now evaluated in the coordinator and surfaced in the dashboard
-- temporary approval windows are now persisted locally and exposed through the control plane
-- the WPF dashboard now exposes policy decision, matched rules, and approval grant or clear actions
-- the remaining release step is tag-and-push approval plus final release notes handoff
+- `v0.5.0` shipped the separate `config/policies.json` schema
+- policy rules are evaluated in the coordinator and surfaced in the dashboard
+- temporary approval windows are persisted locally and exposed through the control plane
+- the WPF dashboard exposes policy decision, matched rules, and approval grant or clear actions
+- `v0.5.1` now adds policy validation, conflict diagnostics, and safer handling for malformed policy JSON
 
 Exit criteria:
 - users can define multiple policy rules with deterministic ordering
 - the dashboard can explain which rule changed the displayed policy state
 - temporary restart approval windows are visible, persisted, and reversible
+
+### 0.5.x Policy Hardening
+
+Purpose:
+Make the new policy engine trustworthy by validating local policy input, surfacing conflicts cleanly, and preventing bad configuration from breaking unrelated restart-awareness features.
+
+Current status:
+- `v0.5.1` adds policy validation and dashboard diagnostics
+- `v0.5.1` keeps scan results available when `config/policies.json` is malformed
+- `v0.5.1` makes approval-window precedence explicit when multiple approval rules match
+- the next policy follow-up is `0.5.2` service-boundary tightening for approval and mitigation ownership
+
+Exit criteria:
+- malformed policy JSON degrades safely and visibly
+- duplicate or conflicting rules are called out to the operator
+- approval-window precedence is deterministic and explained in the UI
+- automated coverage exists for invalid config, conflicts, and approval expiry
 
 ## v0.1.0 - MVP Desktop Monitor
 

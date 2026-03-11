@@ -29,6 +29,7 @@
 - Policy rules are evaluated by SessionGuard, not enforced by Windows itself. They are meant to guide safe restart behavior and approval handling inside the product, not to guarantee OS-level compliance.
 - The current rule set is intentionally local and single-machine. There is no shared approval authority, multi-user coordination, or signed policy distribution model yet.
 - Temporary approval windows are stored locally in `state/policy-approval.json`. They survive app and service restarts, but they are not audited beyond local logs and local state.
+- Malformed `config/policies.json` now disables policy evaluation instead of failing the whole dashboard refresh. That is safer operationally, but it also means bad policy edits can silently remove rule enforcement until the operator reviews the diagnostic section.
 - Process-block rules still depend on user-mode process visibility. If a critical process is hidden by permissions, short-lived, or outside the configured rule inputs, the rule can miss it.
 - Restart-window rules currently use the local machine clock and local time zone without a separate organizational calendar or maintenance-window service.
 

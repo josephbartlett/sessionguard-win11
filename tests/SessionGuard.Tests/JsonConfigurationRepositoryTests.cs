@@ -88,6 +88,42 @@ public sealed class JsonConfigurationRepositoryTests : IDisposable
         Assert.Equal("WindowsTerminal.exe", configuration.Policies.Rules[1].ProcessNames[1]);
     }
 
+    [Fact]
+    public async Task LoadAsync_HandlesInvalidPolicyJsonWithoutFailingWholeConfiguration()
+    {
+        var settings = """
+        {
+          "scanIntervalSeconds": 30
+        }
+        """;
+        var processes = """
+        {
+          "processNames": [ "pwsh.exe" ]
+        }
+        """;
+        var invalidPolicies = """
+        {
+          "enabled": true,
+          "rules": [
+            {
+              "id": "broken-rule",
+              "kind": "ProcessBlock",
+        """;
+
+        await File.WriteAllTextAsync(Path.Combine(_rootPath, "config", "appsettings.json"), settings);
+        await File.WriteAllTextAsync(Path.Combine(_rootPath, "config", "protected-processes.json"), processes);
+        await File.WriteAllTextAsync(Path.Combine(_rootPath, "config", "policies.json"), invalidPolicies);
+
+        var runtimePaths = RuntimePaths.Discover(_rootPath);
+        var repository = new JsonConfigurationRepository(runtimePaths);
+
+        var configuration = await repository.LoadAsync();
+
+        Assert.False(configuration.Policies.Enabled);
+        Assert.True(configuration.PolicyValidation.HasErrors);
+        Assert.Contains(configuration.PolicyValidation.Issues, issue => issue.Code == "policy-load-failed");
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_rootPath))

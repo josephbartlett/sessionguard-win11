@@ -115,9 +115,12 @@ The output is a `PolicyEvaluation` that includes:
 - whether a temporary approval window is required
 - whether a temporary approval window is active
 - matched rules with deterministic priority ordering
-- evaluation trace text explaining why each matched rule fired
+- policy validation diagnostics for malformed or conflicting config
+- evaluation trace text explaining why each matched rule fired and which approval rule won when overlaps exist
 
 Temporary approval windows are persisted locally in `state/policy-approval.json`. This allows the service or the local fallback path to survive process restarts without losing the operator's active approval window immediately.
+
+`JsonConfigurationRepository` now treats `config/policies.json` differently from the other config files: if policy JSON is malformed, SessionGuard keeps the rest of the scan pipeline alive, disables policy evaluation for that scan, and surfaces explicit diagnostics in the dashboard. That keeps restart-awareness and workspace detection available while still staying honest that policy enforcement is temporarily unavailable.
 
 ## Mitigation model
 

@@ -8,15 +8,33 @@ public static class PolicyEvaluator
     public static PolicyEvaluation Evaluate(
         PolicyConfiguration configuration,
         PolicyApprovalState approvalState,
-        PolicyEvaluationContext context)
+        PolicyEvaluationContext context,
+        PolicyValidationReport? validation = null)
     {
         var normalizedConfiguration = configuration.Normalize();
+        var effectiveValidation = validation ?? PolicyValidationReport.None;
+        var traces = BuildValidationTrace(effectiveValidation);
+
+        if (effectiveValidation.HasErrors)
+        {
+            traces.Add("Policy evaluation skipped because configuration errors are present.");
+            return PolicyEvaluation.None with
+            {
+                Summary = "Policy evaluation is unavailable until config/policies.json is fixed.",
+                RecommendedApprovalWindowMinutes = normalizedConfiguration.DefaultApprovalWindowMinutes,
+                EvaluationTrace = traces,
+                Validation = effectiveValidation
+            };
+        }
+
         if (!normalizedConfiguration.Enabled)
         {
             return PolicyEvaluation.None with
             {
                 Summary = "Policy engine is disabled in config.",
-                RecommendedApprovalWindowMinutes = normalizedConfiguration.DefaultApprovalWindowMinutes
+                RecommendedApprovalWindowMinutes = normalizedConfiguration.DefaultApprovalWindowMinutes,
+                EvaluationTrace = traces,
+                Validation = effectiveValidation
             };
         }
 
@@ -28,16 +46,23 @@ public static class PolicyEvaluator
             return PolicyEvaluation.None with
             {
                 Summary = "No policy rules are currently enabled.",
-                RecommendedApprovalWindowMinutes = normalizedConfiguration.DefaultApprovalWindowMinutes
+                RecommendedApprovalWindowMinutes = normalizedConfiguration.DefaultApprovalWindowMinutes,
+                EvaluationTrace = traces.Count > 0
+                    ? traces
+                    : new[]
+                    {
+                        "Policy engine evaluated 0 enabled rules."
+                    },
+                Validation = effectiveValidation
             };
         }
 
         var matchedRules = new List<PolicyRuleMatch>();
-        var traces = new List<string>();
         var approvalIsActive = approvalState.IsActive &&
                                approvalState.ExpiresAt.HasValue &&
                                approvalState.ExpiresAt.Value > context.Timestamp;
         var recommendedApprovalWindowMinutes = normalizedConfiguration.DefaultApprovalWindowMinutes;
+        PolicyRuleDefinition? selectedApprovalRule = null;
 
         foreach (var rule in enabledRules)
         {
@@ -50,10 +75,24 @@ public static class PolicyEvaluator
             matchedRules.Add(match);
             traces.Add($"{match.Title}: {match.Reason}");
 
-            if (rule.Kind == PolicyRuleKind.ApprovalRequired)
+            if (rule.Kind == PolicyRuleKind.ApprovalRequired &&
+                match.Outcome is PolicyRuleOutcome.ApprovalRequired or PolicyRuleOutcome.Approved)
             {
-                recommendedApprovalWindowMinutes = rule.ApprovalWindowMinutes ??
-                                                   normalizedConfiguration.DefaultApprovalWindowMinutes;
+                var ruleWindowMinutes = rule.ApprovalWindowMinutes ??
+                                        normalizedConfiguration.DefaultApprovalWindowMinutes;
+
+                if (selectedApprovalRule is null)
+                {
+                    selectedApprovalRule = rule;
+                    recommendedApprovalWindowMinutes = ruleWindowMinutes;
+                    traces.Add(
+                        $"Approval window source: '{rule.Title}' selected {ruleWindowMinutes} minute(s) as the highest-precedence matching approval rule.");
+                }
+                else if (recommendedApprovalWindowMinutes != ruleWindowMinutes)
+                {
+                    traces.Add(
+                        $"Approval window conflict: '{selectedApprovalRule.Title}' remains authoritative at {recommendedApprovalWindowMinutes} minute(s); '{rule.Title}' also matched with {ruleWindowMinutes} minute(s).");
+                }
             }
         }
 
@@ -70,20 +109,28 @@ public static class PolicyEvaluator
                     normalizedConfiguration.DefaultApprovalWindowMinutes,
                     BuildSummary(PolicyDecisionType.ApprovalActive, Array.Empty<PolicyRuleMatch>(), approvalState),
                     Array.Empty<PolicyRuleMatch>(),
-                    new[]
-                    {
-                        $"A temporary restart approval window is active until {approvalState.ExpiresAt!.Value.LocalDateTime:G}."
-                    });
+                    traces
+                        .Concat(new[]
+                        {
+                            $"A temporary restart approval window is active until {approvalState.ExpiresAt!.Value.LocalDateTime:G}."
+                        })
+                        .ToArray())
+                {
+                    Validation = effectiveValidation
+                };
             }
 
             return PolicyEvaluation.None with
             {
                 RecommendedApprovalWindowMinutes = normalizedConfiguration.DefaultApprovalWindowMinutes,
                 Summary = "No policy rules are currently constraining restart behavior.",
-                EvaluationTrace = new[]
-                {
-                    $"Policy engine evaluated {enabledRules.Length} enabled rule(s); none matched."
-                }
+                EvaluationTrace = traces
+                    .Concat(new[]
+                    {
+                        $"Policy engine evaluated {enabledRules.Length} enabled rule(s); none matched."
+                    })
+                    .ToArray(),
+                Validation = effectiveValidation
             };
         }
 
@@ -91,6 +138,11 @@ public static class PolicyEvaluator
         var requiresApproval = matchedRules.Any(match => match.Outcome == PolicyRuleOutcome.ApprovalRequired);
         var matchedApprovalRule = matchedRules.Any(match =>
             match.Outcome is PolicyRuleOutcome.ApprovalRequired or PolicyRuleOutcome.Approved);
+
+        if (hasBlockingRules && matchedApprovalRule)
+        {
+            traces.Add("Blocking rules take precedence over approval rules in the current state.");
+        }
 
         var decision = DetermineDecision(hasBlockingRules, requiresApproval, approvalIsActive, matchedApprovalRule);
         var summary = BuildSummary(decision, matchedRules, approvalState);
@@ -104,7 +156,10 @@ public static class PolicyEvaluator
             recommendedApprovalWindowMinutes,
             summary,
             matchedRules,
-            traces);
+            traces)
+        {
+            Validation = effectiveValidation
+        };
     }
 
     private static PolicyRuleMatch? EvaluateRule(
@@ -342,5 +397,24 @@ public static class PolicyEvaluator
             RestartRiskLevel.Unknown => -1,
             _ => -1
         };
+    }
+
+    private static List<string> BuildValidationTrace(PolicyValidationReport validation)
+    {
+        var traces = new List<string>();
+
+        if (!validation.HasIssues)
+        {
+            return traces;
+        }
+
+        traces.Add(validation.Summary);
+
+        foreach (var issue in validation.Issues)
+        {
+            traces.Add($"{issue.SeverityLabel}: {issue.DisplayText}");
+        }
+
+        return traces;
     }
 }

@@ -86,7 +86,8 @@ public sealed class SessionGuardCoordinator
                 signalOverview.DefinitivePendingSignals > 0,
                 workspace,
                 protectedProcesses,
-                workspaceObservation.RunningProcesses));
+                workspaceObservation.RunningProcesses),
+            configuration.PolicyValidation);
         var protectionMode = RestartStatusEvaluator.DetermineProtectionMode(
             guardModeEnabled,
             mitigationStates.Any(state => state.IsApplied),
@@ -177,6 +178,15 @@ public sealed class SessionGuardCoordinator
         if (policy.HasBlockingRules)
         {
             recommendations.Add("Policy rules are actively blocking restart right now. Review the matched rules before approving or scheduling any restart.");
+        }
+
+        if (policy.Validation.HasErrors)
+        {
+            recommendations.Add("Policy configuration has errors and no policy rules are being enforced. Review config/policies.json before relying on approval or blocking behavior.");
+        }
+        else if (policy.Validation.HasWarnings)
+        {
+            recommendations.Add("Policy configuration loaded with warnings. Review the policy diagnostics section before relying on the current rule set.");
         }
 
         if (policy.RequiresApproval && !policy.ApprovalActive)

@@ -63,7 +63,17 @@ public sealed class PipeMessageProtocolTests
                         new[]
                         {
                             "Approval required for restart-pending states: A temporary restart approval window is active until 3/11/2026 10:35:00 AM."
-                        }),
+                        })
+                    {
+                        Validation = PolicyValidationReport.Create(
+                            new[]
+                            {
+                                new PolicyValidationIssue(
+                                    "policy-rules-disabled",
+                                    PolicyValidationSeverity.Information,
+                                    "1 rule is disabled and will be skipped during evaluation.")
+                            })
+                    },
                     new RestartSignalOverview(1, 1, 0, 0, 0, 1, 0, "No restart pending."),
                     new[]
                     {
@@ -136,6 +146,7 @@ public sealed class PipeMessageProtocolTests
         Assert.Single(roundTripped.MitigationResult!.CurrentStates);
         Assert.NotNull(roundTripped.PolicyResult);
         Assert.True(roundTripped.PolicyResult!.Policy.ApprovalActive);
+        Assert.True(roundTripped.Status.ScanResult.Policy.Validation.HasIssues);
     }
 
     [Fact]

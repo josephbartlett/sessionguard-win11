@@ -6,6 +6,15 @@ All notable changes to this project should be recorded here in reverse chronolog
 
 No unreleased changes yet.
 
+## 0.5.1 - 2026-03-11
+
+- Added policy configuration validation and diagnostics so malformed or conflicting `config/policies.json` content no longer fails the entire scan path.
+- Added safe fallback behavior for invalid policy JSON by disabling policy evaluation, surfacing operator-facing diagnostics, and keeping restart inspection and workspace monitoring available.
+- Added clearer policy evaluation trace output plus explicit precedence messaging when blocking rules and approval rules overlap.
+- Fixed approval-window selection so the highest-precedence matching approval rule determines the recommended approval duration instead of whichever matching rule happened to evaluate last.
+- Updated the WPF dashboard to show policy configuration health, diagnostic entries, and evaluation trace details.
+- Expanded tests for malformed policy JSON, duplicate or conflicting policy rules, approval-window precedence, persisted expired approval cleanup, and policy-validation payload serialization.
+
 ## 0.5.0 - 2026-03-11
 
 - Added a separate `config/policies.json` schema for restart windows, process or workspace restart blocks, and approval-required rules.

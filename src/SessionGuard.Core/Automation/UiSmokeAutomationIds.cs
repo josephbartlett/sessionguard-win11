@@ -14,6 +14,7 @@ public static class UiSmokeAutomationIds
     public const string PolicyDecisionText = "PolicyDecisionText";
     public const string PolicySummaryText = "PolicySummaryText";
     public const string PolicyApprovalText = "PolicyApprovalText";
+    public const string PolicyDiagnosticsText = "PolicyDiagnosticsText";
     public const string WorkspaceSummaryText = "WorkspaceSummaryText";
     public const string WorkspaceConfidenceText = "WorkspaceConfidenceText";
     public const string WorkspaceSnapshotText = "WorkspaceSnapshotText";

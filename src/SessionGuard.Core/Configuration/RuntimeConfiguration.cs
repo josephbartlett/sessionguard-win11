@@ -1,3 +1,5 @@
+using SessionGuard.Core.Models;
+
 namespace SessionGuard.Core.Configuration;
 
 public sealed record RuntimeConfiguration(
@@ -7,4 +9,7 @@ public sealed record RuntimeConfiguration(
     string ConfigurationDirectory,
     string AppSettingsPath,
     string ProtectedProcessesPath,
-    string PoliciesPath);
+    string PoliciesPath)
+{
+    public PolicyValidationReport PolicyValidation { get; init; } = PolicyValidationReport.None;
+}

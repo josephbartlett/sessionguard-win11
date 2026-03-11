@@ -52,6 +52,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private string _policyDecisionText = "Policy engine: not yet scanned";
     private string _policySummaryText = "Policy summary: not yet scanned";
     private string _policyApprovalText = "Policy approval: not yet scanned";
+    private string _policyDiagnosticsText = "Policy config: not yet scanned";
     private string _protectedProcessSummary = "Protected processes: not yet scanned";
     private string _workspaceSummaryText = "Workspace safety: not yet scanned";
     private string _workspaceConfidenceText = "Workspace confidence: not yet scanned";
@@ -77,6 +78,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
 
         ProtectedProcesses = new ObservableCollection<ProtectedProcessMatch>();
         MatchedPolicyRules = new ObservableCollection<PolicyRuleMatch>();
+        PolicyValidationIssues = new ObservableCollection<PolicyValidationIssue>();
+        PolicyEvaluationTraceItems = new ObservableCollection<string>();
         WorkspaceRiskItems = new ObservableCollection<WorkspaceRiskItem>();
         RestartIndicators = new ObservableCollection<RestartIndicator>();
         ManagedMitigations = new ObservableCollection<ManagedMitigationState>();
@@ -104,6 +107,10 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     public ObservableCollection<ProtectedProcessMatch> ProtectedProcesses { get; }
 
     public ObservableCollection<PolicyRuleMatch> MatchedPolicyRules { get; }
+
+    public ObservableCollection<PolicyValidationIssue> PolicyValidationIssues { get; }
+
+    public ObservableCollection<string> PolicyEvaluationTraceItems { get; }
 
     public ObservableCollection<WorkspaceRiskItem> WorkspaceRiskItems { get; }
 
@@ -263,6 +270,12 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         private set => SetProperty(ref _policyApprovalText, value);
     }
 
+    public string PolicyDiagnosticsText
+    {
+        get => _policyDiagnosticsText;
+        private set => SetProperty(ref _policyDiagnosticsText, value);
+    }
+
     public string ProtectedProcessSummary
     {
         get => _protectedProcessSummary;
@@ -410,6 +423,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             PolicyDecisionText = "Policy engine: unavailable";
             PolicySummaryText = "Policy summary unavailable.";
             PolicyApprovalText = "Policy approval unavailable.";
+            PolicyDiagnosticsText = "Policy config unavailable.";
             ProtectedProcessSummary = "Protected process detection unavailable.";
             WorkspaceSummaryText = "Workspace safety detection unavailable.";
             WorkspaceConfidenceText = "Workspace confidence: unavailable";
@@ -419,6 +433,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             RiskBrush = CreateBrush("#64748B");
             ReplaceItems(ProtectedProcesses, Array.Empty<ProtectedProcessMatch>());
             ReplaceItems(MatchedPolicyRules, Array.Empty<PolicyRuleMatch>());
+            ReplaceItems(PolicyValidationIssues, Array.Empty<PolicyValidationIssue>());
+            ReplaceItems(PolicyEvaluationTraceItems, Array.Empty<string>());
             ReplaceItems(WorkspaceRiskItems, Array.Empty<WorkspaceRiskItem>());
             ReplaceItems(RestartIndicators, Array.Empty<RestartIndicator>());
             ReplaceItems(ManagedMitigations, Array.Empty<ManagedMitigationState>());
@@ -553,9 +569,12 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         ConnectionModeText = status.IsRemote
             ? "Control plane: Service (background service is authoritative)"
             : "Control plane: Local fallback (the dashboard is scanning in-process because the service is unavailable)";
-        PolicyDecisionText = $"Policy decision: {FormatPolicyDecision(result.Policy.Decision)}";
+        PolicyDecisionText = result.Policy.Validation.HasErrors
+            ? "Policy decision: Unavailable due to configuration errors"
+            : $"Policy decision: {FormatPolicyDecision(result.Policy.Decision)}";
         PolicySummaryText = result.Policy.Summary;
         PolicyApprovalText = BuildPolicyApprovalText(result.Policy);
+        PolicyDiagnosticsText = result.Policy.Validation.Summary;
         ProtectedProcessSummary = result.ProtectedProcesses.Count == 0
             ? "Protected processes: none detected"
             : $"Protected processes: {string.Join(", ", result.ProtectedProcesses.Select(match => $"{match.DisplayName} x{match.InstanceCount}"))}";
@@ -569,6 +588,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
 
         ReplaceItems(ProtectedProcesses, result.ProtectedProcesses);
         ReplaceItems(MatchedPolicyRules, result.Policy.MatchedRules);
+        ReplaceItems(PolicyValidationIssues, result.Policy.Validation.Issues);
+        ReplaceItems(PolicyEvaluationTraceItems, result.Policy.EvaluationTrace);
         ReplaceItems(WorkspaceRiskItems, result.Workspace.RiskItems);
         ReplaceItems(RestartIndicators, result.Indicators);
         ReplaceItems(ManagedMitigations, result.Mitigations);
@@ -671,6 +692,11 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
 
     private static string BuildPolicyApprovalText(PolicyEvaluation policy)
     {
+        if (policy.Validation.HasErrors)
+        {
+            return "Policy approval: unavailable until policy configuration errors are fixed";
+        }
+
         if (policy.ApprovalActive && policy.ApprovalExpiresAt.HasValue)
         {
             return $"Policy approval: active until {policy.ApprovalExpiresAt.Value.LocalDateTime:G}";

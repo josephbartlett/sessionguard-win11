@@ -44,6 +44,29 @@ public sealed class FilePolicyApprovalStoreTests : IDisposable
         Assert.False(File.Exists(Path.Combine(paths.StateDirectory, "policy-approval.json")));
     }
 
+    [Fact]
+    public async Task GetCurrentAsync_ClearsPersistedExpiredApprovalWindow()
+    {
+        var store = CreateStore();
+        var paths = RuntimePaths.Discover(_runtimeRoot);
+        var approvalPath = Path.Combine(paths.StateDirectory, "policy-approval.json");
+        var expiredState = """
+        {
+          "isActive": true,
+          "grantedAt": "2026-03-11T16:00:00-04:00",
+          "expiresAt": "2026-03-11T16:30:00-04:00",
+          "windowMinutes": 30
+        }
+        """;
+
+        await File.WriteAllTextAsync(approvalPath, expiredState);
+
+        var current = await store.GetCurrentAsync(DateTimeOffset.Parse("2026-03-11T16:31:00-04:00"));
+
+        Assert.False(current.IsActive);
+        Assert.False(File.Exists(approvalPath));
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_runtimeRoot))

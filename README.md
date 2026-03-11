@@ -8,6 +8,7 @@ The MVP is intentionally bounded:
 - It detects whether a protected workspace is active based on a configurable process list.
 - It now derives advisory workspace-risk heuristics for terminals, editors, browsers, and local dev-server style runtimes.
 - It now applies a separate JSON-backed policy engine for restart windows, blocking rules, and temporary approval windows.
+- It now validates the policy configuration separately so malformed or conflicting policy files show diagnostics instead of breaking the whole dashboard scan.
 - It can apply a small set of reversible native mitigation settings when the app is run with administrative rights.
 - It logs what it observed and what it attempted so the behavior stays auditable.
 
@@ -27,6 +28,10 @@ SessionGuard does not guarantee prevention of every OS-driven restart path, and 
   - restart windows
   - process and workspace restart blocks
   - temporary approval requirements and approval window duration
+- Policy diagnostics that surface:
+  - malformed `policies.json` handling without crashing the scan path
+  - duplicate or conflicting rule warnings
+  - deterministic approval-window precedence when multiple approval rules match
 - Restart signal inspection using multiple providers:
   - bounded registry checks for CBS, Windows Update, and Session Manager reboot clues
   - Windows Update Agent COM `RebootRequired`
@@ -185,6 +190,7 @@ src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe clear
 - Edit [`config/appsettings.json`](/C:/Users/decoy/sessionguard-win11/config/appsettings.json) to change scan interval, warning behavior, active hours defaults, and UI preferences.
 - Edit [`config/protected-processes.json`](/C:/Users/decoy/sessionguard-win11/config/protected-processes.json) to add or remove protected processes without rebuilding.
 - Edit [`config/policies.json`](/C:/Users/decoy/sessionguard-win11/config/policies.json) to change restart windows, process or workspace blocking rules, and approval requirements without rebuilding.
+- If `config/policies.json` is malformed or contains conflicting rules, SessionGuard now keeps scanning and surfaces the policy diagnostics in the dashboard instead of failing the entire refresh path.
 - App logs are written to `logs/sessionguard-app-YYYYMMDD.log`.
 - Service logs are written to `logs/sessionguard-service-YYYYMMDD.log`.
 - Temporary mitigation backups are written to the local `state/` folder so SessionGuard can restore previous values when resetting managed settings.
@@ -217,7 +223,8 @@ src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe clear
 18. Trigger a state with restart pressure, then confirm the policy card explains whether restart is blocked, requires approval, or has an active approval window.
 19. Grant and clear a temporary restart approval window from the dashboard or `SessionGuard.Service.exe approve-restart` and confirm the policy status changes.
 20. Start a protected terminal, browser, or editor session and confirm the workspace safety table explains why the session is considered risky.
-21. Inspect `state/current-scan.json`, `state/workspace-snapshot.json`, `state/policy-approval.json`, and `state/service-health.json` and confirm the latest status is serialized by the service or local fallback path.
+21. Introduce a temporary mistake into [`config/policies.json`](/C:/Users/decoy/sessionguard-win11/config/policies.json), trigger a scan, and confirm the policy card stays up, reports configuration errors, and leaves the rest of the dashboard functional.
+22. Inspect `state/current-scan.json`, `state/workspace-snapshot.json`, `state/policy-approval.json`, and `state/service-health.json` and confirm the latest status is serialized by the service or local fallback path.
 
 ## What the MVP does not do
 
@@ -226,6 +233,7 @@ src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe clear
 - It does not inspect unsaved buffers, browser tab counts, or developer session internals.
 - It now writes advisory workspace metadata, but that metadata is local only and does not capture enough detail to restore sessions.
 - It now includes approval workflows and rule-driven policy state, but those policies are advisory control logic inside SessionGuard rather than a guarantee that Windows itself will honor every desired restart outcome.
+- It now validates policy configuration and degrades safely on malformed policy JSON, but it still cannot infer operator intent beyond the local rule set or resolve every ambiguous policy design automatically.
 - It now includes a service-hostable worker, versioned named-pipe IPC, tray-aware window behavior, and local install/start/stop scripts, but it is not yet a hardened enterprise deployment package or dedicated tray-only shell.
 - It does not yet capture full recovery snapshots or restore workspace state.
 
@@ -237,4 +245,4 @@ src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe clear
 - Roadmap: [`docs/roadmap.md`](/C:/Users/decoy/sessionguard-win11/docs/roadmap.md)
 - Workspace safety plan: [`docs/plans/v0.4.0-workspace-safety-plan.md`](/C:/Users/decoy/sessionguard-win11/docs/plans/v0.4.0-workspace-safety-plan.md)
 - Future service design: [`docs/future-service-architecture.md`](/C:/Users/decoy/sessionguard-win11/docs/future-service-architecture.md)
-- Release notes: [`docs/releases/v0.5.0.md`](/C:/Users/decoy/sessionguard-win11/docs/releases/v0.5.0.md)
+- Release notes: [`docs/releases/v0.5.1.md`](/C:/Users/decoy/sessionguard-win11/docs/releases/v0.5.1.md)

@@ -269,6 +269,25 @@
                                        AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.PolicyApprovalText}"
                                        Text="{Binding PolicyApprovalText}"
                                        TextWrapping="Wrap" />
+                            <TextBlock Margin="0,8,0,0"
+                                       Foreground="{StaticResource SecondaryTextBrush}"
+                                       AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.PolicyDiagnosticsText}"
+                                       Text="{Binding PolicyDiagnosticsText}"
+                                       TextWrapping="Wrap" />
+
+                            <ItemsControl Margin="0,10,0,0" ItemsSource="{Binding PolicyValidationIssues}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Margin="0,0,0,6"
+                                                   Foreground="{StaticResource SecondaryTextBrush}"
+                                                   TextWrapping="Wrap">
+                                            <Run FontWeight="SemiBold" Text="{Binding SeverityLabel}" />
+                                            <Run Text=": " />
+                                            <Run Text="{Binding DisplayText}" />
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
 
                             <WrapPanel Margin="0,12,0,0">
                                 <Button Style="{StaticResource PrimaryActionButtonStyle}"
@@ -305,10 +324,26 @@
                                             <DataTemplate>
                                                 <TextBlock Text="{Binding Reason}" TextWrapping="Wrap" />
                                             </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
-                                </DataGrid.Columns>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
                             </DataGrid>
+
+                            <TextBlock Margin="0,16,0,0"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource SecondaryTextBrush}"
+                                       Text="Evaluation trace" />
+                            <ItemsControl Margin="0,8,0,0" ItemsSource="{Binding PolicyEvaluationTraceItems}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Margin="0,0,0,8"
+                                                   Foreground="{StaticResource PrimaryTextBrush}"
+                                                   Text="{Binding}"
+                                                   TextWrapping="Wrap" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </StackPanel>
                     </Border>
 

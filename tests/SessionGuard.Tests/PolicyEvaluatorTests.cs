@@ -94,6 +94,106 @@ public sealed class PolicyEvaluatorTests
     }
 
     [Fact]
+    public void Evaluate_UsesHighestPrecedenceApprovalWindow_WhenMultipleApprovalRulesMatch()
+    {
+        var configuration = new PolicyConfiguration
+        {
+            DefaultApprovalWindowMinutes = 60,
+            Rules = new[]
+            {
+                new PolicyRuleDefinition
+                {
+                    Id = "approval-high-precedence",
+                    Title = "Short approval",
+                    Kind = PolicyRuleKind.ApprovalRequired,
+                    Priority = 10,
+                    MatchWhenRestartPendingOnly = true,
+                    MinimumRiskLevel = RestartRiskLevel.Elevated,
+                    ApprovalWindowMinutes = 45
+                },
+                new PolicyRuleDefinition
+                {
+                    Id = "approval-low-precedence",
+                    Title = "Long approval",
+                    Kind = PolicyRuleKind.ApprovalRequired,
+                    Priority = 20,
+                    MatchWhenRestartPendingOnly = true,
+                    MinimumRiskLevel = RestartRiskLevel.Elevated,
+                    ApprovalWindowMinutes = 90
+                }
+            }
+        }.Normalize();
+
+        var evaluation = PolicyEvaluator.Evaluate(
+            configuration,
+            PolicyApprovalState.None,
+            CreateContext(restartPending: true, riskLevel: RestartRiskLevel.High));
+
+        Assert.Equal(PolicyDecisionType.ApprovalRequired, evaluation.Decision);
+        Assert.Equal(45, evaluation.RecommendedApprovalWindowMinutes);
+        Assert.Contains(evaluation.EvaluationTrace, trace => trace.Contains("Approval window conflict", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Evaluate_ExplainsBlockingRulesOverrideApprovalRules()
+    {
+        var configuration = new PolicyConfiguration
+        {
+            Rules = new[]
+            {
+                new PolicyRuleDefinition
+                {
+                    Id = "block-terminal-sessions",
+                    Title = "Never restart while terminals are running",
+                    Kind = PolicyRuleKind.ProcessBlock,
+                    ProcessNames = new[] { "pwsh.exe" },
+                    MinimumInstances = 1
+                },
+                new PolicyRuleDefinition
+                {
+                    Id = "approval-required-high-risk",
+                    Title = "Approval required for high risk",
+                    Kind = PolicyRuleKind.ApprovalRequired,
+                    MinimumRiskLevel = RestartRiskLevel.Elevated,
+                    ApprovalWindowMinutes = 45
+                }
+            }
+        }.Normalize();
+
+        var evaluation = PolicyEvaluator.Evaluate(
+            configuration,
+            PolicyApprovalState.None,
+            CreateContext(restartPending: false, riskLevel: RestartRiskLevel.High));
+
+        Assert.Equal(PolicyDecisionType.RestartBlocked, evaluation.Decision);
+        Assert.Contains(evaluation.EvaluationTrace, trace => trace.Contains("take precedence", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Evaluate_SurfacesValidationErrors_WhenConfigurationLoadFailed()
+    {
+        var configuration = new PolicyConfiguration
+        {
+            Enabled = false
+        }.Normalize();
+
+        var validation = PolicyConfigurationValidator.BuildLoadFailure(
+            "config\\policies.json",
+            "Expected StartObject token.");
+        var evaluation = PolicyEvaluator.Evaluate(
+            configuration,
+            PolicyApprovalState.None,
+            CreateContext(),
+            validation);
+
+        Assert.Equal(PolicyDecisionType.None, evaluation.Decision);
+        Assert.True(evaluation.Validation.HasErrors);
+        Assert.Contains("unavailable", evaluation.Summary, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(evaluation.EvaluationTrace, trace => trace.Contains("policy-load-failed", StringComparison.OrdinalIgnoreCase) ||
+                                                             trace.Contains("policies.json", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public void Normalize_SortsRulesDeterministically()
     {
         var configuration = new PolicyConfiguration
