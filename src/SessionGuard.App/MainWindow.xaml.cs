@@ -1,13 +1,10 @@
 using System.ComponentModel;
 using System.Drawing;
 using System.Windows;
+using SessionGuard.App.Automation;
 using SessionGuard.App.ViewModels;
 using SessionGuard.Core.Services;
-using SessionGuard.Infrastructure.Configuration;
-using SessionGuard.Infrastructure.ControlPlane;
-using SessionGuard.Infrastructure.Diagnostics;
 using SessionGuard.Infrastructure.Environment;
-using SessionGuard.Infrastructure.Services;
 using Forms = System.Windows.Forms;
 
 namespace SessionGuard.App;
@@ -15,48 +12,18 @@ namespace SessionGuard.App;
 public partial class MainWindow : Window
 {
     private readonly MainWindowViewModel _viewModel;
-    private readonly Forms.NotifyIcon _notifyIcon;
+    private readonly bool _useTrayIcon;
+    private readonly Forms.NotifyIcon? _notifyIcon;
     private bool _exitRequested;
 
-    public MainWindow()
+    internal MainWindow(
+        MainWindowViewModel viewModel,
+        bool useTrayIcon)
     {
         InitializeComponent();
-
-        var runtimePaths = RuntimePaths.Discover(AppContext.BaseDirectory);
-        var logger = new FileAppLogger(runtimePaths, "app");
-        var snapshotStore = new JsonScanSnapshotStore(runtimePaths);
-        var configurationRepository = new JsonConfigurationRepository(runtimePaths);
-        var mitigationService = new WindowsMitigationService(runtimePaths, logger);
-        var coordinator = new SessionGuardCoordinator(
-            configurationRepository,
-            new ProcessInventoryService(),
-            new IRestartSignalProvider[]
-            {
-                new RegistryRestartSignalProvider(),
-                new WindowsUpdateAgentSignalProvider(),
-                new WindowsUpdateUxSettingsSignalProvider(),
-                new WindowsUpdateScheduledTaskSignalProvider()
-            },
-            mitigationService,
-            logger);
-
-        var localControlPlane = new LocalSessionGuardControlPlane(
-            coordinator,
-            configurationRepository,
-            mitigationService,
-            snapshotStore);
-        var remoteControlPlane = new NamedPipeSessionGuardControlPlane();
-        var controlPlane = new HybridSessionGuardControlPlane(
-            remoteControlPlane,
-            localControlPlane,
-            logger);
-
-        _viewModel = new MainWindowViewModel(
-            controlPlane,
-            configurationRepository,
-            logger,
-            runtimePaths);
-        _notifyIcon = CreateNotifyIcon();
+        _viewModel = viewModel;
+        _useTrayIcon = useTrayIcon;
+        _notifyIcon = _useTrayIcon ? CreateNotifyIcon() : null;
 
         _viewModel.AttentionRequested += HandleAttentionRequested;
         DataContext = _viewModel;
@@ -78,7 +45,7 @@ public partial class MainWindow : Window
 
     private void OnClosing(object? sender, CancelEventArgs e)
     {
-        if (_exitRequested)
+        if (_exitRequested || !_useTrayIcon)
         {
             return;
         }
@@ -91,13 +58,16 @@ public partial class MainWindow : Window
     {
         _viewModel.AttentionRequested -= HandleAttentionRequested;
         _viewModel.Dispose();
-        _notifyIcon.Visible = false;
-        _notifyIcon.Dispose();
+        if (_notifyIcon is not null)
+        {
+            _notifyIcon.Visible = false;
+            _notifyIcon.Dispose();
+        }
     }
 
     private void OnStateChanged(object? sender, EventArgs e)
     {
-        if (WindowState == WindowState.Minimized)
+        if (_useTrayIcon && WindowState == WindowState.Minimized)
         {
             HideToTray(showBalloon: false);
         }
@@ -105,7 +75,7 @@ public partial class MainWindow : Window
 
     private void HandleAttentionRequested(object? sender, EventArgs e)
     {
-        if (!IsVisible || WindowState == WindowState.Minimized)
+        if (_useTrayIcon && _notifyIcon is not null && (!IsVisible || WindowState == WindowState.Minimized))
         {
             _notifyIcon.BalloonTipTitle = "SessionGuard";
             _notifyIcon.BalloonTipText = "High restart risk detected. Open the dashboard to review the current status.";
@@ -142,6 +112,11 @@ public partial class MainWindow : Window
 
     private void HideToTray(bool showBalloon)
     {
+        if (!_useTrayIcon || _notifyIcon is null)
+        {
+            return;
+        }
+
         ShowInTaskbar = false;
         Hide();
 
@@ -155,6 +130,11 @@ public partial class MainWindow : Window
 
     private void ShowFromTray()
     {
+        if (!_useTrayIcon)
+        {
+            return;
+        }
+
         Show();
         ShowInTaskbar = true;
         WindowState = WindowState.Normal;

@@ -3,7 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:automation="clr-namespace:SessionGuard.Core.Automation;assembly=SessionGuard.Core"
         mc:Ignorable="d"
+        AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.MainWindow}"
         Title="SessionGuard"
         Width="1260"
         Height="860"
@@ -31,9 +33,11 @@
 
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Style="{StaticResource PrimaryActionButtonStyle}"
+                            AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.ScanNowButton}"
                             Command="{Binding ScanNowCommand}"
                             Content="Scan now" />
                     <Button Style="{StaticResource SecondaryActionButtonStyle}"
+                            AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.WindowsUpdateOptionsButton}"
                             Command="{Binding OpenWindowsUpdateSettingsCommand}"
                             Content="Windows Update options" />
                 </StackPanel>
@@ -61,15 +65,18 @@
                                 <TextBlock FontSize="18"
                                            FontWeight="SemiBold"
                                            Foreground="White"
+                                           AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.CurrentStatusText}"
                                            Text="{Binding CurrentStatusText}" />
                             </Border>
 
                             <TextBlock Margin="0,14,0,0"
                                        Foreground="{StaticResource PrimaryTextBrush}"
+                                       AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.StatusSummaryText}"
                                        Text="{Binding StatusSummary}"
                                        TextWrapping="Wrap" />
                             <TextBlock Margin="0,10,0,0"
                                        Foreground="{StaticResource SecondaryTextBrush}"
+                                       AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.SignalOverviewText}"
                                        Text="{Binding SignalOverviewText}"
                                        TextWrapping="Wrap" />
                             <TextBlock Margin="0,6,0,0"
@@ -78,6 +85,7 @@
                                        TextWrapping="Wrap" />
                             <TextBlock Margin="0,6,0,0"
                                        Foreground="{StaticResource SecondaryTextBrush}"
+                                       AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.ConnectionModeText}"
                                        Text="{Binding ConnectionModeText}"
                                        TextWrapping="Wrap" />
 
@@ -92,6 +100,8 @@
                                                    FontSize="16"
                                                    FontWeight="SemiBold"
                                                    Foreground="{Binding RiskBrush}"
+                                                   AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.RestartRiskText}"
+                                                   TextWrapping="Wrap"
                                                    Text="{Binding RestartRiskText}" />
                                     </StackPanel>
                                 </Border>
@@ -105,6 +115,8 @@
                                                    FontSize="16"
                                                    FontWeight="SemiBold"
                                                    Foreground="{StaticResource PrimaryTextBrush}"
+                                                   AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.ProtectionModeText}"
+                                                   TextWrapping="Wrap"
                                                    Text="{Binding ProtectionModeText}" />
                                     </StackPanel>
                                 </Border>
@@ -118,6 +130,8 @@
                                                    FontSize="16"
                                                    FontWeight="SemiBold"
                                                    Foreground="{StaticResource PrimaryTextBrush}"
+                                                   AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.PendingRestartText}"
+                                                   TextWrapping="Wrap"
                                                    Text="{Binding PendingRestartText}" />
                                     </StackPanel>
                                 </Border>
@@ -131,6 +145,8 @@
                                                    FontSize="16"
                                                    FontWeight="SemiBold"
                                                    Foreground="{StaticResource PrimaryTextBrush}"
+                                                   AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.AdminAccessText}"
+                                                   TextWrapping="Wrap"
                                                    Text="{Binding AdminAccessText}" />
                                     </StackPanel>
                                 </Border>
@@ -150,14 +166,17 @@
                                        TextWrapping="Wrap" />
                             <TextBlock Margin="0,6,0,0"
                                        Foreground="{StaticResource SecondaryTextBrush}"
+                                       AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.WorkspaceSummaryText}"
                                        Text="{Binding WorkspaceSummaryText}"
                                        TextWrapping="Wrap" />
                             <TextBlock Margin="0,6,0,0"
                                        Foreground="{StaticResource SecondaryTextBrush}"
+                                       AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.WorkspaceConfidenceText}"
                                        Text="{Binding WorkspaceConfidenceText}"
                                        TextWrapping="Wrap" />
                             <TextBlock Margin="0,6,0,0"
                                        Foreground="{StaticResource SecondaryTextBrush}"
+                                       AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.WorkspaceSnapshotText}"
                                        Text="{Binding WorkspaceSnapshotText}"
                                        TextWrapping="Wrap" />
                             <TextBlock Margin="0,12,0,0"
@@ -229,6 +248,7 @@
                                        Foreground="{StaticResource SecondaryTextBrush}"
                                        Text="Workspace safety signals" />
                             <DataGrid Margin="0,14,0,0"
+                                      AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.WorkspaceRiskGrid}"
                                       AutoGenerateColumns="False"
                                       CanUserAddRows="False"
                                       HeadersVisibility="Column"
@@ -236,11 +256,17 @@
                                       ItemsSource="{Binding WorkspaceRiskItems}">
                                 <DataGrid.Columns>
                                     <DataGridTextColumn Width="200" Binding="{Binding Title}" Header="Group" />
-                                    <DataGridTextColumn Width="120" Binding="{Binding Category}" Header="Category" />
+                                    <DataGridTextColumn Width="120" Binding="{Binding CategoryLabel}" Header="Category" />
                                     <DataGridTextColumn Width="110" Binding="{Binding Severity}" Header="Severity" />
                                     <DataGridTextColumn Width="110" Binding="{Binding Confidence}" Header="Confidence" />
                                     <DataGridTextColumn Width="90" Binding="{Binding InstanceCount}" Header="Instances" />
-                                    <DataGridTextColumn Width="*" Binding="{Binding ProcessSummary}" Header="Processes" />
+                                    <DataGridTemplateColumn Width="*" Header="Processes">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding ProcessSummary}" TextWrapping="Wrap" />
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
                                 </DataGrid.Columns>
                             </DataGrid>
 
@@ -264,6 +290,7 @@
                                        Foreground="{StaticResource SecondaryTextBrush}"
                                        Text="Protected process matches" />
                             <DataGrid Margin="0,14,0,0"
+                                      AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.ProtectedProcessesGrid}"
                                       AutoGenerateColumns="False"
                                       CanUserAddRows="False"
                                       HeadersVisibility="Column"
@@ -284,6 +311,7 @@
                                        Foreground="{StaticResource SecondaryTextBrush}"
                                        Text="Restart indicators" />
                             <DataGrid Margin="0,14,0,0"
+                                      AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.RestartIndicatorsGrid}"
                                       AutoGenerateColumns="False"
                                       CanUserAddRows="False"
                                       HeadersVisibility="Column"
@@ -321,6 +349,7 @@
                                        Foreground="{StaticResource SecondaryTextBrush}"
                                        Text="Managed mitigation state" />
                             <DataGrid Margin="0,14,0,0"
+                                      AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.ManagedMitigationsGrid}"
                                       AutoGenerateColumns="False"
                                       CanUserAddRows="False"
                                       HeadersVisibility="Column"

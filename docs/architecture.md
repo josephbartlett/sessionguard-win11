@@ -14,26 +14,27 @@ WPF was chosen over WinUI for the MVP because the priority is a stable desktop m
 ## Runtime flow
 
 1. The app and service resolve runtime paths from the repository root or executable location.
-2. The service host owns the authoritative background scan loop and named-pipe control plane when it is running.
-3. The desktop app creates a hybrid control plane:
+2. The desktop app can also boot in a deterministic `--ui-scenario <name>` mode for screenshot automation and UI smoke validation.
+3. The service host owns the authoritative background scan loop and named-pipe control plane when it is running.
+4. The desktop app creates a hybrid control plane:
    - prefer the service over named pipes
    - fall back to a local in-process scan path if the service is unavailable
-4. The configuration repository loads:
+5. The configuration repository loads:
    - [`config/appsettings.json`](/C:/Users/decoy/sessionguard-win11/config/appsettings.json)
    - [`config/protected-processes.json`](/C:/Users/decoy/sessionguard-win11/config/protected-processes.json)
-5. The coordinator runs a scan:
+6. The coordinator runs a scan:
    - protected-process detection
    - workspace-risk heuristic analysis using protected-tool matches plus bounded runtime-process clues
    - restart signal inspection across multiple providers
    - mitigation state inspection
-6. Core logic aggregates the signals into:
+7. Core logic aggregates the signals into:
    - `Safe`
    - `Restart Pending`
    - `Protected Session Active`
    - `Mitigated / Deferred`
    - `Unknown / Limited Visibility`
-7. The service or local fallback path persists `state/current-scan.json`; when workspace risk is present it also writes `state/workspace-snapshot.json`, and the WPF view model updates the dashboard.
-8. When guard mode is enabled, the WPF shell can raise the dashboard on a high-risk transition and otherwise stay minimized in the tray.
+8. The service or local fallback path persists `state/current-scan.json`; when workspace risk is present it also writes `state/workspace-snapshot.json`, and the WPF view model updates the dashboard.
+9. When guard mode is enabled, the WPF shell can raise the dashboard on a high-risk transition and otherwise stay minimized in the tray.
 
 ## Restart signal inspection
 
@@ -138,6 +139,16 @@ The desktop app and service now write to separate files:
 The service also persists `state/service-health.json` so operator tooling can read current startup and error state directly.
 
 This keeps the MVP auditable without introducing a full telemetry stack.
+
+## UI smoke automation
+
+The repo now includes a deterministic UI smoke path for WPF review:
+
+- `SessionGuard.App` can boot in scenario mode with tray behavior disabled
+- `tests/SessionGuard.UiSmoke` launches the real app executable, validates named UI elements through Windows UI Automation, and captures screenshots
+- `scripts/ui/Run-UiSmoke.ps1` builds the solution and writes screenshots to `artifacts/ui/smoke`
+
+This gives the repo a repeatable way to catch layout regressions, missing controls, and obviously bad UI states before a human manual pass.
 
 ## Extension points
 

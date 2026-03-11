@@ -4,6 +4,10 @@ All notable changes to this project should be recorded here in reverse chronolog
 
 ## Unreleased
 
+- Added deterministic WPF UI smoke scenarios plus a scenario-backed app startup path for automation and screenshot capture.
+- Added `tests/SessionGuard.UiSmoke` and `scripts/ui/Run-UiSmoke.ps1` so the app can be launched, checked, and screenshotted without manual desktop setup.
+- Added stable automation IDs to the WPF dashboard and screenshot artifacts under `artifacts/ui/smoke`.
+- Tightened a few visible UI issues found by the new smoke pass, including clipped metric text and raw enum labels leaking into the workspace table.
 - Added a separate workspace-risk model with grouped heuristics for terminals, editors, browsers, local dev-server style runtimes, and generic protected tools.
 - Tightened standalone runtime heuristics so lone runtime processes surface as elevated risk instead of automatically high risk.
 - Added advisory workspace metadata persistence at `state/workspace-snapshot.json` alongside the existing scan snapshot.

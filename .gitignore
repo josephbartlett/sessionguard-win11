@@ -16,6 +16,7 @@ state/
 
 # Packaging
 artifacts/*.zip
+artifacts/ui/
 artifacts/publish/
 artifacts/staging/
 

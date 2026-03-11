@@ -41,6 +41,7 @@ SessionGuard does not guarantee prevention of every OS-driven restart path, and 
 - Advisory workspace metadata snapshot at `state/workspace-snapshot.json` when workspace-risk heuristics are active.
 - Separate app and service logs under `logs/`.
 - Unit tests for process matching, workspace heuristics, status aggregation, snapshot persistence, control-plane behavior, and IPC compatibility checks.
+- Deterministic WPF UI smoke automation with screenshot capture under `artifacts/ui/smoke`.
 
 ## Repo layout
 
@@ -49,6 +50,7 @@ SessionGuard does not guarantee prevention of every OS-driven restart path, and 
 - [`src/SessionGuard.Infrastructure`](/C:/Users/decoy/sessionguard-win11/src/SessionGuard.Infrastructure) contains Windows-specific config, logging, registry inspection, and mitigation code.
 - [`src/SessionGuard.Service`](/C:/Users/decoy/sessionguard-win11/src/SessionGuard.Service) contains the service-hostable background worker foundation.
 - [`tests/SessionGuard.Tests`](/C:/Users/decoy/sessionguard-win11/tests/SessionGuard.Tests) contains the unit tests.
+- [`tests/SessionGuard.UiSmoke`](/C:/Users/decoy/sessionguard-win11/tests/SessionGuard.UiSmoke) contains the WPF UI smoke runner and screenshot capture tool.
 - [`docs`](/C:/Users/decoy/sessionguard-win11/docs) contains product, architecture, limitations, roadmap, and future-service notes.
 
 ## Build and run
@@ -90,6 +92,12 @@ Run tests:
 
 ```powershell
 dotnet test SessionGuard.sln
+```
+
+Run the deterministic UI smoke and screenshot pass:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/ui/Run-UiSmoke.ps1
 ```
 
 Package the release ZIP:
@@ -158,25 +166,28 @@ src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe probe
 - The latest scan snapshot is written to `state/current-scan.json` for future background-service or tray-client consumption.
 - When workspace-risk heuristics are active, advisory metadata is also written to `state/workspace-snapshot.json`.
 - The service health snapshot is written to `state/service-health.json` so status tooling can show startup, scan, and control-plane health without scraping logs.
+- UI smoke screenshots and the smoke summary are written to `artifacts/ui/smoke/`.
 
 ## Manual review checklist
 
-1. Build the solution and launch the app in a normal PowerShell session.
-2. Confirm the dashboard renders current status, risk, workspace safety signals, restart indicators, protected process matches, and mitigation state.
-3. Confirm the restart indicator table shows multiple providers and that the pending-restart field can read `Pending`, `Not detected`, or `Ambiguous / review signals` depending on the signal mix.
-4. Start a protected tool such as Windows Terminal or VS Code and confirm the dashboard detects it on the next scan or after pressing `Scan now`.
-5. Edit [`config/protected-processes.json`](/C:/Users/decoy/sessionguard-win11/config/protected-processes.json), save the file, and verify the next scan uses the updated list.
-6. Launch the app from an elevated shell, apply the recommended mitigation, and confirm the mitigation state changes to applied.
-7. Reset managed settings and verify the app reports the reverted state.
-8. Review the latest file under `logs/` and confirm scans, detections, mitigation attempts, and failures are recorded.
-9. Run the service project, then launch the desktop app and confirm the dashboard reports `Control plane: Service`.
-10. Run `src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe probe` and confirm it prints JSON status while the service path is running.
-11. Run `powershell -ExecutionPolicy Bypass -File scripts/service/Get-SessionGuardServiceStatus.ps1` and confirm it reports both control-plane reachability and health snapshot details.
-12. Run `powershell -ExecutionPolicy Bypass -File scripts/service/Install-SessionGuardService.ps1 -ValidateOnly` and confirm it reports install readiness or a clear elevation requirement without changing the machine.
-13. Run `powershell -ExecutionPolicy Bypass -File scripts/service/Validate-SessionGuardPublishedLayout.ps1` and confirm the published layout works outside the repo root.
-14. Minimize or close the dashboard window and confirm SessionGuard remains available in the notification area.
-15. Start a protected terminal, browser, or editor session and confirm the workspace safety table explains why the session is considered risky.
-16. Inspect `state/current-scan.json`, `state/workspace-snapshot.json`, and `state/service-health.json` and confirm the latest status is serialized by the service or local fallback path.
+1. Run `powershell -ExecutionPolicy Bypass -File scripts/ui/Run-UiSmoke.ps1`.
+2. Inspect the screenshots under `artifacts/ui/smoke/` and confirm the scenarios render without clipped text, broken layout, or missing sections.
+3. Build the solution and launch the app in a normal PowerShell session.
+4. Confirm the dashboard renders current status, risk, workspace safety signals, restart indicators, protected process matches, and mitigation state.
+5. Confirm the restart indicator table shows multiple providers and that the pending-restart field can read `Pending`, `Not detected`, or `Ambiguous / review signals` depending on the signal mix.
+6. Start a protected tool such as Windows Terminal or VS Code and confirm the dashboard detects it on the next scan or after pressing `Scan now`.
+7. Edit [`config/protected-processes.json`](/C:/Users/decoy/sessionguard-win11/config/protected-processes.json), save the file, and verify the next scan uses the updated list.
+8. Launch the app from an elevated shell, apply the recommended mitigation, and confirm the mitigation state changes to applied.
+9. Reset managed settings and verify the app reports the reverted state.
+10. Review the latest file under `logs/` and confirm scans, detections, mitigation attempts, and failures are recorded.
+11. Run the service project, then launch the desktop app and confirm the dashboard reports `Control plane: Service`.
+12. Run `src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe probe` and confirm it prints JSON status while the service path is running.
+13. Run `powershell -ExecutionPolicy Bypass -File scripts/service/Get-SessionGuardServiceStatus.ps1` and confirm it reports both control-plane reachability and health snapshot details.
+14. Run `powershell -ExecutionPolicy Bypass -File scripts/service/Install-SessionGuardService.ps1 -ValidateOnly` and confirm it reports install readiness or a clear elevation requirement without changing the machine.
+15. Run `powershell -ExecutionPolicy Bypass -File scripts/service/Validate-SessionGuardPublishedLayout.ps1` and confirm the published layout works outside the repo root.
+16. Minimize or close the dashboard window and confirm SessionGuard remains available in the notification area.
+17. Start a protected terminal, browser, or editor session and confirm the workspace safety table explains why the session is considered risky.
+18. Inspect `state/current-scan.json`, `state/workspace-snapshot.json`, and `state/service-health.json` and confirm the latest status is serialized by the service or local fallback path.
 
 ## What the MVP does not do
 
