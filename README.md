@@ -237,4 +237,4 @@ src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe clear
 - Roadmap: [`docs/roadmap.md`](/C:/Users/decoy/sessionguard-win11/docs/roadmap.md)
 - Workspace safety plan: [`docs/plans/v0.4.0-workspace-safety-plan.md`](/C:/Users/decoy/sessionguard-win11/docs/plans/v0.4.0-workspace-safety-plan.md)
 - Future service design: [`docs/future-service-architecture.md`](/C:/Users/decoy/sessionguard-win11/docs/future-service-architecture.md)
-- Release notes: [`docs/releases/v0.4.2.md`](/C:/Users/decoy/sessionguard-win11/docs/releases/v0.4.2.md)
+- Release notes: [`docs/releases/v0.5.0.md`](/C:/Users/decoy/sessionguard-win11/docs/releases/v0.5.0.md)

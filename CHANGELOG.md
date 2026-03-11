@@ -4,6 +4,10 @@ All notable changes to this project should be recorded here in reverse chronolog
 
 ## Unreleased
 
+No unreleased changes yet.
+
+## 0.5.0 - 2026-03-11
+
 - Added a separate `config/policies.json` schema for restart windows, process or workspace restart blocks, and approval-required rules.
 - Added a new policy evaluation layer in `SessionGuard.Core` with deterministic rule ordering and matched-rule explanations.
 - Added persisted temporary restart approval state at `state/policy-approval.json` plus control-plane methods to grant or clear approval.

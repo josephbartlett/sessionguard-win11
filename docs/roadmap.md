@@ -68,6 +68,7 @@ Current status:
 - policy rules are now evaluated in the coordinator and surfaced in the dashboard
 - temporary approval windows are now persisted locally and exposed through the control plane
 - the WPF dashboard now exposes policy decision, matched rules, and approval grant or clear actions
+- the remaining release step is tag-and-push approval plus final release notes handoff
 
 Exit criteria:
 - users can define multiple policy rules with deterministic ordering
