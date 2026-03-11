@@ -80,7 +80,7 @@ public sealed class HybridSessionGuardControlPlane : ISessionGuardControlPlane
             ReportRemoteAvailability(true, null);
             return result;
         }
-        catch (Exception exception)
+        catch (SessionGuardControlPlaneUnavailableException exception)
         {
             ReportRemoteAvailability(false, exception);
             return await localAction(_local);

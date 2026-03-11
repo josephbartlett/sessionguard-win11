@@ -16,6 +16,7 @@ public sealed class SessionGuardServiceRuntime
 
     private SessionControlStatus? _currentStatus;
     private bool? _guardModeEnabled;
+    private bool _initialized;
 
     public SessionGuardServiceRuntime(
         SessionGuardCoordinator coordinator,
@@ -47,7 +48,7 @@ public sealed class SessionGuardServiceRuntime
             }
 
             var configuration = await _configurationRepository.LoadAsync(cancellationToken);
-            EnsureGuardModeInitialized(configuration);
+            await EnsureInitializedLockedAsync(configuration, cancellationToken);
             return await ScanLockedAsync(configuration, cancellationToken);
         }
         finally
@@ -63,7 +64,7 @@ public sealed class SessionGuardServiceRuntime
         try
         {
             var configuration = await _configurationRepository.LoadAsync(cancellationToken);
-            EnsureGuardModeInitialized(configuration);
+            await EnsureInitializedLockedAsync(configuration, cancellationToken);
             return await ScanLockedAsync(configuration, cancellationToken);
         }
         finally
@@ -79,6 +80,7 @@ public sealed class SessionGuardServiceRuntime
         try
         {
             var configuration = await _configurationRepository.LoadAsync(cancellationToken);
+            await EnsureInitializedLockedAsync(configuration, cancellationToken);
             _guardModeEnabled = enabled;
             _logger.Info("service.guard_mode.changed", new { enabled });
             return await ScanLockedAsync(configuration, cancellationToken);
@@ -96,7 +98,7 @@ public sealed class SessionGuardServiceRuntime
         try
         {
             var configuration = await _configurationRepository.LoadAsync(cancellationToken);
-            EnsureGuardModeInitialized(configuration);
+            await EnsureInitializedLockedAsync(configuration, cancellationToken);
             var result = await _mitigationService.ApplyRecommendedAsync(configuration, cancellationToken);
             await ScanLockedAsync(configuration, cancellationToken);
             return result;
@@ -114,7 +116,7 @@ public sealed class SessionGuardServiceRuntime
         try
         {
             var configuration = await _configurationRepository.LoadAsync(cancellationToken);
-            EnsureGuardModeInitialized(configuration);
+            await EnsureInitializedLockedAsync(configuration, cancellationToken);
             var result = await _mitigationService.ResetManagedAsync(configuration, cancellationToken);
             await ScanLockedAsync(configuration, cancellationToken);
             return result;
@@ -132,7 +134,7 @@ public sealed class SessionGuardServiceRuntime
         try
         {
             var configuration = await _configurationRepository.LoadAsync(cancellationToken);
-            EnsureGuardModeInitialized(configuration);
+            await EnsureInitializedLockedAsync(configuration, cancellationToken);
             var baselineStatus = await ScanLockedAsync(configuration, cancellationToken);
             var windowMinutes = baselineStatus.ScanResult.Policy.RecommendedApprovalWindowMinutes > 0
                 ? baselineStatus.ScanResult.Policy.RecommendedApprovalWindowMinutes
@@ -144,6 +146,7 @@ public sealed class SessionGuardServiceRuntime
             var status = await ScanLockedAsync(configuration, cancellationToken);
             return new PolicyApprovalCommandResult(
                 true,
+                false,
                 $"Granted a temporary restart approval window for {windowMinutes} minute(s).",
                 status.ScanResult.Policy);
         }
@@ -160,11 +163,12 @@ public sealed class SessionGuardServiceRuntime
         try
         {
             var configuration = await _configurationRepository.LoadAsync(cancellationToken);
-            EnsureGuardModeInitialized(configuration);
+            await EnsureInitializedLockedAsync(configuration, cancellationToken);
             await _policyApprovalStore.ClearAsync(cancellationToken);
             var status = await ScanLockedAsync(configuration, cancellationToken);
             return new PolicyApprovalCommandResult(
                 true,
+                false,
                 "Cleared the temporary restart approval window.",
                 status.ScanResult.Policy);
         }
@@ -174,9 +178,43 @@ public sealed class SessionGuardServiceRuntime
         }
     }
 
-    private void EnsureGuardModeInitialized(Core.Configuration.RuntimeConfiguration configuration)
+    public async Task InitializeAsync(CancellationToken cancellationToken = default)
+    {
+        await _gate.WaitAsync(cancellationToken);
+
+        try
+        {
+            var configuration = await _configurationRepository.LoadAsync(cancellationToken);
+            await EnsureInitializedLockedAsync(configuration, cancellationToken);
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    private async Task EnsureInitializedLockedAsync(
+        Core.Configuration.RuntimeConfiguration configuration,
+        CancellationToken cancellationToken)
     {
         _guardModeEnabled ??= configuration.AppSettings.GuardModeEnabledByDefault;
+
+        if (_initialized)
+        {
+            return;
+        }
+
+        var approvalState = await _policyApprovalStore.GetCurrentAsync(DateTimeOffset.Now, cancellationToken);
+        _logger.Info(
+            "service.policy_approval.recovered",
+            new
+            {
+                approvalState.IsActive,
+                approvalState.ExpiresAt,
+                approvalState.WindowMinutes
+            });
+        await _healthReporter.RecordApprovalRecoveryAsync(approvalState, cancellationToken);
+        _initialized = true;
     }
 
     private async Task<SessionControlStatus> ScanLockedAsync(

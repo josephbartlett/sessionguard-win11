@@ -6,6 +6,15 @@ All notable changes to this project should be recorded here in reverse chronolog
 
 No unreleased changes yet.
 
+## 0.5.2 - 2026-03-11
+
+- Tightened the control-plane boundary so mitigation writes and restart-approval changes are service-owned and no longer execute in local fallback.
+- Added explicit local-fallback messaging and disabled service-owned write actions in the WPF dashboard when the background service is unavailable.
+- Added a dedicated control-plane unavailable exception so the hybrid client only falls back on transport or availability failures, not on application-level service errors.
+- Bumped the local named-pipe protocol to `1.2` to reflect the updated action-result contract.
+- Added service startup approval-state recovery and persisted approval-recovery details into `state/service-health.json`.
+- Expanded tests for service-only actions, remote-application-failure handling, approval recovery, and the updated IPC payloads.
+
 ## 0.5.1 - 2026-03-11
 
 - Added policy configuration validation and diagnostics so malformed or conflicting `config/policies.json` content no longer fails the entire scan path.

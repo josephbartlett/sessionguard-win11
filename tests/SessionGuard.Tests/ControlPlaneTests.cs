@@ -13,7 +13,7 @@ public sealed class ControlPlaneTests
     public async Task HybridControlPlane_FallsBackToLocal_WhenRemoteFails()
     {
         var scanResult = CreateScanResult();
-        var remote = new ThrowingControlPlane();
+        var remote = new UnavailableControlPlane();
         var local = new StubControlPlane(
             new SessionControlStatus(scanResult, GuardModeEnabled: true, "Local fallback", IsRemote: false));
         var logger = new RecordingLogger();
@@ -48,6 +48,20 @@ public sealed class ControlPlaneTests
         Assert.Equal("Service", status.ConnectionMode);
         Assert.True(status.IsRemote);
         Assert.DoesNotContain(logger.Warnings, warning => warning.Contains("control_plane.remote.unavailable", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task HybridControlPlane_DoesNotFallbackToLocal_WhenRemoteReturnsApplicationFailure()
+    {
+        var remote = new ApplicationFailureControlPlane();
+        var local = new RecordingControlPlane(new SessionControlStatus(CreateScanResult(), GuardModeEnabled: true, "Local fallback", IsRemote: false));
+        var logger = new RecordingLogger();
+        var hybrid = new HybridSessionGuardControlPlane(remote, local, logger);
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => hybrid.ApplyRecommendedAsync());
+
+        Assert.Contains("service denied", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.False(local.ApplyRecommendedCalled);
     }
 
     [Fact]
@@ -90,7 +104,59 @@ public sealed class ControlPlaneTests
         Assert.Equal(PolicyDecisionType.ApprovalActive, status.ScanResult.Policy.Decision);
     }
 
-    private static SessionGuardServiceRuntime CreateRuntime(RecordingSnapshotStore snapshotStore)
+    [Fact]
+    public async Task LocalControlPlane_ServiceOwnedActionsReturnRequiresService()
+    {
+        var local = CreateLocalControlPlane();
+
+        var mitigation = await local.ApplyRecommendedAsync();
+        var approval = await local.GrantRestartApprovalAsync();
+
+        Assert.False(mitigation.Success);
+        Assert.True(mitigation.RequiresService);
+        Assert.False(approval.Success);
+        Assert.True(approval.RequiresService);
+    }
+
+    [Fact]
+    public async Task ServiceRuntime_InitializeAsync_RecordsRecoveredApprovalState()
+    {
+        var snapshotStore = new RecordingSnapshotStore();
+        var now = DateTimeOffset.Now;
+        var approvalStore = new InMemoryPolicyApprovalStore
+        {
+            Current = new PolicyApprovalState(
+                IsActive: true,
+                GrantedAt: now,
+                ExpiresAt: now.AddMinutes(45),
+                WindowMinutes: 45)
+        };
+        var runtimeRoot = Path.Combine(Path.GetTempPath(), "SessionGuard.Tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(runtimeRoot);
+        var logger = new RecordingLogger();
+        var healthReporter = new SessionGuardServiceHealthReporter(
+            RuntimePaths.Discover(runtimeRoot),
+            logger);
+        var runtime = CreateRuntime(snapshotStore, approvalStore, logger, healthReporter);
+
+        await runtime.InitializeAsync();
+
+        await using var stream = File.OpenRead(healthReporter.HealthPath);
+        var snapshot = await System.Text.Json.JsonSerializer.DeserializeAsync<ServiceHealthSnapshot>(
+            stream,
+            Infrastructure.Serialization.SessionGuardJson.Default);
+
+        Assert.NotNull(snapshot);
+        Assert.True(snapshot!.ApprovalWindowActive);
+        Assert.Equal(45, snapshot.ApprovalWindowMinutes);
+        Assert.NotNull(snapshot.ApprovalStateRecoveredAt);
+    }
+
+    private static SessionGuardServiceRuntime CreateRuntime(
+        RecordingSnapshotStore snapshotStore,
+        InMemoryPolicyApprovalStore? approvalStore = null,
+        RecordingLogger? logger = null,
+        SessionGuardServiceHealthReporter? healthReporter = null)
     {
         var configuration = new RuntimeConfiguration(
             new AppSettings
@@ -122,15 +188,19 @@ public sealed class ControlPlaneTests
             "config\\appsettings.json",
             "config\\protected-processes.json",
             "config\\policies.json");
-        var logger = new RecordingLogger();
+        logger ??= new RecordingLogger();
         var configurationRepository = new StubConfigurationRepository(configuration);
         var mitigationService = new StubMitigationService();
-        var approvalStore = new InMemoryPolicyApprovalStore();
-        var runtimeRoot = Path.Combine(Path.GetTempPath(), "SessionGuard.Tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(runtimeRoot);
-        var healthReporter = new SessionGuardServiceHealthReporter(
-            RuntimePaths.Discover(runtimeRoot),
-            logger);
+        approvalStore ??= new InMemoryPolicyApprovalStore();
+
+        if (healthReporter is null)
+        {
+            var runtimeRoot = Path.Combine(Path.GetTempPath(), "SessionGuard.Tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(runtimeRoot);
+            healthReporter = new SessionGuardServiceHealthReporter(
+                RuntimePaths.Discover(runtimeRoot),
+                logger);
+        }
 
         return new SessionGuardServiceRuntime(
             new SessionGuardCoordinator(
@@ -169,6 +239,74 @@ public sealed class ControlPlaneTests
             logger);
     }
 
+    private static LocalSessionGuardControlPlane CreateLocalControlPlane()
+    {
+        var configuration = new RuntimeConfiguration(
+            new AppSettings
+            {
+                GuardModeEnabledByDefault = true,
+                ScanIntervalSeconds = 30
+            }.Normalize(),
+            new ProtectedProcessCatalog
+            {
+                ProcessNames = new[] { "pwsh.exe" }
+            }.Normalize(),
+            new PolicyConfiguration
+            {
+                DefaultApprovalWindowMinutes = 45,
+                Rules = new[]
+                {
+                    new PolicyRuleDefinition
+                    {
+                        Id = "approval-required-restart-pending",
+                        Title = "Approval required for restart-pending states",
+                        Kind = PolicyRuleKind.ApprovalRequired,
+                        MatchWhenRestartPendingOnly = true,
+                        MinimumRiskLevel = RestartRiskLevel.Elevated,
+                        ApprovalWindowMinutes = 45
+                    }
+                }
+            }.Normalize(),
+            "config",
+            "config\\appsettings.json",
+            "config\\protected-processes.json",
+            "config\\policies.json");
+        var configurationRepository = new StubConfigurationRepository(configuration);
+        var mitigationService = new StubMitigationService();
+        var approvalStore = new InMemoryPolicyApprovalStore();
+        var snapshotStore = new RecordingSnapshotStore();
+
+        return new LocalSessionGuardControlPlane(
+            new SessionGuardCoordinator(
+                configurationRepository,
+                new StubWorkspaceDetector(
+                    new WorkspaceProcessObservation(
+                        new[] { new ProtectedProcessMatch("pwsh.exe", 1) },
+                        new[] { new ObservedProcessInfo("pwsh.exe", 1) })),
+                new IRestartSignalProvider[]
+                {
+                    new StubRestartSignalProvider(
+                        "stub",
+                        new[]
+                        {
+                            new RestartIndicator(
+                                "stub",
+                                "Pending reboot",
+                                RestartIndicatorCategory.PendingRestart,
+                                true,
+                                "Pending reboot detected.",
+                                SignalConfidence.High)
+                        })
+                },
+                mitigationService,
+                approvalStore,
+                new RecordingLogger()),
+            configurationRepository,
+            mitigationService,
+            approvalStore,
+            snapshotStore);
+    }
+
     private static SessionScanResult CreateScanResult()
     {
         return new SessionScanResult(
@@ -191,10 +329,10 @@ public sealed class ControlPlaneTests
             new[] { "No action required." });
     }
 
-    private sealed class ThrowingControlPlane : ISessionGuardControlPlane
+    private sealed class UnavailableControlPlane : ISessionGuardControlPlane
     {
         public Task<SessionControlStatus> GetStatusAsync(CancellationToken cancellationToken = default)
-            => Task.FromException<SessionControlStatus>(new InvalidOperationException("Service unavailable"));
+            => Task.FromException<SessionControlStatus>(new SessionGuardControlPlaneUnavailableException("Service unavailable"));
 
         public Task<SessionControlStatus> ScanNowAsync(CancellationToken cancellationToken = default)
             => GetStatusAsync(cancellationToken);
@@ -203,19 +341,43 @@ public sealed class ControlPlaneTests
             => GetStatusAsync(cancellationToken);
 
         public Task<MitigationCommandResult> ApplyRecommendedAsync(CancellationToken cancellationToken = default)
-            => Task.FromException<MitigationCommandResult>(new InvalidOperationException("Service unavailable"));
+            => Task.FromException<MitigationCommandResult>(new SessionGuardControlPlaneUnavailableException("Service unavailable"));
 
         public Task<MitigationCommandResult> ResetManagedAsync(CancellationToken cancellationToken = default)
-            => Task.FromException<MitigationCommandResult>(new InvalidOperationException("Service unavailable"));
+            => Task.FromException<MitigationCommandResult>(new SessionGuardControlPlaneUnavailableException("Service unavailable"));
 
         public Task<PolicyApprovalCommandResult> GrantRestartApprovalAsync(CancellationToken cancellationToken = default)
-            => Task.FromException<PolicyApprovalCommandResult>(new InvalidOperationException("Service unavailable"));
+            => Task.FromException<PolicyApprovalCommandResult>(new SessionGuardControlPlaneUnavailableException("Service unavailable"));
 
         public Task<PolicyApprovalCommandResult> ClearRestartApprovalAsync(CancellationToken cancellationToken = default)
-            => Task.FromException<PolicyApprovalCommandResult>(new InvalidOperationException("Service unavailable"));
+            => Task.FromException<PolicyApprovalCommandResult>(new SessionGuardControlPlaneUnavailableException("Service unavailable"));
     }
 
-    private sealed class StubControlPlane : ISessionGuardControlPlane
+    private sealed class ApplicationFailureControlPlane : ISessionGuardControlPlane
+    {
+        public Task<SessionControlStatus> GetStatusAsync(CancellationToken cancellationToken = default)
+            => Task.FromException<SessionControlStatus>(new InvalidOperationException("Service denied status request."));
+
+        public Task<SessionControlStatus> ScanNowAsync(CancellationToken cancellationToken = default)
+            => Task.FromException<SessionControlStatus>(new InvalidOperationException("Service denied scan request."));
+
+        public Task<SessionControlStatus> SetGuardModeAsync(bool enabled, CancellationToken cancellationToken = default)
+            => Task.FromException<SessionControlStatus>(new InvalidOperationException("Service denied guard mode request."));
+
+        public Task<MitigationCommandResult> ApplyRecommendedAsync(CancellationToken cancellationToken = default)
+            => Task.FromException<MitigationCommandResult>(new InvalidOperationException("Service denied mitigation request."));
+
+        public Task<MitigationCommandResult> ResetManagedAsync(CancellationToken cancellationToken = default)
+            => Task.FromException<MitigationCommandResult>(new InvalidOperationException("Service denied mitigation reset request."));
+
+        public Task<PolicyApprovalCommandResult> GrantRestartApprovalAsync(CancellationToken cancellationToken = default)
+            => Task.FromException<PolicyApprovalCommandResult>(new InvalidOperationException("Service denied approval request."));
+
+        public Task<PolicyApprovalCommandResult> ClearRestartApprovalAsync(CancellationToken cancellationToken = default)
+            => Task.FromException<PolicyApprovalCommandResult>(new InvalidOperationException("Service denied approval-clear request."));
+    }
+
+    private class StubControlPlane : ISessionGuardControlPlane
     {
         private readonly SessionControlStatus _status;
 
@@ -231,17 +393,33 @@ public sealed class ControlPlaneTests
         public Task<SessionControlStatus> SetGuardModeAsync(bool enabled, CancellationToken cancellationToken = default)
             => Task.FromResult(_status with { GuardModeEnabled = enabled });
 
-        public Task<MitigationCommandResult> ApplyRecommendedAsync(CancellationToken cancellationToken = default)
-            => Task.FromResult(new MitigationCommandResult(true, false, "ok", Array.Empty<ManagedMitigationState>()));
+        public virtual Task<MitigationCommandResult> ApplyRecommendedAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult(new MitigationCommandResult(true, false, false, "ok", Array.Empty<ManagedMitigationState>()));
 
         public Task<MitigationCommandResult> ResetManagedAsync(CancellationToken cancellationToken = default)
-            => Task.FromResult(new MitigationCommandResult(true, false, "ok", Array.Empty<ManagedMitigationState>()));
+            => Task.FromResult(new MitigationCommandResult(true, false, false, "ok", Array.Empty<ManagedMitigationState>()));
 
         public Task<PolicyApprovalCommandResult> GrantRestartApprovalAsync(CancellationToken cancellationToken = default)
-            => Task.FromResult(new PolicyApprovalCommandResult(true, "ok", _status.ScanResult.Policy));
+            => Task.FromResult(new PolicyApprovalCommandResult(true, false, "ok", _status.ScanResult.Policy));
 
         public Task<PolicyApprovalCommandResult> ClearRestartApprovalAsync(CancellationToken cancellationToken = default)
-            => Task.FromResult(new PolicyApprovalCommandResult(true, "ok", _status.ScanResult.Policy));
+            => Task.FromResult(new PolicyApprovalCommandResult(true, false, "ok", _status.ScanResult.Policy));
+    }
+
+    private sealed class RecordingControlPlane : StubControlPlane
+    {
+        public RecordingControlPlane(SessionControlStatus status)
+            : base(status)
+        {
+        }
+
+        public bool ApplyRecommendedCalled { get; private set; }
+
+        public override Task<MitigationCommandResult> ApplyRecommendedAsync(CancellationToken cancellationToken = default)
+        {
+            ApplyRecommendedCalled = true;
+            return base.ApplyRecommendedAsync(cancellationToken);
+        }
     }
 
     private sealed class StubConfigurationRepository : IConfigurationRepository
@@ -298,10 +476,10 @@ public sealed class ControlPlaneTests
             => Task.FromResult<IReadOnlyList<ManagedMitigationState>>(Array.Empty<ManagedMitigationState>());
 
         public Task<MitigationCommandResult> ApplyRecommendedAsync(RuntimeConfiguration configuration, CancellationToken cancellationToken = default)
-            => Task.FromResult(new MitigationCommandResult(true, false, "Applied", Array.Empty<ManagedMitigationState>()));
+            => Task.FromResult(new MitigationCommandResult(true, false, false, "Applied", Array.Empty<ManagedMitigationState>()));
 
         public Task<MitigationCommandResult> ResetManagedAsync(RuntimeConfiguration configuration, CancellationToken cancellationToken = default)
-            => Task.FromResult(new MitigationCommandResult(true, false, "Reset", Array.Empty<ManagedMitigationState>()));
+            => Task.FromResult(new MitigationCommandResult(true, false, false, "Reset", Array.Empty<ManagedMitigationState>()));
     }
 
     private sealed class RecordingSnapshotStore : IScanSnapshotStore
@@ -317,27 +495,27 @@ public sealed class ControlPlaneTests
 
     private sealed class InMemoryPolicyApprovalStore : IPolicyApprovalStore
     {
-        private PolicyApprovalState _state = PolicyApprovalState.None;
+        public PolicyApprovalState Current { get; set; } = PolicyApprovalState.None;
 
         public Task<PolicyApprovalState> GetCurrentAsync(DateTimeOffset now, CancellationToken cancellationToken = default)
         {
-            if (_state.IsActive && _state.ExpiresAt.HasValue && _state.ExpiresAt.Value <= now)
+            if (Current.IsActive && Current.ExpiresAt.HasValue && Current.ExpiresAt.Value <= now)
             {
-                _state = PolicyApprovalState.None;
+                Current = PolicyApprovalState.None;
             }
 
-            return Task.FromResult(_state);
+            return Task.FromResult(Current);
         }
 
         public Task<PolicyApprovalState> GrantAsync(DateTimeOffset now, TimeSpan duration, CancellationToken cancellationToken = default)
         {
-            _state = new PolicyApprovalState(true, now, now.Add(duration), (int)duration.TotalMinutes);
-            return Task.FromResult(_state);
+            Current = new PolicyApprovalState(true, now, now.Add(duration), (int)duration.TotalMinutes);
+            return Task.FromResult(Current);
         }
 
         public Task ClearAsync(CancellationToken cancellationToken = default)
         {
-            _state = PolicyApprovalState.None;
+            Current = PolicyApprovalState.None;
             return Task.CompletedTask;
         }
     }

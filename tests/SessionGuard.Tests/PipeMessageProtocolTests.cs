@@ -102,12 +102,13 @@ public sealed class PipeMessageProtocolTests
                 GuardModeEnabled: true,
                 "Service",
                 IsRemote: true),
-            new MitigationCommandResult(
-                true,
-                false,
-                "Applied",
-                new[]
-                {
+                    new MitigationCommandResult(
+                        true,
+                        false,
+                        false,
+                        "Applied",
+                        new[]
+                        {
                     new ManagedMitigationState(
                         "active-hours",
                         "Active hours",
@@ -120,6 +121,7 @@ public sealed class PipeMessageProtocolTests
                 }),
             new PolicyApprovalCommandResult(
                 true,
+                false,
                 "Granted approval",
                 new PolicyEvaluation(
                     PolicyDecisionType.ApprovalActive,

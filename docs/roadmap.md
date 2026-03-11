@@ -84,13 +84,31 @@ Current status:
 - `v0.5.1` adds policy validation and dashboard diagnostics
 - `v0.5.1` keeps scan results available when `config/policies.json` is malformed
 - `v0.5.1` makes approval-window precedence explicit when multiple approval rules match
-- the next policy follow-up is `0.5.2` service-boundary tightening for approval and mitigation ownership
+- `v0.5.2` makes mitigation and approval writes service-owned and keeps local fallback read-only for those actions
+- `v0.5.2` adds service startup approval-state recovery and richer health reporting
+- the next policy follow-up is `0.5.3` operator UX refinement around approval expiry and transition messaging
 
 Exit criteria:
 - malformed policy JSON degrades safely and visibly
 - duplicate or conflicting rules are called out to the operator
 - approval-window precedence is deterministic and explained in the UI
 - automated coverage exists for invalid config, conflicts, and approval expiry
+
+### 0.5.2 Service-Boundary Tightening
+
+Purpose:
+Make the service the authoritative owner for state-changing policy and mitigation actions without losing local monitoring when the service is down.
+
+Current status:
+- mitigation writes are service-owned
+- restart approval changes are service-owned
+- local fallback remains available for monitoring and scanning, but is explicitly read-only for those write actions
+- service startup now records approval-state recovery into the persisted health snapshot
+
+Exit criteria:
+- local fallback never performs mitigation or approval writes
+- remote application failures do not silently trigger local write fallback
+- service health exposes approval-window recovery state
 
 ## v0.1.0 - MVP Desktop Monitor
 

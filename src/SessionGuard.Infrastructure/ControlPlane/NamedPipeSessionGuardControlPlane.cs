@@ -106,17 +106,32 @@ public sealed class NamedPipeSessionGuardControlPlane : ISessionGuardControlPlan
         SessionControlRequest request,
         CancellationToken cancellationToken)
     {
-        using var client = new NamedPipeClientStream(
-            ".",
-            SessionGuardPipeConstants.PipeName,
-            PipeDirection.InOut,
-            PipeOptions.Asynchronous);
+        try
+        {
+            using var client = new NamedPipeClientStream(
+                ".",
+                SessionGuardPipeConstants.PipeName,
+                PipeDirection.InOut,
+                PipeOptions.Asynchronous);
 
-        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeoutCts.CancelAfter(_connectTimeout);
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeoutCts.CancelAfter(_connectTimeout);
 
-        await client.ConnectAsync(timeoutCts.Token);
-        await PipeMessageProtocol.WriteRequestAsync(client, request, cancellationToken);
-        return await PipeMessageProtocol.ReadResponseAsync(client, cancellationToken);
+            await client.ConnectAsync(timeoutCts.Token);
+            await PipeMessageProtocol.WriteRequestAsync(client, request, cancellationToken);
+            return await PipeMessageProtocol.ReadResponseAsync(client, cancellationToken);
+        }
+        catch (OperationCanceledException exception) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new SessionGuardControlPlaneUnavailableException(
+                $"Timed out connecting to the SessionGuard service pipe within {_connectTimeout.TotalMilliseconds:0} ms.",
+                exception);
+        }
+        catch (Exception exception) when (exception is IOException or TimeoutException or InvalidDataException)
+        {
+            throw new SessionGuardControlPlaneUnavailableException(
+                "SessionGuard service control plane is unavailable.",
+                exception);
+        }
     }
 }

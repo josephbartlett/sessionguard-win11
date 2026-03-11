@@ -26,6 +26,7 @@ public sealed class SessionGuardWorker : BackgroundService
     {
         var hostMode = WindowsServiceHelpers.IsWindowsService() ? "WindowsService" : "Console";
         await _healthReporter.InitializeAsync(hostMode, stoppingToken);
+        await _runtime.InitializeAsync(stoppingToken);
         _logger.Info("service.start");
 
         while (!stoppingToken.IsCancellationRequested)

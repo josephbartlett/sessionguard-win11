@@ -98,6 +98,7 @@ public sealed class WindowsMitigationService : IMitigationService
             return new MitigationCommandResult(
                 false,
                 true,
+                false,
                 "Administrative access is required to apply native Windows Update mitigation settings.",
                 readOnlyStates);
         }
@@ -120,6 +121,7 @@ public sealed class WindowsMitigationService : IMitigationService
             return new MitigationCommandResult(
                 true,
                 false,
+                false,
                 "Applied recommended native restart mitigation settings.",
                 states);
         }
@@ -128,6 +130,7 @@ public sealed class WindowsMitigationService : IMitigationService
             _logger.Error("mitigation.apply.failed", exception);
             var states = await GetStatesAsync(configuration, cancellationToken);
             return new MitigationCommandResult(
+                false,
                 false,
                 false,
                 $"Failed to apply native restart mitigation settings: {exception.Message}",
@@ -149,6 +152,7 @@ public sealed class WindowsMitigationService : IMitigationService
             return new MitigationCommandResult(
                 false,
                 true,
+                false,
                 "Administrative access is required to reset managed mitigation settings.",
                 readOnlyStates);
         }
@@ -181,6 +185,7 @@ public sealed class WindowsMitigationService : IMitigationService
             return new MitigationCommandResult(
                 true,
                 false,
+                false,
                 "Restored or removed the mitigation values managed by SessionGuard.",
                 states);
         }
@@ -189,6 +194,7 @@ public sealed class WindowsMitigationService : IMitigationService
             _logger.Error("mitigation.reset.failed", exception);
             var states = await GetStatesAsync(configuration, cancellationToken);
             return new MitigationCommandResult(
+                false,
                 false,
                 false,
                 $"Failed to reset managed mitigation settings: {exception.Message}",

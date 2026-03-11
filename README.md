@@ -9,6 +9,7 @@ The MVP is intentionally bounded:
 - It now derives advisory workspace-risk heuristics for terminals, editors, browsers, and local dev-server style runtimes.
 - It now applies a separate JSON-backed policy engine for restart windows, blocking rules, and temporary approval windows.
 - It now validates the policy configuration separately so malformed or conflicting policy files show diagnostics instead of breaking the whole dashboard scan.
+- It now treats mitigation changes and restart-approval changes as service-owned actions, so local fallback remains read-only for those writes.
 - It can apply a small set of reversible native mitigation settings when the app is run with administrative rights.
 - It logs what it observed and what it attempted so the behavior stays auditable.
 
@@ -47,6 +48,9 @@ SessionGuard does not guarantee prevention of every OS-driven restart path, and 
 - Local JSON-line logging under the runtime `logs/` folder.
 - Tray-aware WPF dashboard behavior that minimizes to the notification area and can reopen the dashboard on demand.
 - Versioned named-pipe control plane between the desktop app and the service-hostable worker, with local fallback if the service is not reachable.
+- Service-owned write boundary for:
+  - mitigation apply/reset actions
+  - temporary restart approval grant/clear actions
 - Machine-readable scan snapshot at `state/current-scan.json` shared by the desktop app and service path.
 - Advisory workspace metadata snapshot at `state/workspace-snapshot.json` when workspace-risk heuristics are active.
 - Persisted approval state at `state/policy-approval.json` when a temporary restart approval window is active.
@@ -85,6 +89,8 @@ dotnet run --project src/SessionGuard.App/SessionGuard.App.csproj
 ```
 
 When the service host is running, the desktop app prefers the named-pipe service control plane and reports `Control plane: Service`. If the service is not reachable, the app falls back to a local in-process scan path and reports `Control plane: Local fallback`.
+
+When the app is in `Control plane: Local fallback`, mitigation writes and restart-approval changes are intentionally disabled. Monitoring stays available, but service-owned write actions require the background service to reconnect.
 
 Run the desktop app in an elevated PowerShell session to test mitigation actions:
 
@@ -183,6 +189,7 @@ src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe clear
 
 - Non-elevated mode supports full monitoring, dashboard updates, config changes, and logging.
 - Applying or resetting native mitigation settings requires elevation because the app writes under `HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate`.
+- Applying or resetting native mitigation settings also requires the background service path. The desktop app will not perform those writes itself while in local fallback.
 - If the app is not elevated, it stays honest: it surfaces a read-only status and explains why the action could not be completed.
 
 ## Config and logs
@@ -197,7 +204,7 @@ src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe clear
 - The latest scan snapshot is written to `state/current-scan.json` for future background-service or tray-client consumption.
 - When workspace-risk heuristics are active, advisory metadata is also written to `state/workspace-snapshot.json`.
 - Temporary restart approval state is written to `state/policy-approval.json` so the policy engine can survive app or service restarts until the window expires.
-- The service health snapshot is written to `state/service-health.json` so status tooling can show startup, scan, and control-plane health without scraping logs.
+- The service health snapshot is written to `state/service-health.json` so status tooling can show startup, scan, control-plane health, and approval-state recovery without scraping logs.
 - UI smoke screenshots and the smoke summary are written to `artifacts/ui/smoke/`.
 - CI-oriented validation outputs, including test results and UI smoke artifacts, are written to `artifacts/ci/windows-validation/`.
 
@@ -221,10 +228,11 @@ src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe clear
 16. Run `powershell -ExecutionPolicy Bypass -File scripts/service/Validate-SessionGuardPublishedLayout.ps1` and confirm the published layout works outside the repo root.
 17. Minimize or close the dashboard window and confirm SessionGuard remains available in the notification area.
 18. Trigger a state with restart pressure, then confirm the policy card explains whether restart is blocked, requires approval, or has an active approval window.
-19. Grant and clear a temporary restart approval window from the dashboard or `SessionGuard.Service.exe approve-restart` and confirm the policy status changes.
-20. Start a protected terminal, browser, or editor session and confirm the workspace safety table explains why the session is considered risky.
-21. Introduce a temporary mistake into [`config/policies.json`](/C:/Users/decoy/sessionguard-win11/config/policies.json), trigger a scan, and confirm the policy card stays up, reports configuration errors, and leaves the rest of the dashboard functional.
-22. Inspect `state/current-scan.json`, `state/workspace-snapshot.json`, `state/policy-approval.json`, and `state/service-health.json` and confirm the latest status is serialized by the service or local fallback path.
+19. Stop the service or force local fallback, then confirm the mitigation and approval buttons are disabled and the dashboard explains that those write actions are service-owned.
+20. Grant and clear a temporary restart approval window from the dashboard or `SessionGuard.Service.exe approve-restart` while the service path is active and confirm the policy status changes.
+21. Start a protected terminal, browser, or editor session and confirm the workspace safety table explains why the session is considered risky.
+22. Introduce a temporary mistake into [`config/policies.json`](/C:/Users/decoy/sessionguard-win11/config/policies.json), trigger a scan, and confirm the policy card stays up, reports configuration errors, and leaves the rest of the dashboard functional.
+23. Inspect `state/current-scan.json`, `state/workspace-snapshot.json`, `state/policy-approval.json`, and `state/service-health.json` and confirm the latest status is serialized by the service or local fallback path.
 
 ## What the MVP does not do
 
@@ -234,6 +242,7 @@ src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe clear
 - It now writes advisory workspace metadata, but that metadata is local only and does not capture enough detail to restore sessions.
 - It now includes approval workflows and rule-driven policy state, but those policies are advisory control logic inside SessionGuard rather than a guarantee that Windows itself will honor every desired restart outcome.
 - It now validates policy configuration and degrades safely on malformed policy JSON, but it still cannot infer operator intent beyond the local rule set or resolve every ambiguous policy design automatically.
+- It now makes mitigation and approval writes service-owned, but the local fallback path still exists for monitoring, so a missing service reduces SessionGuard to read-only restart awareness until the service returns.
 - It now includes a service-hostable worker, versioned named-pipe IPC, tray-aware window behavior, and local install/start/stop scripts, but it is not yet a hardened enterprise deployment package or dedicated tray-only shell.
 - It does not yet capture full recovery snapshots or restore workspace state.
 
@@ -245,4 +254,4 @@ src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe clear
 - Roadmap: [`docs/roadmap.md`](/C:/Users/decoy/sessionguard-win11/docs/roadmap.md)
 - Workspace safety plan: [`docs/plans/v0.4.0-workspace-safety-plan.md`](/C:/Users/decoy/sessionguard-win11/docs/plans/v0.4.0-workspace-safety-plan.md)
 - Future service design: [`docs/future-service-architecture.md`](/C:/Users/decoy/sessionguard-win11/docs/future-service-architecture.md)
-- Release notes: [`docs/releases/v0.5.1.md`](/C:/Users/decoy/sessionguard-win11/docs/releases/v0.5.1.md)
+- Release notes: [`docs/releases/v0.5.2.md`](/C:/Users/decoy/sessionguard-win11/docs/releases/v0.5.2.md)

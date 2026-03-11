@@ -79,9 +79,35 @@ public sealed class SessionGuardServiceHealthReporter
                 LastScanRiskLevel = status.ScanResult.RiskLevel,
                 LastScanSummary = status.ScanResult.Summary,
                 LastGuardModeEnabled = status.GuardModeEnabled,
+                ApprovalWindowActive = status.ScanResult.Policy.ApprovalActive,
+                ApprovalWindowExpiresAt = status.ScanResult.Policy.ApprovalExpiresAt,
+                ApprovalWindowMinutes = status.ScanResult.Policy.RecommendedApprovalWindowMinutes,
+                ApprovalStateSummary = status.ScanResult.Policy.ApprovalActive && status.ScanResult.Policy.ApprovalExpiresAt.HasValue
+                    ? $"Temporary approval active until {status.ScanResult.Policy.ApprovalExpiresAt.Value.LocalDateTime:G}."
+                    : "No temporary approval window is active.",
                 LastErrorStage = null,
                 LastErrorAt = null,
                 LastErrorMessage = null
+            },
+            cancellationToken);
+    }
+
+    public Task RecordApprovalRecoveryAsync(
+        PolicyApprovalState approvalState,
+        CancellationToken cancellationToken = default)
+    {
+        var now = DateTimeOffset.Now;
+        return UpdateAsync(
+            snapshot => (snapshot ?? CreateSnapshot("Unknown", now)) with
+            {
+                LastUpdatedAt = now,
+                ApprovalWindowActive = approvalState.IsActive,
+                ApprovalWindowExpiresAt = approvalState.ExpiresAt,
+                ApprovalWindowMinutes = approvalState.WindowMinutes,
+                ApprovalStateRecoveredAt = now,
+                ApprovalStateSummary = approvalState.IsActive && approvalState.ExpiresAt.HasValue
+                    ? $"Recovered a persisted temporary approval window that remains active until {approvalState.ExpiresAt.Value.LocalDateTime:G}."
+                    : "No persisted temporary approval window was active during service startup."
             },
             cancellationToken);
     }

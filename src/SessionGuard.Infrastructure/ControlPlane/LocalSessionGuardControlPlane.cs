@@ -46,60 +46,45 @@ public sealed class LocalSessionGuardControlPlane : ISessionGuardControlPlane
     public async Task<MitigationCommandResult> ApplyRecommendedAsync(CancellationToken cancellationToken = default)
     {
         var configuration = await _configurationRepository.LoadAsync(cancellationToken);
-        return await _mitigationService.ApplyRecommendedAsync(configuration, cancellationToken);
+        var states = await _mitigationService.GetStatesAsync(configuration, cancellationToken);
+        return new MitigationCommandResult(
+            Success: false,
+            RequiresElevation: false,
+            RequiresService: true,
+            "Managed mitigation changes are service-owned. Start the SessionGuard service and reconnect before applying settings.",
+            states);
     }
 
     public async Task<MitigationCommandResult> ResetManagedAsync(CancellationToken cancellationToken = default)
     {
         var configuration = await _configurationRepository.LoadAsync(cancellationToken);
-        return await _mitigationService.ResetManagedAsync(configuration, cancellationToken);
+        var states = await _mitigationService.GetStatesAsync(configuration, cancellationToken);
+        return new MitigationCommandResult(
+            Success: false,
+            RequiresElevation: false,
+            RequiresService: true,
+            "Managed mitigation reset is service-owned. Start the SessionGuard service and reconnect before changing settings.",
+            states);
     }
 
     public async Task<PolicyApprovalCommandResult> GrantRestartApprovalAsync(CancellationToken cancellationToken = default)
     {
-        await _gate.WaitAsync(cancellationToken);
-
-        try
-        {
-            var configuration = await _configurationRepository.LoadAsync(cancellationToken);
-            var baselineStatus = await ScanLockedAsync(configuration, forceReloadGuardMode: false, explicitGuardMode: null, cancellationToken);
-            var windowMinutes = baselineStatus.ScanResult.Policy.RecommendedApprovalWindowMinutes > 0
-                ? baselineStatus.ScanResult.Policy.RecommendedApprovalWindowMinutes
-                : configuration.Policies.DefaultApprovalWindowMinutes;
-            await _policyApprovalStore.GrantAsync(
-                DateTimeOffset.Now,
-                TimeSpan.FromMinutes(windowMinutes),
-                cancellationToken);
-            var status = await ScanLockedAsync(configuration, forceReloadGuardMode: false, explicitGuardMode: null, cancellationToken);
-            return new PolicyApprovalCommandResult(
-                true,
-                $"Granted a temporary restart approval window for {windowMinutes} minute(s).",
-                status.ScanResult.Policy);
-        }
-        finally
-        {
-            _gate.Release();
-        }
+        var status = await ScanInternalAsync(forceReloadGuardMode: false, explicitGuardMode: null, cancellationToken);
+        return new PolicyApprovalCommandResult(
+            Success: false,
+            RequiresService: true,
+            "Restart approval changes are service-owned. Start the SessionGuard service and reconnect before granting approval.",
+            status.ScanResult.Policy);
     }
 
     public async Task<PolicyApprovalCommandResult> ClearRestartApprovalAsync(CancellationToken cancellationToken = default)
     {
-        await _gate.WaitAsync(cancellationToken);
-
-        try
-        {
-            var configuration = await _configurationRepository.LoadAsync(cancellationToken);
-            await _policyApprovalStore.ClearAsync(cancellationToken);
-            var status = await ScanLockedAsync(configuration, forceReloadGuardMode: false, explicitGuardMode: null, cancellationToken);
-            return new PolicyApprovalCommandResult(
-                true,
-                "Cleared the temporary restart approval window.",
-                status.ScanResult.Policy);
-        }
-        finally
-        {
-            _gate.Release();
-        }
+        var status = await ScanInternalAsync(forceReloadGuardMode: false, explicitGuardMode: null, cancellationToken);
+        return new PolicyApprovalCommandResult(
+            Success: false,
+            RequiresService: true,
+            "Restart approval changes are service-owned. Start the SessionGuard service and reconnect before clearing approval.",
+            status.ScanResult.Policy);
     }
 
     private async Task<SessionControlStatus> ScanInternalAsync(

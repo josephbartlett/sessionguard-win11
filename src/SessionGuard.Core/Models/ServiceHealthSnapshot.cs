@@ -25,6 +25,11 @@ public sealed record ServiceHealthSnapshot(
     RestartRiskLevel? LastScanRiskLevel = null,
     string? LastScanSummary = null,
     bool? LastGuardModeEnabled = null,
+    bool? ApprovalWindowActive = null,
+    DateTimeOffset? ApprovalWindowExpiresAt = null,
+    int? ApprovalWindowMinutes = null,
+    DateTimeOffset? ApprovalStateRecoveredAt = null,
+    string? ApprovalStateSummary = null,
     string? LastErrorStage = null,
     DateTimeOffset? LastErrorAt = null,
     string? LastErrorMessage = null);

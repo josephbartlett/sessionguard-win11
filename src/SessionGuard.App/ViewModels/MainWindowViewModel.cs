@@ -35,6 +35,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private bool _disposed;
     private bool _guardModeEnabled;
     private bool _guardModeInitialized;
+    private bool _serviceWriteActionsAvailable;
     private bool _suppressGuardModeRefresh;
     private bool _isBusy;
     private bool _showDetailedSignals = true;
@@ -53,6 +54,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private string _policySummaryText = "Policy summary: not yet scanned";
     private string _policyApprovalText = "Policy approval: not yet scanned";
     private string _policyDiagnosticsText = "Policy config: not yet scanned";
+    private string _serviceActionAvailabilityText = "Managed actions: availability not yet scanned";
     private string _protectedProcessSummary = "Protected processes: not yet scanned";
     private string _workspaceSummaryText = "Workspace safety: not yet scanned";
     private string _workspaceConfidenceText = "Workspace confidence: not yet scanned";
@@ -92,10 +94,10 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         _scanNowCommand = new AsyncRelayCommand(
             () => RefreshAsync(initialLoad: false, forceScan: true, explicitGuardMode: null, skipIfBusy: false),
             () => !IsBusy);
-        _applyMitigationsCommand = new AsyncRelayCommand(ApplyMitigationsAsync, () => !IsBusy);
-        _resetMitigationsCommand = new AsyncRelayCommand(ResetMitigationsAsync, () => !IsBusy);
-        _grantRestartApprovalCommand = new AsyncRelayCommand(GrantRestartApprovalAsync, () => !IsBusy);
-        _clearRestartApprovalCommand = new AsyncRelayCommand(ClearRestartApprovalAsync, () => !IsBusy);
+        _applyMitigationsCommand = new AsyncRelayCommand(ApplyMitigationsAsync, () => !IsBusy && ServiceWriteActionsAvailable);
+        _resetMitigationsCommand = new AsyncRelayCommand(ResetMitigationsAsync, () => !IsBusy && ServiceWriteActionsAvailable);
+        _grantRestartApprovalCommand = new AsyncRelayCommand(GrantRestartApprovalAsync, () => !IsBusy && ServiceWriteActionsAvailable);
+        _clearRestartApprovalCommand = new AsyncRelayCommand(ClearRestartApprovalAsync, () => !IsBusy && ServiceWriteActionsAvailable);
         _openConfigCommand = new RelayCommand(() => OpenPath(_runtimePaths.ConfigDirectory), () => !IsBusy);
         _openPoliciesCommand = new RelayCommand(() => OpenPath(_policiesPath), () => !IsBusy && !string.IsNullOrWhiteSpace(_policiesPath));
         _openLogsCommand = new RelayCommand(() => OpenPath(_runtimePaths.LogDirectory), () => !IsBusy);
@@ -186,6 +188,21 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         private set => SetProperty(ref _showDetailedSignals, value);
     }
 
+    public bool ServiceWriteActionsAvailable
+    {
+        get => _serviceWriteActionsAvailable;
+        private set
+        {
+            if (SetProperty(ref _serviceWriteActionsAvailable, value))
+            {
+                _applyMitigationsCommand.RaiseCanExecuteChanged();
+                _resetMitigationsCommand.RaiseCanExecuteChanged();
+                _grantRestartApprovalCommand.RaiseCanExecuteChanged();
+                _clearRestartApprovalCommand.RaiseCanExecuteChanged();
+            }
+        }
+    }
+
     public bool ShouldStartMinimized
     {
         get => _shouldStartMinimized;
@@ -274,6 +291,12 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     {
         get => _policyDiagnosticsText;
         private set => SetProperty(ref _policyDiagnosticsText, value);
+    }
+
+    public string ServiceActionAvailabilityText
+    {
+        get => _serviceActionAvailabilityText;
+        private set => SetProperty(ref _serviceActionAvailabilityText, value);
     }
 
     public string ProtectedProcessSummary
@@ -424,6 +447,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             PolicySummaryText = "Policy summary unavailable.";
             PolicyApprovalText = "Policy approval unavailable.";
             PolicyDiagnosticsText = "Policy config unavailable.";
+            ServiceWriteActionsAvailable = false;
+            ServiceActionAvailabilityText = "Managed actions: unavailable because the background service is unreachable.";
             ProtectedProcessSummary = "Protected process detection unavailable.";
             WorkspaceSummaryText = "Workspace safety detection unavailable.";
             WorkspaceConfidenceText = "Workspace confidence: unavailable";
@@ -460,7 +485,10 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             var result = await _controlPlane.ApplyRecommendedAsync();
             LastActionMessage = result.Message;
             ReplaceItems(ManagedMitigations, result.CurrentStates);
-            await RefreshAsync(initialLoad: false, forceScan: true, explicitGuardMode: null, skipIfBusy: false);
+            if (result.Success)
+            {
+                await RefreshAsync(initialLoad: false, forceScan: true, explicitGuardMode: null, skipIfBusy: false);
+            }
         }
         catch (Exception exception)
         {
@@ -476,7 +504,10 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             var result = await _controlPlane.ResetManagedAsync();
             LastActionMessage = result.Message;
             ReplaceItems(ManagedMitigations, result.CurrentStates);
-            await RefreshAsync(initialLoad: false, forceScan: true, explicitGuardMode: null, skipIfBusy: false);
+            if (result.Success)
+            {
+                await RefreshAsync(initialLoad: false, forceScan: true, explicitGuardMode: null, skipIfBusy: false);
+            }
         }
         catch (Exception exception)
         {
@@ -491,7 +522,10 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         {
             var result = await _controlPlane.GrantRestartApprovalAsync();
             LastActionMessage = result.Message;
-            await RefreshAsync(initialLoad: false, forceScan: true, explicitGuardMode: null, skipIfBusy: false);
+            if (result.Success)
+            {
+                await RefreshAsync(initialLoad: false, forceScan: true, explicitGuardMode: null, skipIfBusy: false);
+            }
         }
         catch (Exception exception)
         {
@@ -506,7 +540,10 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         {
             var result = await _controlPlane.ClearRestartApprovalAsync();
             LastActionMessage = result.Message;
-            await RefreshAsync(initialLoad: false, forceScan: true, explicitGuardMode: null, skipIfBusy: false);
+            if (result.Success)
+            {
+                await RefreshAsync(initialLoad: false, forceScan: true, explicitGuardMode: null, skipIfBusy: false);
+            }
         }
         catch (Exception exception)
         {
@@ -569,6 +606,10 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         ConnectionModeText = status.IsRemote
             ? "Control plane: Service (background service is authoritative)"
             : "Control plane: Local fallback (the dashboard is scanning in-process because the service is unavailable)";
+        ServiceWriteActionsAvailable = status.IsRemote;
+        ServiceActionAvailabilityText = status.IsRemote
+            ? "Managed actions: service-backed mitigation and approval changes are available."
+            : "Managed actions: mitigation and approval changes are disabled in local fallback until the background service reconnects.";
         PolicyDecisionText = result.Policy.Validation.HasErrors
             ? "Policy decision: Unavailable due to configuration errors"
             : $"Policy decision: {FormatPolicyDecision(result.Policy.Decision)}";

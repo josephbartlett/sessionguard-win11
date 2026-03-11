@@ -122,6 +122,14 @@ Temporary approval windows are persisted locally in `state/policy-approval.json`
 
 `JsonConfigurationRepository` now treats `config/policies.json` differently from the other config files: if policy JSON is malformed, SessionGuard keeps the rest of the scan pipeline alive, disables policy evaluation for that scan, and surfaces explicit diagnostics in the dashboard. That keeps restart-awareness and workspace detection available while still staying honest that policy enforcement is temporarily unavailable.
 
+As of `0.5.2`, SessionGuard also tightens write ownership at the control-plane boundary:
+
+- mitigation apply/reset actions are service-owned
+- restart approval grant/clear actions are service-owned
+- local fallback remains available for status and scanning, but it returns explicit read-only results for those write commands instead of performing them in-process
+
+`NamedPipeSessionGuardControlPlane` now distinguishes transport or protocol unavailability from application-level service failures. The hybrid client only falls back on true control-plane unavailability, which prevents accidental local execution after a real service-side failure.
+
 ## Mitigation model
 
 SessionGuard only manages reversible, native Windows settings:
@@ -175,6 +183,8 @@ The desktop app and service now write to separate files:
 - `logs/sessionguard-service-YYYYMMDD.log`
 
 The service also persists `state/service-health.json` so operator tooling can read current startup and error state directly.
+
+The health snapshot now also records approval-window recovery state so startup diagnostics can show whether the service recovered a still-active temporary approval window or started with none.
 
 This keeps the MVP auditable without introducing a full telemetry stack.
 

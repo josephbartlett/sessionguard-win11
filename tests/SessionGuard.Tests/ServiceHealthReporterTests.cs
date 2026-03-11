@@ -30,6 +30,7 @@ public sealed class ServiceHealthReporterTests
         Assert.Equal(45, snapshot.ScanIntervalSeconds);
         Assert.Equal(RestartStateCategory.ProtectedSessionActive, snapshot.LastScanState);
         Assert.Equal(RestartRiskLevel.High, snapshot.LastScanRiskLevel);
+        Assert.False(snapshot.ApprovalWindowActive);
         Assert.False(string.IsNullOrWhiteSpace(snapshot.ProductVersion));
     }
 
@@ -53,6 +54,30 @@ public sealed class ServiceHealthReporterTests
         Assert.Equal("pipe", snapshot.LastErrorStage);
         Assert.Equal("Pipe failure", snapshot.LastErrorMessage);
         Assert.NotNull(snapshot.LastStoppedAt);
+    }
+
+    [Fact]
+    public async Task RecordApprovalRecovery_PersistsApprovalRecoveryDetails()
+    {
+        var runtimeRoot = CreateRuntimeRoot();
+        var logger = new RecordingLogger();
+        var reporter = new SessionGuardServiceHealthReporter(
+            RuntimePaths.Discover(runtimeRoot),
+            logger);
+
+        await reporter.InitializeAsync("Console");
+        await reporter.RecordApprovalRecoveryAsync(
+            new PolicyApprovalState(
+                IsActive: true,
+                GrantedAt: DateTimeOffset.Parse("2026-03-11T16:00:00-04:00"),
+                ExpiresAt: DateTimeOffset.Parse("2026-03-11T16:45:00-04:00"),
+                WindowMinutes: 45));
+
+        var snapshot = await ReadSnapshotAsync(reporter.HealthPath);
+
+        Assert.True(snapshot.ApprovalWindowActive);
+        Assert.Equal(45, snapshot.ApprovalWindowMinutes);
+        Assert.NotNull(snapshot.ApprovalStateRecoveredAt);
     }
 
     private static SessionControlStatus CreateStatus()

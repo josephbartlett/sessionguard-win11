@@ -32,6 +32,7 @@ internal sealed class ScenarioSessionGuardControlPlane : ISessionGuardControlPla
         return Task.FromResult(new MitigationCommandResult(
             Success: false,
             RequiresElevation: false,
+            RequiresService: false,
             "UI smoke scenarios are read-only. Mitigation changes are disabled in scenario mode.",
             _scenario.Status.ScanResult.Mitigations));
     }
@@ -41,6 +42,7 @@ internal sealed class ScenarioSessionGuardControlPlane : ISessionGuardControlPla
         return Task.FromResult(new MitigationCommandResult(
             Success: false,
             RequiresElevation: false,
+            RequiresService: false,
             "UI smoke scenarios are read-only. Managed setting reset is disabled in scenario mode.",
             _scenario.Status.ScanResult.Mitigations));
     }
@@ -49,6 +51,7 @@ internal sealed class ScenarioSessionGuardControlPlane : ISessionGuardControlPla
     {
         return Task.FromResult(new PolicyApprovalCommandResult(
             Success: false,
+            RequiresService: false,
             "UI smoke scenarios are read-only. Policy approval is disabled in scenario mode.",
             _scenario.Status.ScanResult.Policy));
     }
@@ -57,6 +60,7 @@ internal sealed class ScenarioSessionGuardControlPlane : ISessionGuardControlPla
     {
         return Task.FromResult(new PolicyApprovalCommandResult(
             Success: false,
+            RequiresService: false,
             "UI smoke scenarios are read-only. Policy approval is disabled in scenario mode.",
             _scenario.Status.ScanResult.Policy));
     }
