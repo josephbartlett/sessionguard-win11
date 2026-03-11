@@ -4,6 +4,8 @@ All notable changes to this project should be recorded here in reverse chronolog
 
 ## Unreleased
 
+## 0.3.1 - 2026-03-11
+
 - Added a persisted `state/service-health.json` snapshot for service startup, scan, and pipe diagnostics.
 - Updated the service status tooling to surface health snapshot data alongside control-plane reachability.
 - Added a published-layout validation script and runtime path tests for repo-external service validation.
