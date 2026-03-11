@@ -12,6 +12,8 @@
 - Default branch is `main`.
 - Stay on `main` unless a human explicitly asks for another branch.
 - Keep commits non-interactive and script-friendly.
+- Agents may create local commits when it helps keep work scoped and auditable.
+- Agents must never push branches, tags, or commits unless a human explicitly approves that push in the current conversation.
 - Do not rewrite published history unless a human explicitly asks for it.
 - Before tagging a release, ensure `git status` is clean and local build/test verification has been run.
 
@@ -40,12 +42,57 @@
 
 - Tag releases as `vMAJOR.MINOR.PATCH`.
 - Use annotated tags for releases.
+- If a human explicitly approves a push, return release notes in this exact response shape:
+  - `Release title: <title>`
+  - `Description:`
+  - fenced `md` block containing the release body
 - Release notes should include:
   - user-visible capabilities
   - key architectural changes
   - limitations or known constraints
   - build/run verification status
 - Do not tag a release if the repo does not build locally.
+- Keep release titles concise and versioned, for example `SessionGuard 0.1.1 - Repo Rules Update`.
+
+## Release template
+
+When a push has been explicitly approved, use this template in the final response:
+
+Release title: `SessionGuard X.Y.Z - <short release name>`
+
+Description:
+
+```md
+## SessionGuard X.Y.Z
+
+Short summary of the release.
+
+### Highlights
+
+- item
+- item
+
+### Included in this release
+
+- item
+- item
+
+### Architecture
+
+- item
+- item
+
+### Limitations
+
+- item
+- item
+
+### Verification
+
+- `dotnet build SessionGuard.sln`
+- `dotnet test SessionGuard.sln`
+- other relevant verification
+```
 
 ## Project structure expectations
 
