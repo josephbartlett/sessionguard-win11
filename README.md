@@ -116,6 +116,12 @@ Query service status and control-plane reachability:
 powershell -ExecutionPolicy Bypass -File scripts/service/Get-SessionGuardServiceStatus.ps1
 ```
 
+Validate a published service layout outside the repo root:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/service/Validate-SessionGuardPublishedLayout.ps1
+```
+
 Print the latest persisted service health snapshot:
 
 ```powershell
@@ -157,8 +163,9 @@ src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe probe
 9. Run the service project, then launch the desktop app and confirm the dashboard reports `Control plane: Service`.
 10. Run `src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe probe` and confirm it prints JSON status while the service path is running.
 11. Run `powershell -ExecutionPolicy Bypass -File scripts/service/Get-SessionGuardServiceStatus.ps1` and confirm it reports both control-plane reachability and health snapshot details.
-12. Minimize or close the dashboard window and confirm SessionGuard remains available in the notification area.
-13. Inspect `state/current-scan.json` and `state/service-health.json` and confirm the latest status is serialized by the service or local fallback path.
+12. Run `powershell -ExecutionPolicy Bypass -File scripts/service/Validate-SessionGuardPublishedLayout.ps1` and confirm the published layout works outside the repo root.
+13. Minimize or close the dashboard window and confirm SessionGuard remains available in the notification area.
+14. Inspect `state/current-scan.json` and `state/service-health.json` and confirm the latest status is serialized by the service or local fallback path.
 
 ## What the MVP does not do
 

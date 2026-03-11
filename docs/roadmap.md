@@ -17,6 +17,7 @@ Planned work:
 
 Current status:
 - service health snapshot persistence is now part of the stabilization work
+- repo-external published-layout validation is now part of the stabilization work
 - the next stabilization slice should focus on clean-machine install validation and additional script coverage
 
 Exit criteria:

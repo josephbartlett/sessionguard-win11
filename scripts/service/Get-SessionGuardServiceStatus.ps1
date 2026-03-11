@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
-    [switch]$AsJson
+    [switch]$AsJson,
+    [string]$ProbeExecutable = ""
 )
 
 Set-StrictMode -Version Latest
@@ -9,8 +10,8 @@ $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "common.ps1")
 
 $service = Get-Service -Name $script:SessionGuardServiceName -ErrorAction SilentlyContinue
-$probeExe = Get-SessionGuardProbeExePath
-$healthPath = Get-SessionGuardServiceHealthPath
+$probeExe = Get-SessionGuardProbeExePath -PreferredPath $ProbeExecutable
+$healthPath = Get-SessionGuardServiceHealthPath -ProbeExecutable $probeExe
 $probeSucceeded = $false
 $probeOutput = $null
 $healthSnapshot = $null

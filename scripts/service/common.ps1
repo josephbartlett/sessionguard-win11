@@ -22,8 +22,12 @@ function Get-SessionGuardServiceExePath {
 }
 
 function Get-SessionGuardServiceHealthPath {
+    param(
+        [string]$ProbeExecutable = ""
+    )
+
     $candidates = @()
-    $probeExe = Get-SessionGuardProbeExePath
+    $probeExe = Get-SessionGuardProbeExePath -PreferredPath $ProbeExecutable
     if ($null -ne $probeExe) {
         $candidates += (Join-Path (Split-Path -Parent $probeExe) "state\\service-health.json")
     }
@@ -47,6 +51,14 @@ function Get-SessionGuardServiceHealthPath {
 }
 
 function Get-SessionGuardProbeExePath {
+    param(
+        [string]$PreferredPath = ""
+    )
+
+    if (-not [string]::IsNullOrWhiteSpace($PreferredPath)) {
+        return $PreferredPath
+    }
+
     $publishExe = Get-SessionGuardServiceExePath
     if (Test-Path $publishExe) {
         return $publishExe
