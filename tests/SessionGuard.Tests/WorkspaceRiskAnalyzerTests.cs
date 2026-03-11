@@ -67,4 +67,44 @@ public sealed class WorkspaceRiskAnalyzerTests
         Assert.Equal(WorkspaceCategory.ProtectedTool, item.Category);
         Assert.Contains("operator-defined protection list", item.Reason, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public void Analyze_AssignsMediumConfidenceToBrowserOnlySessions()
+    {
+        var observation = new WorkspaceProcessObservation(
+            new[]
+            {
+                new ProtectedProcessMatch("chrome.exe", 3)
+            },
+            new[]
+            {
+                new ObservedProcessInfo("chrome.exe", 3)
+            });
+
+        var snapshot = WorkspaceRiskAnalyzer.Analyze(observation, DateTimeOffset.Parse("2026-03-11T09:12:00-05:00"));
+
+        var item = Assert.Single(snapshot.RiskItems);
+        Assert.Equal(WorkspaceCategory.Browser, item.Category);
+        Assert.Equal(WorkspaceRiskSeverity.Elevated, item.Severity);
+        Assert.Equal(WorkspaceConfidence.Medium, item.Confidence);
+    }
+
+    [Fact]
+    public void Analyze_TreatsStandaloneRuntimeAsElevatedInsteadOfHigh()
+    {
+        var observation = new WorkspaceProcessObservation(
+            Array.Empty<ProtectedProcessMatch>(),
+            new[]
+            {
+                new ObservedProcessInfo("python.exe", 1)
+            });
+
+        var snapshot = WorkspaceRiskAnalyzer.Analyze(observation, DateTimeOffset.Parse("2026-03-11T09:14:00-05:00"));
+
+        var item = Assert.Single(snapshot.RiskItems);
+        Assert.Equal(WorkspaceCategory.LocalDevServer, item.Category);
+        Assert.Equal(WorkspaceRiskSeverity.Elevated, item.Severity);
+        Assert.Equal(WorkspaceConfidence.Medium, item.Confidence);
+        Assert.Equal(WorkspaceRiskSeverity.Elevated, snapshot.HighestSeverity);
+    }
 }

@@ -12,7 +12,11 @@
 - Windows Update Agent COM, UX settings, and scheduled-task clues improve coverage, but they still do not expose every restart decision path.
 - Smart scheduler predictions and scheduled-task visibility are advisory orchestration clues, not proof that Windows will definitely restart at a specific time.
 - Protected workspace detection is still process-name based. It does not know whether a terminal has unsaved work, whether a browser tab matters to the user, or whether a runtime process is truly serving a critical workload.
+- Terminal and shell heuristics intentionally treat open shells as risky even when the shell may be idle. That biases toward visibility over false reassurance.
+- Browser heuristics only operate on configured protected browsers and still cannot tell whether session restore, pinned tabs, or form-state recovery is enabled.
+- Editor and IDE heuristics do not inspect project state, dirty buffers, debugger sessions, or build progress.
 - Local dev-server style runtime detection is intentionally conservative and may produce false positives for short-lived scripts or background tools that are not truly restart-sensitive.
+- Local dev-server style runtime detection can also miss runtimes outside the current allowlist, so absence of a runtime risk item is not proof that no long-running work exists.
 
 ## Mitigation limitations
 

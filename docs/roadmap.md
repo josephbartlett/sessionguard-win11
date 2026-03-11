@@ -34,7 +34,8 @@ Current status:
 - Phase 1 workspace models and heuristics are now implemented on this branch
 - Phase 2 advisory workspace snapshot persistence is now implemented on this branch
 - Phase 3 dashboard rendering for workspace-risk summaries is now implemented on this branch
-- Phase 4 validation and release-hardening work remains open before a `v0.4.0` tag
+- Phase 4 validation and release-hardening work is now complete on this branch
+- the remaining release step is tag-and-push approval plus final release notes handoff
 
 ## v0.1.0 - MVP Desktop Monitor
 

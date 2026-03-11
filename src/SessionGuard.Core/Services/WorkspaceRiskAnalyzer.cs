@@ -84,14 +84,15 @@ public static class WorkspaceRiskAnalyzer
             WorkspaceConfidence.Medium,
             "Browser processes are running. SessionGuard cannot count tabs or confirm session persistence, so the disruption risk is inferred from process presence only.",
             BrowserProcesses);
+        var hasInteractiveContext = riskItems.Count > 0;
         AddRunningCategory(
             riskItems,
             runningLookup,
             WorkspaceCategory.LocalDevServer,
             "Local dev-server style runtimes",
-            WorkspaceRiskSeverity.High,
-            riskItems.Count > 0 ? WorkspaceConfidence.High : WorkspaceConfidence.Medium,
-            riskItems.Count > 0
+            hasInteractiveContext ? WorkspaceRiskSeverity.High : WorkspaceRiskSeverity.Elevated,
+            hasInteractiveContext ? WorkspaceConfidence.High : WorkspaceConfidence.Medium,
+            hasInteractiveContext
                 ? "Runtime processes commonly used for local servers or long-running tasks are active alongside interactive tools."
                 : "Runtime processes commonly used for local servers or long-running tasks are active. SessionGuard cannot confirm workload type from process names alone.",
             DevServerProcesses);

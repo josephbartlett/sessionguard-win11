@@ -5,10 +5,12 @@ All notable changes to this project should be recorded here in reverse chronolog
 ## Unreleased
 
 - Added a separate workspace-risk model with grouped heuristics for terminals, editors, browsers, local dev-server style runtimes, and generic protected tools.
+- Tightened standalone runtime heuristics so lone runtime processes surface as elevated risk instead of automatically high risk.
 - Added advisory workspace metadata persistence at `state/workspace-snapshot.json` alongside the existing scan snapshot.
 - Updated the WPF dashboard to show workspace safety groups, confidence, and per-group reasons.
 - Expanded tests for workspace heuristics, snapshot persistence, and the updated scan result/control-plane contract.
 - Bumped the local named-pipe protocol version to `1.1` to keep app and service payloads aligned for the richer scan result.
+- Prepared `0.4.0` release metadata, packaging defaults, and release notes.
 
 ## 0.3.1 - 2026-03-11
 
