@@ -2,6 +2,32 @@
 
 This roadmap is intentionally phased. The MVP stays narrow so each subsequent version can expand capability without weakening the safety and honesty of the product.
 
+## Near-Term Execution Plan
+
+### 0.3.x Stabilization Track
+
+Purpose:
+Reduce operational ambiguity in the new service-backed architecture before expanding feature scope.
+
+Planned work:
+- strengthen service startup, scan, and control-plane diagnostics
+- validate published-install behavior outside the repo root
+- expand tests around service operations and health reporting
+- keep local fallback explicit so operators can tell whether the dashboard is using the service
+
+Current status:
+- service health snapshot persistence is now part of the stabilization work
+- the next stabilization slice should focus on clean-machine install validation and additional script coverage
+
+Exit criteria:
+- service startup and failure states are visible through status tooling
+- published service layout is documented and behaves consistently
+- regression coverage exists for the key service lifecycle paths
+
+### v0.4.0 Execution Detail
+
+See [`docs/plans/v0.4.0-workspace-safety-plan.md`](/C:/Users/decoy/sessionguard-win11/docs/plans/v0.4.0-workspace-safety-plan.md) for the concrete implementation phases, dependencies, and acceptance gates.
+
 ## v0.1.0 - MVP Desktop Monitor
 
 ### Purpose

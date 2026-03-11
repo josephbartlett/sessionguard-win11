@@ -80,6 +80,7 @@ Before writing managed values, the infrastructure layer captures previous values
 - `logs/`: local structured logs created on demand.
 - `state/`: local backup state used for mitigation reset behavior.
   - `current-scan.json`: latest machine-readable scan snapshot shared by the app and service paths.
+  - `service-health.json`: service lifecycle and diagnostics snapshot for startup, scan, and pipe health.
 
 The log and state folders are intentionally excluded from source control.
 
@@ -110,6 +111,8 @@ The desktop app and service now write to separate files:
 
 - `logs/sessionguard-app-YYYYMMDD.log`
 - `logs/sessionguard-service-YYYYMMDD.log`
+
+The service also persists `state/service-health.json` so operator tooling can read current startup and error state directly.
 
 This keeps the MVP auditable without introducing a full telemetry stack.
 

@@ -9,18 +9,22 @@ namespace SessionGuard.Service;
 public sealed class SessionGuardPipeServer : BackgroundService
 {
     private readonly SessionGuardServiceRuntime _runtime;
+    private readonly SessionGuardServiceHealthReporter _healthReporter;
     private readonly SessionGuard.Core.Services.IAppLogger _logger;
 
     public SessionGuardPipeServer(
         SessionGuardServiceRuntime runtime,
+        SessionGuardServiceHealthReporter healthReporter,
         SessionGuard.Core.Services.IAppLogger logger)
     {
         _runtime = runtime;
+        _healthReporter = healthReporter;
         _logger = logger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        await _healthReporter.RecordPipeServerStartedAsync(stoppingToken);
         _logger.Info("service.pipe.start", new { pipe = SessionGuardPipeConstants.PipeName });
 
         while (!stoppingToken.IsCancellationRequested)
@@ -41,6 +45,7 @@ public sealed class SessionGuardPipeServer : BackgroundService
             catch (Exception exception)
             {
                 _logger.Error("service.pipe.request.failed", exception);
+                await _healthReporter.RecordErrorAsync("pipe", exception, stoppingToken);
             }
         }
 

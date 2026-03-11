@@ -2,6 +2,7 @@ using SessionGuard.Core.Configuration;
 using SessionGuard.Core.Models;
 using SessionGuard.Core.Services;
 using SessionGuard.Infrastructure.ControlPlane;
+using SessionGuard.Infrastructure.Environment;
 using SessionGuard.Service;
 
 namespace SessionGuard.Tests;
@@ -93,6 +94,11 @@ public sealed class ControlPlaneTests
         var logger = new RecordingLogger();
         var configurationRepository = new StubConfigurationRepository(configuration);
         var mitigationService = new StubMitigationService();
+        var runtimeRoot = Path.Combine(Path.GetTempPath(), "SessionGuard.Tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(runtimeRoot);
+        var healthReporter = new SessionGuardServiceHealthReporter(
+            RuntimePaths.Discover(runtimeRoot),
+            logger);
 
         return new SessionGuardServiceRuntime(
             new SessionGuardCoordinator(
@@ -118,6 +124,7 @@ public sealed class ControlPlaneTests
             configurationRepository,
             mitigationService,
             snapshotStore,
+            healthReporter,
             logger);
     }
 

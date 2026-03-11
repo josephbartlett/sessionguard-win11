@@ -9,6 +9,7 @@ public sealed class SessionGuardServiceRuntime
     private readonly IConfigurationRepository _configurationRepository;
     private readonly IMitigationService _mitigationService;
     private readonly IScanSnapshotStore _snapshotStore;
+    private readonly SessionGuardServiceHealthReporter _healthReporter;
     private readonly IAppLogger _logger;
     private readonly SemaphoreSlim _gate = new(1, 1);
 
@@ -20,12 +21,14 @@ public sealed class SessionGuardServiceRuntime
         IConfigurationRepository configurationRepository,
         IMitigationService mitigationService,
         IScanSnapshotStore snapshotStore,
+        SessionGuardServiceHealthReporter healthReporter,
         IAppLogger logger)
     {
         _coordinator = coordinator;
         _configurationRepository = configurationRepository;
         _mitigationService = mitigationService;
         _snapshotStore = snapshotStore;
+        _healthReporter = healthReporter;
         _logger = logger;
     }
 
@@ -150,6 +153,11 @@ public sealed class SessionGuardServiceRuntime
                 result.HasAmbiguousSignals,
                 guardModeEnabled = _currentStatus.GuardModeEnabled
             });
+
+        await _healthReporter.RecordScanAsync(
+            _currentStatus,
+            configuration.AppSettings.ScanIntervalSeconds,
+            cancellationToken);
 
         return _currentStatus;
     }

@@ -21,6 +21,31 @@ function Get-SessionGuardServiceExePath {
     return Join-Path $PublishRoot "SessionGuard.Service.exe"
 }
 
+function Get-SessionGuardServiceHealthPath {
+    $candidates = @()
+    $probeExe = Get-SessionGuardProbeExePath
+    if ($null -ne $probeExe) {
+        $candidates += (Join-Path (Split-Path -Parent $probeExe) "state\\service-health.json")
+    }
+
+    $repoHealthPath = Join-Path (Get-SessionGuardRepositoryRoot) "state\\service-health.json"
+    if ($candidates -notcontains $repoHealthPath) {
+        $candidates += $repoHealthPath
+    }
+
+    $existing = @(
+        $candidates |
+        Where-Object { Test-Path $_ } |
+        Sort-Object { (Get-Item $_).LastWriteTimeUtc } -Descending
+    )
+
+    if ($existing.Count -gt 0) {
+        return $existing[0]
+    }
+
+    return $candidates[0]
+}
+
 function Get-SessionGuardProbeExePath {
     $publishExe = Get-SessionGuardServiceExePath
     if (Test-Path $publishExe) {

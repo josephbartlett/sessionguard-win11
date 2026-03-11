@@ -116,6 +116,12 @@ Query service status and control-plane reachability:
 powershell -ExecutionPolicy Bypass -File scripts/service/Get-SessionGuardServiceStatus.ps1
 ```
 
+Print the latest persisted service health snapshot:
+
+```powershell
+artifacts\publish\SessionGuard.Service\SessionGuard.Service.exe health
+```
+
 Probe the running service directly from the service executable:
 
 ```powershell
@@ -136,6 +142,7 @@ src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe probe
 - Service logs are written to `logs/sessionguard-service-YYYYMMDD.log`.
 - Temporary mitigation backups are written to the local `state/` folder so SessionGuard can restore previous values when resetting managed settings.
 - The latest scan snapshot is written to `state/current-scan.json` for future background-service or tray-client consumption.
+- The service health snapshot is written to `state/service-health.json` so status tooling can show startup, scan, and control-plane health without scraping logs.
 
 ## Manual review checklist
 
@@ -149,8 +156,9 @@ src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe probe
 8. Review the latest file under `logs/` and confirm scans, detections, mitigation attempts, and failures are recorded.
 9. Run the service project, then launch the desktop app and confirm the dashboard reports `Control plane: Service`.
 10. Run `src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe probe` and confirm it prints JSON status while the service path is running.
-11. Minimize or close the dashboard window and confirm SessionGuard remains available in the notification area.
-12. Inspect `state/current-scan.json` and confirm the latest status is serialized by the service or local fallback path.
+11. Run `powershell -ExecutionPolicy Bypass -File scripts/service/Get-SessionGuardServiceStatus.ps1` and confirm it reports both control-plane reachability and health snapshot details.
+12. Minimize or close the dashboard window and confirm SessionGuard remains available in the notification area.
+13. Inspect `state/current-scan.json` and `state/service-health.json` and confirm the latest status is serialized by the service or local fallback path.
 
 ## What the MVP does not do
 
@@ -166,5 +174,6 @@ src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe probe
 - Product brief: [`docs/product-brief.md`](/C:/Users/decoy/sessionguard-win11/docs/product-brief.md)
 - Limitations: [`docs/limitations.md`](/C:/Users/decoy/sessionguard-win11/docs/limitations.md)
 - Roadmap: [`docs/roadmap.md`](/C:/Users/decoy/sessionguard-win11/docs/roadmap.md)
+- Workspace safety plan: [`docs/plans/v0.4.0-workspace-safety-plan.md`](/C:/Users/decoy/sessionguard-win11/docs/plans/v0.4.0-workspace-safety-plan.md)
 - Future service design: [`docs/future-service-architecture.md`](/C:/Users/decoy/sessionguard-win11/docs/future-service-architecture.md)
 - Release notes: [`docs/releases/v0.3.0.md`](/C:/Users/decoy/sessionguard-win11/docs/releases/v0.3.0.md)

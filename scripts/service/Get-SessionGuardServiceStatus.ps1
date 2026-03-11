@@ -10,8 +10,10 @@ $ErrorActionPreference = "Stop"
 
 $service = Get-Service -Name $script:SessionGuardServiceName -ErrorAction SilentlyContinue
 $probeExe = Get-SessionGuardProbeExePath
+$healthPath = Get-SessionGuardServiceHealthPath
 $probeSucceeded = $false
 $probeOutput = $null
+$healthSnapshot = $null
 
 if ($null -ne $probeExe) {
     try {
@@ -25,14 +27,24 @@ if ($null -ne $probeExe) {
     }
 }
 
+if (Test-Path $healthPath) {
+    try {
+        $healthSnapshot = Get-Content $healthPath -Raw | ConvertFrom-Json
+    }
+    catch {
+    }
+}
+
 $status = [pscustomobject]@{
     ServiceName = $script:SessionGuardServiceName
     Installed = $null -ne $service
     Status = if ($null -ne $service) { $service.Status.ToString() } else { "NotInstalled" }
     StartType = if ($null -ne $service) { $service.StartType.ToString() } else { "Unknown" }
     ProbeExecutable = $probeExe
+    HealthFilePath = $healthPath
     ControlPlaneReachable = $probeSucceeded
     ProbeOutput = if ($probeOutput) { [string]::Join([Environment]::NewLine, $probeOutput) } else { "" }
+    Health = $healthSnapshot
 }
 
 if ($AsJson) {
