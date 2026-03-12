@@ -6,6 +6,15 @@ All notable changes to this project should be recorded here in reverse chronolog
 
 No unreleased changes yet.
 
+## 0.5.3 - 2026-03-11
+
+- Added operator-facing approval-timing text and tray-status summaries so the current approval state is visible without reopening the full dashboard.
+- Added local tray balloon notifications for service fallback, service reconnection, approval activation, approval expiry, approval expiry warnings, and policy transition states.
+- Added an approval-expiry warning lead-time setting in `config/appsettings.json` and enabled desktop notifications by default.
+- Fixed approval transition messaging so manually cleared approval windows are not mislabeled as expired.
+- Added empty-state messaging for policy, workspace, protected-process, and mitigation grids so low-activity views look intentional instead of blank.
+- Expanded tests for operator alert transitions, approval expiry handling, and policy-configuration notification edges.
+
 ## 0.5.2 - 2026-03-11
 
 - Tightened the control-plane boundary so mitigation writes and restart-approval changes are service-owned and no longer execute in local fallback.

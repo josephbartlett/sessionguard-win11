@@ -85,6 +85,7 @@ public static class UiSmokeScenarioCatalog
                 [UiSmokeAutomationIds.ConnectionModeText] = "Control plane: Service (background service is authoritative)",
                 [UiSmokeAutomationIds.ServiceActionAvailabilityText] = "Managed actions: service-backed mitigation and approval changes are available.",
                 [UiSmokeAutomationIds.PolicyDecisionText] = "Policy decision: No active constraints",
+                [UiSmokeAutomationIds.PolicyTimingText] = "Policy timing: no approval window is active.",
                 [UiSmokeAutomationIds.WorkspaceSummaryText] = workspace.Summary
             });
     }
@@ -144,6 +145,7 @@ public static class UiSmokeScenarioCatalog
                 [UiSmokeAutomationIds.ServiceActionAvailabilityText] = "Managed actions: service-backed mitigation and approval changes are available.",
                 [UiSmokeAutomationIds.PolicyDecisionText] = "Policy decision: Approval required",
                 [UiSmokeAutomationIds.PolicyApprovalText] = "Policy approval: required before restart (45 minute default window)",
+                [UiSmokeAutomationIds.PolicyTimingText] = "Policy timing: no approval window is active. Restart still requires supervised approval.",
                 [UiSmokeAutomationIds.StatusSummaryText] = scanResult.Summary
             });
     }
@@ -259,6 +261,7 @@ public static class UiSmokeScenarioCatalog
                 [UiSmokeAutomationIds.ConnectionModeText] = "Control plane: Service (background service is authoritative)",
                 [UiSmokeAutomationIds.ServiceActionAvailabilityText] = "Managed actions: service-backed mitigation and approval changes are available.",
                 [UiSmokeAutomationIds.PolicyDecisionText] = "Policy decision: Restart blocked by policy",
+                [UiSmokeAutomationIds.PolicyTimingText] = "Policy timing: no approval window is active.",
                 [UiSmokeAutomationIds.WorkspaceSummaryText] = workspace.Summary,
                 [UiSmokeAutomationIds.WorkspaceConfidenceText] = "Workspace confidence: High"
             });
@@ -339,6 +342,7 @@ public static class UiSmokeScenarioCatalog
                 [UiSmokeAutomationIds.ConnectionModeText] = "Control plane: Local fallback (the dashboard is scanning in-process because the service is unavailable)",
                 [UiSmokeAutomationIds.ServiceActionAvailabilityText] = "Managed actions: mitigation and approval changes are disabled in local fallback until the background service reconnects.",
                 [UiSmokeAutomationIds.PolicyDecisionText] = "Policy decision: Restart blocked by policy",
+                [UiSmokeAutomationIds.PolicyTimingText] = "Policy timing: no approval window is active.",
                 [UiSmokeAutomationIds.WorkspaceConfidenceText] = "Workspace confidence: Medium"
             });
     }
@@ -346,6 +350,7 @@ public static class UiSmokeScenarioCatalog
     private static UiSmokeScenario CreateMitigatedScenario()
     {
         var timestamp = ParseTimestamp("2026-03-11T15:20:00-04:00");
+        var expiry = timestamp.AddMinutes(60);
         var workspace = WorkspaceStateSnapshot.None(timestamp);
         var mitigations = new[]
         {
@@ -410,7 +415,8 @@ public static class UiSmokeScenarioCatalog
                 [UiSmokeAutomationIds.AdminAccessText] = "Elevated",
                 [UiSmokeAutomationIds.PolicyDecisionText] = "Policy decision: Approval window active",
                 [UiSmokeAutomationIds.ConnectionModeText] = "Control plane: Service (background service is authoritative)",
-                [UiSmokeAutomationIds.ServiceActionAvailabilityText] = "Managed actions: service-backed mitigation and approval changes are available."
+                [UiSmokeAutomationIds.ServiceActionAvailabilityText] = "Managed actions: service-backed mitigation and approval changes are available.",
+                [UiSmokeAutomationIds.PolicyTimingText] = $"Policy timing: approval window active until {expiry.LocalDateTime:G} (60 minute(s) remaining)."
             });
     }
 

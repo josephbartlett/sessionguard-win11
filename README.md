@@ -10,6 +10,7 @@ The MVP is intentionally bounded:
 - It now applies a separate JSON-backed policy engine for restart windows, blocking rules, and temporary approval windows.
 - It now validates the policy configuration separately so malformed or conflicting policy files show diagnostics instead of breaking the whole dashboard scan.
 - It now treats mitigation changes and restart-approval changes as service-owned actions, so local fallback remains read-only for those writes.
+- It now surfaces tray status and local desktop notifications for approval timing, service fallback, and policy transition events.
 - It can apply a small set of reversible native mitigation settings when the app is run with administrative rights.
 - It logs what it observed and what it attempted so the behavior stays auditable.
 
@@ -46,7 +47,11 @@ SessionGuard does not guarantee prevention of every OS-driven restart path, and 
   - `NoAutoRebootWithLoggedOnUsers`
   - policy-managed active hours (`SetActiveHours`, `ActiveHoursStart`, `ActiveHoursEnd`)
 - Local JSON-line logging under the runtime `logs/` folder.
-- Tray-aware WPF dashboard behavior that minimizes to the notification area and can reopen the dashboard on demand.
+- Tray-aware WPF dashboard behavior that minimizes to the notification area, exposes a compact status surface in the tray menu, and can reopen the dashboard on demand.
+- Local desktop notifications for:
+  - service fallback and service reconnection
+  - approval activation, early clearing, expiry, and expiry-soon warnings
+  - policy transitions such as restart-blocked and policy-config-error states
 - Versioned named-pipe control plane between the desktop app and the service-hostable worker, with local fallback if the service is not reachable.
 - Service-owned write boundary for:
   - mitigation apply/reset actions
@@ -194,7 +199,7 @@ src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe clear
 
 ## Config and logs
 
-- Edit [`config/appsettings.json`](/C:/Users/decoy/sessionguard-win11/config/appsettings.json) to change scan interval, warning behavior, active hours defaults, and UI preferences.
+- Edit [`config/appsettings.json`](/C:/Users/decoy/sessionguard-win11/config/appsettings.json) to change scan interval, warning behavior, approval-expiry warning lead time, active hours defaults, and UI preferences.
 - Edit [`config/protected-processes.json`](/C:/Users/decoy/sessionguard-win11/config/protected-processes.json) to add or remove protected processes without rebuilding.
 - Edit [`config/policies.json`](/C:/Users/decoy/sessionguard-win11/config/policies.json) to change restart windows, process or workspace blocking rules, and approval requirements without rebuilding.
 - If `config/policies.json` is malformed or contains conflicting rules, SessionGuard now keeps scanning and surfaces the policy diagnostics in the dashboard instead of failing the entire refresh path.
@@ -228,11 +233,12 @@ src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe clear
 16. Run `powershell -ExecutionPolicy Bypass -File scripts/service/Validate-SessionGuardPublishedLayout.ps1` and confirm the published layout works outside the repo root.
 17. Minimize or close the dashboard window and confirm SessionGuard remains available in the notification area.
 18. Trigger a state with restart pressure, then confirm the policy card explains whether restart is blocked, requires approval, or has an active approval window.
-19. Stop the service or force local fallback, then confirm the mitigation and approval buttons are disabled and the dashboard explains that those write actions are service-owned.
+19. Stop the service or force local fallback, then confirm the mitigation and approval buttons are disabled, the dashboard explains that those write actions are service-owned, and the tray surface reports local fallback.
 20. Grant and clear a temporary restart approval window from the dashboard or `SessionGuard.Service.exe approve-restart` while the service path is active and confirm the policy status changes.
-21. Start a protected terminal, browser, or editor session and confirm the workspace safety table explains why the session is considered risky.
-22. Introduce a temporary mistake into [`config/policies.json`](/C:/Users/decoy/sessionguard-win11/config/policies.json), trigger a scan, and confirm the policy card stays up, reports configuration errors, and leaves the rest of the dashboard functional.
-23. Inspect `state/current-scan.json`, `state/workspace-snapshot.json`, `state/policy-approval.json`, and `state/service-health.json` and confirm the latest status is serialized by the service or local fallback path.
+21. Minimize the app to the tray while the service path is active, then confirm tray balloon notifications appear for service transitions or approval timing events when they occur.
+22. Start a protected terminal, browser, or editor session and confirm the workspace safety table explains why the session is considered risky.
+23. Introduce a temporary mistake into [`config/policies.json`](/C:/Users/decoy/sessionguard-win11/config/policies.json), trigger a scan, and confirm the policy card stays up, reports configuration errors, and leaves the rest of the dashboard functional.
+24. Inspect `state/current-scan.json`, `state/workspace-snapshot.json`, `state/policy-approval.json`, and `state/service-health.json` and confirm the latest status is serialized by the service or local fallback path.
 
 ## What the MVP does not do
 
@@ -254,4 +260,4 @@ src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe clear
 - Roadmap: [`docs/roadmap.md`](/C:/Users/decoy/sessionguard-win11/docs/roadmap.md)
 - Workspace safety plan: [`docs/plans/v0.4.0-workspace-safety-plan.md`](/C:/Users/decoy/sessionguard-win11/docs/plans/v0.4.0-workspace-safety-plan.md)
 - Future service design: [`docs/future-service-architecture.md`](/C:/Users/decoy/sessionguard-win11/docs/future-service-architecture.md)
-- Release notes: [`docs/releases/v0.5.2.md`](/C:/Users/decoy/sessionguard-win11/docs/releases/v0.5.2.md)
+- Release notes: [`docs/releases/v0.5.3.md`](/C:/Users/decoy/sessionguard-win11/docs/releases/v0.5.3.md)

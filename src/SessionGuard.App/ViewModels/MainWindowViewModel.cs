@@ -30,6 +30,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private readonly RelayCommand _openLogsCommand;
     private readonly RelayCommand _openWindowsUpdateSettingsCommand;
 
+    private OperatorAlertContext? _operatorAlertContext;
     private WarningBehaviorOptions _warningBehavior = new();
     private RestartRiskLevel _previousRiskLevel;
     private bool _disposed;
@@ -54,6 +55,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private string _policySummaryText = "Policy summary: not yet scanned";
     private string _policyApprovalText = "Policy approval: not yet scanned";
     private string _policyDiagnosticsText = "Policy config: not yet scanned";
+    private string _policyTimingText = "Policy timing: not yet scanned";
     private string _serviceActionAvailabilityText = "Managed actions: availability not yet scanned";
     private string _protectedProcessSummary = "Protected processes: not yet scanned";
     private string _workspaceSummaryText = "Workspace safety: not yet scanned";
@@ -63,6 +65,11 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private string _configurationDirectoryText = string.Empty;
     private string _policyDirectoryText = string.Empty;
     private string _logDirectoryText = string.Empty;
+    private string _trayTooltipText = "SessionGuard";
+    private string _trayStatusText = "Status: not yet scanned";
+    private string _trayModeText = "Mode: not yet scanned";
+    private string _trayPolicyText = "Policy: not yet scanned";
+    private string _trayTimingText = "Timing: not yet scanned";
     private string _policiesPath = string.Empty;
     private Brush _statusBrush = CreateBrush("#64748B");
     private Brush _riskBrush = CreateBrush("#64748B");
@@ -105,6 +112,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     }
 
     public event EventHandler? AttentionRequested;
+
+    public event EventHandler<OperatorNotificationEventArgs>? NotificationRequested;
 
     public ObservableCollection<ProtectedProcessMatch> ProtectedProcesses { get; }
 
@@ -293,6 +302,12 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         private set => SetProperty(ref _policyDiagnosticsText, value);
     }
 
+    public string PolicyTimingText
+    {
+        get => _policyTimingText;
+        private set => SetProperty(ref _policyTimingText, value);
+    }
+
     public string ServiceActionAvailabilityText
     {
         get => _serviceActionAvailabilityText;
@@ -345,6 +360,36 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     {
         get => _logDirectoryText;
         private set => SetProperty(ref _logDirectoryText, value);
+    }
+
+    public string TrayTooltipText
+    {
+        get => _trayTooltipText;
+        private set => SetProperty(ref _trayTooltipText, value);
+    }
+
+    public string TrayStatusText
+    {
+        get => _trayStatusText;
+        private set => SetProperty(ref _trayStatusText, value);
+    }
+
+    public string TrayModeText
+    {
+        get => _trayModeText;
+        private set => SetProperty(ref _trayModeText, value);
+    }
+
+    public string TrayPolicyText
+    {
+        get => _trayPolicyText;
+        private set => SetProperty(ref _trayPolicyText, value);
+    }
+
+    public string TrayTimingText
+    {
+        get => _trayTimingText;
+        private set => SetProperty(ref _trayTimingText, value);
     }
 
     public Brush StatusBrush
@@ -447,12 +492,18 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             PolicySummaryText = "Policy summary unavailable.";
             PolicyApprovalText = "Policy approval unavailable.";
             PolicyDiagnosticsText = "Policy config unavailable.";
+            PolicyTimingText = "Policy timing unavailable.";
             ServiceWriteActionsAvailable = false;
             ServiceActionAvailabilityText = "Managed actions: unavailable because the background service is unreachable.";
             ProtectedProcessSummary = "Protected process detection unavailable.";
             WorkspaceSummaryText = "Workspace safety detection unavailable.";
             WorkspaceConfidenceText = "Workspace confidence: unavailable";
             WorkspaceSnapshotText = "Workspace snapshot: unavailable";
+            TrayTooltipText = "SessionGuard - Unavailable";
+            TrayStatusText = "Status: unavailable";
+            TrayModeText = "Mode: unavailable";
+            TrayPolicyText = "Policy: unavailable";
+            TrayTimingText = "Timing: unavailable";
             LastActionMessage = $"Scan failed: {exception.Message}";
             StatusBrush = CreateBrush("#64748B");
             RiskBrush = CreateBrush("#64748B");
@@ -616,6 +667,24 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         PolicySummaryText = result.Policy.Summary;
         PolicyApprovalText = BuildPolicyApprovalText(result.Policy);
         PolicyDiagnosticsText = result.Policy.Validation.Summary;
+        var operatorAlert = OperatorAlertEvaluator.Evaluate(
+            _operatorAlertContext,
+            status,
+            _warningBehavior.ApprovalExpiryWarningLeadMinutes);
+        PolicyTimingText = operatorAlert.PolicyTimingText;
+        TrayTooltipText = operatorAlert.Tray.TooltipText;
+        TrayStatusText = operatorAlert.Tray.StatusLine;
+        TrayModeText = operatorAlert.Tray.ModeLine;
+        TrayPolicyText = operatorAlert.Tray.PolicyLine;
+        TrayTimingText = operatorAlert.Tray.TimingLine;
+        _operatorAlertContext = operatorAlert.Context;
+        if (_warningBehavior.ShowDesktopNotifications)
+        {
+            foreach (var notification in operatorAlert.Notifications)
+            {
+                NotificationRequested?.Invoke(this, new OperatorNotificationEventArgs(notification));
+            }
+        }
         ProtectedProcessSummary = result.ProtectedProcesses.Count == 0
             ? "Protected processes: none detected"
             : $"Protected processes: {string.Join(", ", result.ProtectedProcesses.Select(match => $"{match.DisplayName} x{match.InstanceCount}"))}";

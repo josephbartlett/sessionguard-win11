@@ -45,14 +45,17 @@ public sealed class WarningBehaviorOptions
 {
     public bool RaiseWindowOnHighRisk { get; init; } = true;
 
-    public bool ShowDesktopNotifications { get; init; }
+    public bool ShowDesktopNotifications { get; init; } = true;
+
+    public int ApprovalExpiryWarningLeadMinutes { get; init; } = 5;
 
     public WarningBehaviorOptions Normalize()
     {
         return new WarningBehaviorOptions
         {
             RaiseWindowOnHighRisk = RaiseWindowOnHighRisk,
-            ShowDesktopNotifications = ShowDesktopNotifications
+            ShowDesktopNotifications = ShowDesktopNotifications,
+            ApprovalExpiryWarningLeadMinutes = Math.Clamp(ApprovalExpiryWarningLeadMinutes, 1, 60)
         };
     }
 }

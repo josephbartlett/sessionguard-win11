@@ -36,7 +36,11 @@ WPF was chosen over WinUI for the MVP because the priority is a stable desktop m
    - `Mitigated / Deferred`
    - `Unknown / Limited Visibility`
 8. The service or local fallback path persists `state/current-scan.json`; when workspace risk is present it also writes `state/workspace-snapshot.json`, and the WPF view model updates the dashboard.
-9. When guard mode is enabled, the WPF shell can raise the dashboard on a high-risk transition and otherwise stay minimized in the tray.
+9. Core operator-alert evaluation turns scan transitions into:
+   - policy-timing summary text for the dashboard
+   - compact tray status text for the notify-icon context menu
+   - desktop notification events for service fallback, policy transitions, and approval timing
+10. When guard mode is enabled, the WPF shell can raise the dashboard on a high-risk transition and otherwise stay minimized in the tray.
 
 ## Restart signal inspection
 
@@ -167,6 +171,12 @@ The log and state folders are intentionally excluded from source control.
 
 `SessionGuard.App` currently acts as a tray-aware dashboard client layered over a hybrid control plane. That keeps the background path and the desktop path aligned while full service installation, startup, and dedicated tray-shell packaging are still in progress.
 
+As of `0.5.3`, the desktop shell also derives an operator-alert layer from shared scan status:
+
+- the tray menu shows compact status, mode, policy, and timing lines
+- the view model emits notification events instead of letting the window shell infer policy transitions itself
+- approval timing is surfaced explicitly so operators can see whether an approval is active, expiring soon, expired, or was cleared early
+
 ## Logging
 
 Logging is lightweight JSON-line output and captures:
@@ -195,7 +205,7 @@ The repo now includes a deterministic UI smoke path for WPF review:
 - `SessionGuard.App` can boot in scenario mode with tray behavior disabled
 - `tests/SessionGuard.UiSmoke` launches the real app executable, validates named UI elements through Windows UI Automation, and captures screenshots
 - `scripts/ui/Run-UiSmoke.ps1` builds the solution and writes screenshots to `artifacts/ui/smoke`
-- the scenario catalog now covers policy decision states so UI smoke can catch policy-card regressions as well as the older restart and workspace views
+- the scenario catalog now covers policy decision states and policy-timing text so UI smoke can catch policy-card regressions as well as the older restart and workspace views
 
 This gives the repo a repeatable way to catch layout regressions, missing controls, and obviously bad UI states before a human manual pass.
 

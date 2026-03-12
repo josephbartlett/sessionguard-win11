@@ -279,6 +279,11 @@
                                        AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.PolicyDiagnosticsText}"
                                        Text="{Binding PolicyDiagnosticsText}"
                                        TextWrapping="Wrap" />
+                            <TextBlock Margin="0,8,0,0"
+                                       Foreground="{StaticResource SecondaryTextBrush}"
+                                       AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.PolicyTimingText}"
+                                       Text="{Binding PolicyTimingText}"
+                                       TextWrapping="Wrap" />
 
                             <ItemsControl Margin="0,10,0,0" ItemsSource="{Binding PolicyValidationIssues}">
                                 <ItemsControl.ItemTemplate>
@@ -310,6 +315,7 @@
                                        TextWrapping="Wrap" />
 
                             <DataGrid Margin="0,14,0,0"
+                                      x:Name="PolicyRulesGrid"
                                       AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.PolicyRulesGrid}"
                                       AutoGenerateColumns="False"
                                       CanUserAddRows="False"
@@ -334,9 +340,24 @@
                                                 <TextBlock Text="{Binding Reason}" TextWrapping="Wrap" />
                                             </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                            </DataGrid.Columns>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
                             </DataGrid>
+                            <TextBlock Margin="0,8,0,0"
+                                       Foreground="{StaticResource SecondaryTextBrush}"
+                                       Text="No policy rules matched during the latest scan."
+                                       TextWrapping="Wrap">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ElementName=PolicyRulesGrid, Path=HasItems}" Value="False">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
 
                             <TextBlock Margin="0,16,0,0"
                                        FontSize="14"
@@ -363,6 +384,7 @@
                                        Foreground="{StaticResource SecondaryTextBrush}"
                                        Text="Workspace safety signals" />
                             <DataGrid Margin="0,14,0,0"
+                                      x:Name="WorkspaceRiskGrid"
                                       AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.WorkspaceRiskGrid}"
                                       AutoGenerateColumns="False"
                                       CanUserAddRows="False"
@@ -384,6 +406,21 @@
                                     </DataGridTemplateColumn>
                                 </DataGrid.Columns>
                             </DataGrid>
+                            <TextBlock Margin="0,8,0,0"
+                                       Foreground="{StaticResource SecondaryTextBrush}"
+                                       Text="No workspace-risk groups are active in the current scan."
+                                       TextWrapping="Wrap">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ElementName=WorkspaceRiskGrid, Path=HasItems}" Value="False">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
 
                             <ItemsControl Margin="0,12,0,0" ItemsSource="{Binding WorkspaceRiskItems}">
                                 <ItemsControl.ItemTemplate>
@@ -405,6 +442,7 @@
                                        Foreground="{StaticResource SecondaryTextBrush}"
                                        Text="Protected process matches" />
                             <DataGrid Margin="0,14,0,0"
+                                      x:Name="ProtectedProcessesGrid"
                                       AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.ProtectedProcessesGrid}"
                                       AutoGenerateColumns="False"
                                       CanUserAddRows="False"
@@ -416,6 +454,21 @@
                                     <DataGridTextColumn Width="140" Binding="{Binding InstanceCount}" Header="Instances" />
                                 </DataGrid.Columns>
                             </DataGrid>
+                            <TextBlock Margin="0,8,0,0"
+                                       Foreground="{StaticResource SecondaryTextBrush}"
+                                       Text="No protected processes were detected in the current scan."
+                                       TextWrapping="Wrap">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ElementName=ProtectedProcessesGrid, Path=HasItems}" Value="False">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
                         </StackPanel>
                     </Border>
 
@@ -464,6 +517,7 @@
                                        Foreground="{StaticResource SecondaryTextBrush}"
                                        Text="Managed mitigation state" />
                             <DataGrid Margin="0,14,0,0"
+                                      x:Name="ManagedMitigationsGrid"
                                       AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.ManagedMitigationsGrid}"
                                       AutoGenerateColumns="False"
                                       CanUserAddRows="False"
@@ -478,6 +532,21 @@
                                     <DataGridCheckBoxColumn Width="120" Binding="{Binding RequiresElevation}" Header="Needs admin" />
                                 </DataGrid.Columns>
                             </DataGrid>
+                            <TextBlock Margin="0,8,0,0"
+                                       Foreground="{StaticResource SecondaryTextBrush}"
+                                       Text="No managed mitigation settings are active in the current scan."
+                                       TextWrapping="Wrap">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ElementName=ManagedMitigationsGrid, Path=HasItems}" Value="False">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
                         </StackPanel>
                     </Border>
                 </StackPanel>

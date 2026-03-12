@@ -86,13 +86,30 @@ Current status:
 - `v0.5.1` makes approval-window precedence explicit when multiple approval rules match
 - `v0.5.2` makes mitigation and approval writes service-owned and keeps local fallback read-only for those actions
 - `v0.5.2` adds service startup approval-state recovery and richer health reporting
-- the next policy follow-up is `0.5.3` operator UX refinement around approval expiry and transition messaging
+- `v0.5.3` adds approval-timing messaging, tray status summaries, and local desktop notifications for policy and service transitions
+- the next policy follow-up after `0.5.3` is production hardening toward `v1.0.0`
 
 Exit criteria:
 - malformed policy JSON degrades safely and visibly
 - duplicate or conflicting rules are called out to the operator
 - approval-window precedence is deterministic and explained in the UI
-- automated coverage exists for invalid config, conflicts, and approval expiry
+- automated coverage exists for invalid config, conflicts, approval expiry, and operator-facing timing transitions
+
+### 0.5.3 Operator UX Refinement
+
+Purpose:
+Make the policy engine easier to operate day-to-day by surfacing approval timing, service-mode changes, and policy transitions without requiring the full dashboard to stay open constantly.
+
+Current status:
+- approval timing is now shown as a first-class dashboard field
+- the tray menu now shows compact status, mode, policy, and timing lines
+- local tray balloon notifications now cover service fallback, service reconnection, approval timing transitions, and policy configuration issues
+- empty-state messaging now makes low-activity dashboard sections read as intentional instead of blank
+
+Exit criteria:
+- operators can tell from the tray whether SessionGuard is service-backed or in local fallback
+- approval windows have visible active, expiring-soon, expired, and cleared states
+- policy transitions trigger operator-facing messaging without requiring a full dashboard refresh review
 
 ### 0.5.2 Service-Boundary Tightening
 
