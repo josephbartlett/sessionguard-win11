@@ -5,8 +5,8 @@ All notable changes to this project should be recorded here in reverse chronolog
 ## Unreleased
 
 - Simplified the WPF dashboard into an overview-first layout with clearer plain-language status and a single recommended next step.
-- Moved restart indicators, policy diagnostics, workspace tables, mitigation controls, and file shortcuts under a collapsed `Advanced details` section so the default UI is quieter.
-- Updated the UI smoke harness so screenshots capture the default overview while the automation still expands `Advanced details` for technical assertions.
+- Split the UI into intentional `Simple view` and `Technical view` modes so the default screen stays calm while the full diagnostic workspace remains available on demand.
+- Updated the UI smoke harness so screenshots capture the default overview first, then switch into Technical view for diagnostic assertions and `-technical` artifacts.
 
 ## 1.0.0 - 2026-03-12
 

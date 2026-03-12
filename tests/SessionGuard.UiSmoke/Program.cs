@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
 using FlaUI.Core.AutomationElements;
-using FlaUI.Core.AutomationElements.PatternElements;
 using FlaUI.UIA3;
 using SessionGuard.Core.Automation;
 using FlaUIApp = FlaUI.Core.Application;
@@ -56,15 +55,16 @@ internal static class Program
             using var app = FlaUIApp.Attach(process.Id);
             var window = WaitForMainWindow(app, automation);
 
+            VerifyRequiredElement(window, UiSmokeAutomationIds.SimpleViewButton);
+            VerifyRequiredElement(window, UiSmokeAutomationIds.TechnicalViewButton);
             VerifyRequiredElement(window, UiSmokeAutomationIds.ScanNowButton);
             VerifyRequiredElement(window, UiSmokeAutomationIds.WindowsUpdateOptionsButton);
-            VerifyRequiredElement(window, UiSmokeAutomationIds.AdvancedDetailsExpander);
             WaitForOverviewState(window, scenario);
 
-            var screenshotPath = Path.Combine(outputDirectory, $"{scenario.Name}.png");
-            WindowCapture.SaveToFile(process.MainWindowHandle, screenshotPath);
+            var overviewScreenshotPath = Path.Combine(outputDirectory, $"{scenario.Name}.png");
+            WindowCapture.SaveToFile(process.MainWindowHandle, overviewScreenshotPath);
 
-            ExpandAdvancedDetails(window);
+            SwitchToTechnicalView(window);
             VerifyRequiredElement(window, UiSmokeAutomationIds.PolicyDecisionText);
             VerifyRequiredElement(window, UiSmokeAutomationIds.PolicyDiagnosticsText);
             VerifyRequiredElement(window, UiSmokeAutomationIds.PolicyTimingText);
@@ -80,9 +80,13 @@ internal static class Program
                 WaitForText(window, expectedText.Key, expectedText.Value);
             }
 
+            var technicalScreenshotPath = Path.Combine(outputDirectory, $"{scenario.Name}-technical.png");
+            WindowCapture.SaveToFile(process.MainWindowHandle, technicalScreenshotPath);
+
             return new SmokeResult(
                 scenario.Name,
-                screenshotPath,
+                overviewScreenshotPath,
+                technicalScreenshotPath,
                 process.MainWindowTitle,
                 process.MainWindowHandle != IntPtr.Zero,
                 scenario.ExpectedTexts.Keys.ToArray());
@@ -200,20 +204,19 @@ internal static class Program
         }
     }
 
-    private static void ExpandAdvancedDetails(Window window)
+    private static void SwitchToTechnicalView(Window window)
     {
         if (WaitForElement(window, UiSmokeAutomationIds.PolicyDecisionText, TimeSpan.FromMilliseconds(250)) is not null)
         {
             return;
         }
 
-        var expander = VerifyRequiredElement(window, UiSmokeAutomationIds.AdvancedDetailsExpander);
-        var expandable = new ExpandCollapseAutomationElement(expander.FrameworkAutomationElement);
-        expandable.Expand();
+        var technicalViewButton = VerifyRequiredElement(window, UiSmokeAutomationIds.TechnicalViewButton).AsButton();
+        technicalViewButton.Invoke();
 
         if (WaitForElement(window, UiSmokeAutomationIds.PolicyDecisionText, TimeSpan.FromSeconds(5)) is null)
         {
-            throw new InvalidOperationException("Advanced details did not expand, so the technical dashboard sections could not be verified.");
+            throw new InvalidOperationException("Technical view did not reveal the advanced diagnostics, so the technical dashboard sections could not be verified.");
         }
     }
 
@@ -290,7 +293,8 @@ internal static class Program
 
     private sealed record SmokeResult(
         string ScenarioName,
-        string ScreenshotPath,
+        string OverviewScreenshotPath,
+        string TechnicalScreenshotPath,
         string WindowTitle,
         bool WindowHandleAvailable,
         IReadOnlyList<string> VerifiedAutomationIds);

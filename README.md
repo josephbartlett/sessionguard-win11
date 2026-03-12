@@ -24,7 +24,7 @@ SessionGuard does not guarantee prevention of every OS-driven restart path, and 
 
 ## MVP capabilities
 
-- Overview-first dashboard showing current status, what to do next, and why SessionGuard is warning; technical tables and file shortcuts stay under collapsed `Advanced details`.
+- Overview-first dashboard with explicit `Simple view` and `Technical view` modes so the default experience stays calm while the full diagnostic workspace remains one switch away.
 - Configurable protected process detection from [`config/protected-processes.json`](/C:/Users/decoy/sessionguard-win11/config/protected-processes.json).
 - Configurable policy rules from [`config/policies.json`](/C:/Users/decoy/sessionguard-win11/config/policies.json) for:
   - restart windows
@@ -234,7 +234,7 @@ src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe clear
 
 ## Config and logs
 
-- Edit [`config/appsettings.json`](/C:/Users/decoy/sessionguard-win11/config/appsettings.json) to change scan interval, warning behavior, approval-expiry warning lead time, active hours defaults, and UI preferences.
+- Edit [`config/appsettings.json`](/C:/Users/decoy/sessionguard-win11/config/appsettings.json) to change scan interval, warning behavior, approval-expiry warning lead time, active hours defaults, and UI preferences. `uiPreferences.showDetailedSignals` now acts as the default launch preference for `Technical view`.
 - Edit [`config/protected-processes.json`](/C:/Users/decoy/sessionguard-win11/config/protected-processes.json) to add or remove protected processes without rebuilding.
 - Edit [`config/policies.json`](/C:/Users/decoy/sessionguard-win11/config/policies.json) to change restart windows, process or workspace blocking rules, and approval requirements without rebuilding.
 - The shipped config files now include `schemaVersion`. Versionless legacy config is still supported, but published service layouts now upgrade it in place and write backups before mutating it.
@@ -255,10 +255,10 @@ src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe clear
 
 1. Run `powershell -ExecutionPolicy Bypass -File scripts/ui/Run-UiSmoke.ps1`.
 2. Run `powershell -ExecutionPolicy Bypass -File scripts/ci/Invoke-WindowsValidation.ps1` if you want the same validation flow used by GitHub Actions.
-3. Inspect the screenshots under `artifacts/ui/smoke/` or `artifacts/ci/windows-validation/ui-smoke/` and confirm the scenarios render without clipped text, broken layout, missing sections, or an unexpectedly expanded `Advanced details` section.
+3. Inspect the screenshots under `artifacts/ui/smoke/` or `artifacts/ci/windows-validation/ui-smoke/` and confirm both the default overview screenshots (`*.png`) and the technical screenshots (`*-technical.png`) render without clipped text, broken layout, or confusing view-mode state.
 4. Build the solution and launch the app in a normal PowerShell session.
-5. Confirm the dashboard opens with a calm overview showing current status, what to do now, and why SessionGuard is warning.
-6. Expand `Advanced details` and confirm the restart indicators, protected apps, workspace safety tables, policy details, and mitigation state are still available.
+5. Confirm the dashboard opens in the expected default mode and that `Simple view` feels calm, with current status, what to do now, and why SessionGuard is warning.
+6. Switch to `Technical view` and confirm the restart indicators, protected apps, workspace safety tables, policy details, and mitigation state are still available without losing the overview context.
 7. Start a protected tool such as Windows Terminal or VS Code and confirm the dashboard detects it on the next scan or after pressing `Scan now`.
 8. Edit [`config/protected-processes.json`](/C:/Users/decoy/sessionguard-win11/config/protected-processes.json), save the file, and verify the next scan uses the updated list.
 9. Launch the app from an elevated shell, apply the recommended mitigation, and confirm the mitigation state changes to applied.

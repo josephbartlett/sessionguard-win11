@@ -30,6 +30,8 @@ public static class UiSmokeAutomationIds
     public const string GrantApprovalButton = "GrantApprovalButton";
     public const string ClearApprovalButton = "ClearApprovalButton";
     public const string WindowsUpdateOptionsButton = "WindowsUpdateOptionsButton";
+    public const string SimpleViewButton = "SimpleViewButton";
+    public const string TechnicalViewButton = "TechnicalViewButton";
     public const string AdvancedDetailsExpander = "AdvancedDetailsExpander";
     public const string RecommendedActionButton = "RecommendedActionButton";
 }

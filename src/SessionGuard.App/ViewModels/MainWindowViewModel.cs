@@ -30,6 +30,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private readonly RelayCommand _openConfigCommand;
     private readonly RelayCommand _openPoliciesCommand;
     private readonly RelayCommand _openLogsCommand;
+    private readonly RelayCommand _setSimpleViewCommand;
+    private readonly RelayCommand _setTechnicalViewCommand;
     private readonly RelayCommand _openWindowsUpdateSettingsCommand;
 
     private OperatorAlertContext? _operatorAlertContext;
@@ -128,6 +130,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         _openConfigCommand = new RelayCommand(() => OpenPath(_runtimePaths.ConfigDirectory), () => !IsBusy);
         _openPoliciesCommand = new RelayCommand(() => OpenPath(_policiesPath), () => !IsBusy && !string.IsNullOrWhiteSpace(_policiesPath));
         _openLogsCommand = new RelayCommand(() => OpenPath(_runtimePaths.LogDirectory), () => !IsBusy);
+        _setSimpleViewCommand = new RelayCommand(() => SetTechnicalView(false), () => !IsBusy);
+        _setTechnicalViewCommand = new RelayCommand(() => SetTechnicalView(true), () => !IsBusy);
         _openWindowsUpdateSettingsCommand = new RelayCommand(OpenWindowsUpdateSettings, () => !IsBusy);
     }
 
@@ -169,6 +173,10 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
 
     public RelayCommand OpenLogsCommand => _openLogsCommand;
 
+    public RelayCommand SetSimpleViewCommand => _setSimpleViewCommand;
+
+    public RelayCommand SetTechnicalViewCommand => _setTechnicalViewCommand;
+
     public RelayCommand OpenWindowsUpdateSettingsCommand => _openWindowsUpdateSettingsCommand;
 
     public bool GuardModeEnabled
@@ -209,6 +217,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
                 _openConfigCommand.RaiseCanExecuteChanged();
                 _openPoliciesCommand.RaiseCanExecuteChanged();
                 _openLogsCommand.RaiseCanExecuteChanged();
+                _setSimpleViewCommand.RaiseCanExecuteChanged();
+                _setTechnicalViewCommand.RaiseCanExecuteChanged();
                 _openWindowsUpdateSettingsCommand.RaiseCanExecuteChanged();
             }
         }
@@ -217,8 +227,29 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     public bool ShowDetailedSignals
     {
         get => _showDetailedSignals;
-        set => SetProperty(ref _showDetailedSignals, value);
+        set
+        {
+            if (SetProperty(ref _showDetailedSignals, value))
+            {
+                OnPropertyChanged(nameof(SimpleViewEnabled));
+                OnPropertyChanged(nameof(TechnicalViewEnabled));
+                OnPropertyChanged(nameof(ViewModeHeadline));
+                OnPropertyChanged(nameof(ViewModeDescription));
+                _setSimpleViewCommand.RaiseCanExecuteChanged();
+                _setTechnicalViewCommand.RaiseCanExecuteChanged();
+            }
+        }
     }
+
+    public bool SimpleViewEnabled => !ShowDetailedSignals;
+
+    public bool TechnicalViewEnabled => ShowDetailedSignals;
+
+    public string ViewModeHeadline => TechnicalViewEnabled ? "Technical view is on." : "Simple view is on.";
+
+    public string ViewModeDescription => TechnicalViewEnabled
+        ? "You are seeing raw restart signals, rule matches, managed settings, and operator file shortcuts."
+        : "Simple view keeps the focus on status, guidance, and plain-language reasons. Switch views when you need the raw signals or advanced controls.";
 
     public bool ServiceWriteActionsAvailable
     {
@@ -777,6 +808,11 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
                 await RefreshAsync(initialLoad: false, forceScan: true, explicitGuardMode: null, skipIfBusy: false);
                 break;
         }
+    }
+
+    private void SetTechnicalView(bool enabled)
+    {
+        ShowDetailedSignals = enabled;
     }
 
     private void ApplyConfiguration(RuntimeConfiguration configuration, bool initialLoad)
