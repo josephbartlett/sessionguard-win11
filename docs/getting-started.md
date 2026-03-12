@@ -133,9 +133,9 @@ Requirements:
 Example:
 
 ```powershell
-git tag -a v1.0.1 -m "SessionGuard 1.0.1"
+git tag -a v1.0.2 -m "SessionGuard 1.0.2"
 git push origin main
-git push origin v1.0.1
+git push origin v1.0.2
 ```
 
 The release workflow will validate the build, publish binaries, and attach the versioned zip assets to the GitHub Release.

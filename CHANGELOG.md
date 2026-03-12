@@ -4,6 +4,8 @@ All notable changes to this project should be recorded here in reverse chronolog
 
 ## Unreleased
 
+## 1.0.2 - 2026-03-12
+
 - Added a combined install path that installs the service, registers the tray app to start at user sign-in, and launches the app minimized to the tray.
 - Added a shared app-plus-service bundle publish path, root-level bundle install and uninstall entry points, and a bundled release zip so end users do not need to juggle separate app and service packages.
 - Added explicit runtime-model documentation explaining the difference between the service, the app, the tray icon, and startup behavior.
