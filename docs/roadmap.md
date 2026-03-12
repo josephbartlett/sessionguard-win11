@@ -108,6 +108,7 @@ Current status:
 - install now verifies post-start health and control-plane reachability instead of treating `Start-Service` alone as success
 - the service tooling now includes a one-command deployment update flow that stops the live service, republishes into the target root, reinstalls, restarts, and verifies the running version against `install-manifest.json`
 - elevated validation on this branch now includes a clean fresh install and a live in-place upgrade from `v0.5.3`
+- release automation now publishes versioned desktop-app, service, and source assets from a matching `vX.Y.Z` tag
 
 Exit criteria:
 - republishing does not overwrite operator-edited runtime config
@@ -372,3 +373,10 @@ Turn SessionGuard into a hardened Windows restart-mitigation platform suitable f
 - deployment and upgrade paths are documented and repeatable
 - diagnostics are sufficient for field support
 - the product remains explicit that it mitigates restart disruption rather than guaranteeing universal restart suppression
+
+### Current status
+
+- the acceptance criteria above are satisfied on this branch
+- the desktop UI now ships with a calmer overview-first default plus an explicit technical mode
+- release assets can now be produced locally or from a matching GitHub tag
+- the next planned work after `v1.0.0` is post-release hardening or packaging refinement rather than new core platform architecture

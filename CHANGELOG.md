@@ -4,35 +4,19 @@ All notable changes to this project should be recorded here in reverse chronolog
 
 ## Unreleased
 
-- Simplified the WPF dashboard into an overview-first layout with clearer plain-language status and a single recommended next step.
-- Split the UI into intentional `Simple view` and `Technical view` modes so the default screen stays calm while the full diagnostic workspace remains available on demand.
-- Updated the UI smoke harness so screenshots capture the default overview first, then switch into Technical view for diagnostic assertions and `-technical` artifacts.
-- Added a desktop publish script that produces a versioned WPF app folder with runtime config, defaults, and a desktop manifest.
-- Added a repo-owned release asset script plus a tag-triggered GitHub Actions workflow that validates the build and attaches versioned binary zips to GitHub Releases.
+- No unreleased changes.
 
 ## 1.0.0 - 2026-03-12
 
 - Shipped the full SessionGuard platform baseline: restart-signal inspection, workspace-risk heuristics, policy engine, tray-aware desktop shell, and service-backed monitoring.
+- Simplified the default dashboard into an overview-first experience with clearer plain-language status and an explicit `Simple view` / `Technical view` split.
 - Hardened the service lifecycle with publish preservation, runtime validation, install manifests, config schema migration, and a one-command deployment update flow.
 - Tightened the service boundary so mitigation writes and approval changes remain service-owned while local fallback stays read-only for those actions.
 - Added deterministic Windows validation with UI smoke automation, local and CI entry points, and packaged screenshot artifacts.
+- Added desktop-app publishing, versioned binary release assets, and a tag-driven GitHub Actions workflow for desktop app, service, and source packages.
 - Added operator-facing diagnostics for policy validation, approval timing, service health, published-layout validation, and config-backup visibility.
 - Corrected Windows `sc.exe` service-creation argument formatting so elevated install and update flows work reliably on a real machine.
 - Added `Update-SessionGuardServiceDeployment.ps1` as the supported upgrade path for installed service deployments.
-
-- Hardened the published service layout so mutable runtime config stays in `config/` while shipped defaults are copied to `config.defaults/`.
-- Added runtime self-validation through `SessionGuard.Service.exe validate-runtime` and surfaced that validation in the install and status scripts.
-- Added `install-manifest.json` to published service layouts with version, protocol, path, and validation metadata.
-- Updated publish behavior to preserve existing `config/`, `logs/`, and `state/` folders when republishing into the same service root.
-- Updated service installation to verify post-start health and control-plane reachability after a successful start.
-- Expanded tests for published-layout path discovery and default-config seeding.
-- Added `schemaVersion` to the shipped JSON config files and a bounded legacy-to-current config migration path.
-- Added `SessionGuard.Service.exe upgrade-config` plus a PowerShell wrapper script for upgrading published runtime config in place with backups.
-- Added migration inspection into runtime validation so install-readiness checks can detect legacy or unsupported config schema versions.
-- Added `Update-SessionGuardServiceDeployment.ps1` as a one-command stop, republish, reinstall, restart, and running-version verification path for installed service deployments.
-- Expanded status reporting with the installed service image path so deployment tooling can verify the service is running the expected binary.
-- Expanded PowerShell script coverage for the new deployment-upgrade validate-only flow.
-- Corrected Windows `sc.exe` service-creation argument formatting so elevated install and update flows work reliably on a real machine.
 
 ## 0.5.3 - 2026-03-11
 

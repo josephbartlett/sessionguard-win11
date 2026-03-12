@@ -4,7 +4,7 @@
 
 - Windows can restart for reasons outside the small set of user-mode-visible signals this MVP inspects.
 - Policy-backed mitigations reduce risk but do not override every restart path on every device configuration.
-- SessionGuard now includes a service-hostable worker and local IPC path, but it still does not ship a hardened installed service model, kernel component, or enterprise management channel.
+- SessionGuard now includes a hardened local service install and upgrade path, but it still does not ship a kernel component, enterprise management channel, or centralized policy authority.
 
 ## Visibility limitations
 
@@ -39,9 +39,8 @@
 - The desktop UI now minimizes to the tray, but it is still primarily a dashboard window rather than a dedicated lightweight tray client.
 - Desktop notifications are local tray balloon tips only. They are not Windows toast notifications, do not integrate with a richer action center workflow, and are easiest to notice when the dashboard window is hidden or minimized.
 - The local named-pipe control plane is now versioned, but compatibility is still only guaranteed within the local SessionGuard release line.
-- Service installation and start or stop scripts are now included, but the workflow is still aimed at local power-user validation rather than enterprise deployment.
-- Published runtime config is now preserved across republish operations, but there is still no formal config-schema migration layer for future breaking config changes.
-- Config schema migration currently covers only the bounded legacy-to-`schemaVersion: 1` path. Future major config redesigns will still need explicit migration steps before they can be claimed upgrade-safe.
+- Service installation, update, and start or stop scripts are included, but the workflow is still aimed at local operator deployment rather than enterprise fleet rollout.
+- Published runtime config is now preserved across republish operations and has a bounded schema migration path, but future breaking config redesigns will still need explicit migration steps before they can be claimed upgrade-safe.
 - A dedicated tray-shell package is not yet part of the shipped workflow.
 
 ## Recovery limitations
