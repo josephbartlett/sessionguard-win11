@@ -4,8 +4,14 @@ All notable changes to this project should be recorded here in reverse chronolog
 
 ## Unreleased
 
+- No unreleased changes.
+
+## 1.0.1 - 2026-03-12
+
 - Tightened the documentation set for a post-1.0 release, including a shorter README, a new getting-started guide, and a dedicated manual validation checklist.
 - Removed stale active-use "MVP" framing from current product docs and tightened repo documentation rules in `AGENTS.md`.
+- Simplified the roadmap into a product-facing shipped-history plus likely-next-steps view.
+- Updated one remaining mitigation description string so the running product no longer refers to itself as an MVP instance.
 
 ## 1.0.0 - 2026-03-12
 
