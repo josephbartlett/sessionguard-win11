@@ -73,7 +73,7 @@ public sealed class WindowsMitigationService : IMitigationService
                 .Select(state => state.Id == "active-hours-enabled"
                     ? state with
                     {
-                        Description = "Active hours policy management is disabled in config for this MVP instance.",
+                        Description = "Active hours policy management is disabled in this configuration.",
                         RecommendedValue = "0",
                         IsApplied = state.CurrentValue == "0"
                     }

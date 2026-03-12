@@ -2,7 +2,7 @@
 
 ## Platform limitations
 
-- Windows can restart for reasons outside the small set of user-mode-visible signals this MVP inspects.
+- Windows can restart for reasons outside the small set of user-mode-visible signals SessionGuard inspects.
 - Policy-backed mitigations reduce risk but do not override every restart path on every device configuration.
 - SessionGuard now includes a hardened local service install and upgrade path, but it still does not ship a kernel component, enterprise management channel, or centralized policy authority.
 
@@ -49,6 +49,6 @@
 - No process relaunch orchestration
 - No browser or editor recovery integration
 
-## Practical reading of the MVP
+## Practical reading of the product
 
 Use SessionGuard as a local restart-awareness and mitigation helper. Do not treat it as a guarantee, a replacement for backups, or a substitute for saving work before maintenance windows.

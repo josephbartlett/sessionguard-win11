@@ -32,7 +32,7 @@
 
 - Use `MAJOR.MINOR.PATCH`.
 - `PATCH` is for backward-compatible fixes, documentation clarifications, tests, and low-risk internal cleanup.
-- `MINOR` is for backward-compatible feature additions or meaningful MVP expansions.
+- `MINOR` is for backward-compatible feature additions or meaningful product expansions.
 - `MAJOR` is for intentional breaking changes in configuration, contracts, packaging, or operator expectations.
 - Pre-1.0 versions should still follow semantic intent:
   - `0.x.0` for feature milestones
@@ -115,8 +115,12 @@ Short summary of the release.
 ## Documentation rules
 
 - Update `README.md` when setup, behavior, or review steps change.
+- Keep `README.md` focused on first-run understanding, quick-start commands, and links to deeper docs rather than turning it into a dump of every operator detail.
 - Update `docs/limitations.md` when platform limits become clearer.
 - Update `docs/roadmap.md` when release sequencing or version intent changes.
+- Prefer relative Markdown links inside repo docs so they work on GitHub as well as locally.
+- Avoid calling the current product an "MVP" except when referring to historical pre-1.0 versions or release notes.
+- If a doc or release note describes current status, make sure it reflects what is actually shipped rather than stale planning language.
 - Keep documentation honest about confidence, permissions, and Windows platform boundaries.
 
 ## Logging and diagnostics
@@ -129,4 +133,4 @@ Short summary of the release.
 
 - Preserve a professional, minimal, Windows-native style.
 - Prefer clarity and state visibility over visual flourish.
-- Avoid speculative controls or workflow surfaces that do not map to a real MVP use case.
+- Avoid speculative controls or workflow surfaces that do not map to a real product use case.

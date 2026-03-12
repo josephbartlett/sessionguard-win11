@@ -2,14 +2,14 @@
 
 ## Decision summary
 
-SessionGuard MVP uses a layered `WPF + Core + Infrastructure` structure:
+SessionGuard uses a layered `WPF + Core + Infrastructure` structure:
 
 - `SessionGuard.App`: presentation, tray-aware dashboard behavior, and user-facing actions.
 - `SessionGuard.Core`: models, process matching, restart status evaluation, scan orchestration, and service contracts.
 - `SessionGuard.Infrastructure`: Windows-specific implementations for config loading, file logging, process inventory, registry inspection, versioned named-pipe IPC, and registry-backed mitigation settings.
 - `SessionGuard.Service`: service-hostable background worker plus named-pipe server that reuses the same coordinator and shared state output.
 
-WPF was chosen over WinUI for the MVP because the priority is a stable desktop monitor with fast local iteration and direct Windows API access. The architecture keeps system-facing logic out of the UI so the service boundary and future tray shell can evolve without rewriting the core scan logic.
+WPF was chosen over WinUI because the priority was a stable Windows desktop application with fast local iteration and direct Windows API access. The architecture keeps system-facing logic out of the UI so the service boundary, release packaging, and any future tray-first shell can evolve without rewriting the core scan logic.
 
 ## Runtime flow
 
@@ -22,9 +22,9 @@ WPF was chosen over WinUI for the MVP because the priority is a stable desktop m
    - prefer the service over named pipes
    - fall back to a local in-process scan path if the service is unavailable
 5. The configuration repository loads:
-   - [`config/appsettings.json`](/C:/Users/decoy/sessionguard-win11/config/appsettings.json)
-   - [`config/protected-processes.json`](/C:/Users/decoy/sessionguard-win11/config/protected-processes.json)
-   - [`config/policies.json`](/C:/Users/decoy/sessionguard-win11/config/policies.json)
+   - [`config/appsettings.json`](../config/appsettings.json)
+   - [`config/protected-processes.json`](../config/protected-processes.json)
+   - [`config/policies.json`](../config/policies.json)
    - when a published runtime has `config.defaults/`, missing live config files are seeded into `config/` before load
    - versionless legacy config files are inspected against the current config schema and can be upgraded in place by the published service tooling
 6. The coordinator runs a scan:
@@ -130,7 +130,7 @@ Temporary approval windows are persisted locally in `state/policy-approval.json`
 
 `JsonConfigurationRepository` now treats `config/policies.json` differently from the other config files: if policy JSON is malformed, SessionGuard keeps the rest of the scan pipeline alive, disables policy evaluation for that scan, and surfaces explicit diagnostics in the dashboard. That keeps restart-awareness and workspace detection available while still staying honest that policy enforcement is temporarily unavailable.
 
-As of `0.5.2`, SessionGuard also tightens write ownership at the control-plane boundary:
+SessionGuard now tightens write ownership at the control-plane boundary:
 
 - mitigation apply/reset actions are service-owned
 - restart approval grant/clear actions are service-owned
@@ -185,9 +185,9 @@ The config-upgrade path is intentionally bounded:
 - exposes `probe` and `scan-now` console commands for local validation
 - exposes `validate-runtime` so scripts can verify that the published layout is runnable before installation
 
-`SessionGuard.App` currently acts as a tray-aware dashboard client layered over a hybrid control plane. That keeps the background path and the desktop path aligned while full service installation, startup, and dedicated tray-shell packaging are still in progress.
+`SessionGuard.App` currently acts as a tray-aware dashboard client layered over a hybrid control plane. That keeps the background path and the desktop path aligned while still leaving room for a lighter dedicated tray shell later if the product needs one.
 
-As of `0.5.3`, the desktop shell also derives an operator-alert layer from shared scan status:
+The desktop shell also derives an operator-alert layer from shared scan status:
 
 - the tray menu shows compact status, mode, policy, and timing lines
 - the view model emits notification events instead of letting the window shell infer policy transitions itself
@@ -212,7 +212,7 @@ The service also persists `state/service-health.json` so operator tooling can re
 
 The health snapshot now also records approval-window recovery state so startup diagnostics can show whether the service recovered a still-active temporary approval window or started with none.
 
-This keeps the MVP auditable without introducing a full telemetry stack.
+This keeps the product auditable without introducing a full telemetry stack.
 
 ## UI smoke automation
 

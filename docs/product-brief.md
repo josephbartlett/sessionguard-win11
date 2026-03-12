@@ -15,18 +15,21 @@ Windows 11 users who keep active development or research workspaces open can los
 - power users
 - anyone who regularly keeps a live workspace open for hours
 
-## MVP objective
+## Current release objective
 
-Provide a local desktop utility that makes restart risk visible, detects whether a protected workspace is active, and applies a narrow set of reversible native mitigations where Windows supports them.
+Provide a local Windows utility that makes restart risk visible, detects whether a protected workspace is active, supports service-backed monitoring, and applies a narrow set of reversible native mitigations where Windows supports them.
 
-## MVP scope
+## Current scope
 
 - restart state dashboard
 - protected process detection
+- workspace-risk heuristics
 - configurable process list
+- local policy rules and approval windows
 - local logging
 - safe mitigation actions for native policy-backed restart behavior
 - honest handling of admin-required paths
+- service-backed monitoring and service-owned write actions
 
 ## Non-goals
 
@@ -36,19 +39,20 @@ Provide a local desktop utility that makes restart risk visible, detects whether
 - deep app-specific workspace introspection
 - enterprise policy distribution
 - snapshot or recovery orchestration
+- Microsoft Store packaging for the full service-backed build in its current form
 
 ## Design principles
 
 - honest about Windows platform limits
 - safe and reversible changes
-- user-mode first with a service-backed path as the product matures
+- user-mode visibility with a service-backed path for the actions that require stronger ownership
 - minimal UI, high signal
 - auditable behavior through logs and docs
 
-## Success criteria for the MVP
+## Success criteria for the current release
 
 - a developer can build and run the app locally
-- the app surfaces useful restart and workspace state
+- the app surfaces useful restart, workspace, and policy state
 - protected-process detection works with a configurable list
-- mitigation actions succeed when elevated and fail clearly when not elevated
+- service-backed write actions succeed when elevated and fail clearly when not elevated
 - docs explain purpose, limits, and future direction without overstating capability

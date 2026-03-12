@@ -4,7 +4,8 @@ All notable changes to this project should be recorded here in reverse chronolog
 
 ## Unreleased
 
-- No unreleased changes.
+- Tightened the documentation set for a post-1.0 release, including a shorter README, a new getting-started guide, and a dedicated manual validation checklist.
+- Removed stale active-use "MVP" framing from current product docs and tightened repo documentation rules in `AGENTS.md`.
 
 ## 1.0.0 - 2026-03-12
 
@@ -110,7 +111,7 @@ All notable changes to this project should be recorded here in reverse chronolog
 
 ## 0.1.1 - 2026-03-11
 
-- Expanded [`AGENTS.md`](/C:/Users/decoy/sessionguard-win11/AGENTS.md) with explicit push approval rules.
+- Expanded [`AGENTS.md`](AGENTS.md) with explicit push approval rules.
 - Added a standard release-title and markdown-description template for future approved pushes.
 - Clarified that agents may create local commits but must not push without explicit approval.
 

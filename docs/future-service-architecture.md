@@ -2,7 +2,7 @@
 
 ## Goal
 
-Evolve SessionGuard from a foreground desktop monitor into a split architecture with a background Windows Service and a lighter user shell.
+Keep evolving SessionGuard's service-plus-shell architecture without losing the product's current simplicity and honesty.
 
 ## Current status
 
@@ -16,9 +16,9 @@ The repo now includes `SessionGuard.Service`, a background worker/service-host f
 - can be run locally from the CLI as a console host
 - ships install metadata and runtime validation for published layouts
 
-The repo also now includes a tray-aware WPF shell that prefers the service control plane and falls back locally when the service is unavailable.
+The repo also includes a tray-aware WPF shell that prefers the service control plane and falls back locally when the service is unavailable.
 
-This is not the full service split yet. It is the first concrete service-plus-client control boundary.
+The main remaining future split is no longer "service or no service." It is whether SessionGuard should grow a lighter dedicated tray shell, richer notifications, and a cleaner packaging story beyond the current dashboard-first experience.
 
 ## Proposed components
 
@@ -62,11 +62,11 @@ This split architecture supports:
 
 - continuous restart monitoring even when the dashboard window is closed
 - restart approval windows
-- advisory workspace snapshot metadata, which now exists locally in the current branch
+- advisory workspace snapshot metadata, which already exists in the current product
 - richer browser and terminal heuristics
 - policy-driven behavior across multiple user sessions
 
-## Migration path from the MVP
+## Migration path from the earlier desktop-only releases
 
 Current foundation already in repo:
 
