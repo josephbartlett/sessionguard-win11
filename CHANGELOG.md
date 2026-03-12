@@ -7,6 +7,8 @@ All notable changes to this project should be recorded here in reverse chronolog
 - Simplified the WPF dashboard into an overview-first layout with clearer plain-language status and a single recommended next step.
 - Split the UI into intentional `Simple view` and `Technical view` modes so the default screen stays calm while the full diagnostic workspace remains available on demand.
 - Updated the UI smoke harness so screenshots capture the default overview first, then switch into Technical view for diagnostic assertions and `-technical` artifacts.
+- Added a desktop publish script that produces a versioned WPF app folder with runtime config, defaults, and a desktop manifest.
+- Added a repo-owned release asset script plus a tag-triggered GitHub Actions workflow that validates the build and attaches versioned binary zips to GitHub Releases.
 
 ## 1.0.0 - 2026-03-12
 

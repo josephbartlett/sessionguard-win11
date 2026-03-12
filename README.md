@@ -143,6 +143,35 @@ Package the release ZIP:
 powershell -ExecutionPolicy Bypass -File scripts/package-release.ps1
 ```
 
+Publish a distributable desktop app folder and `.exe` locally:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/app/Publish-SessionGuardApp.ps1
+```
+
+The published desktop executable will be written to `artifacts\publish\SessionGuard.App\SessionGuard.App.exe`.
+
+Publish release-ready binary assets locally for the desktop app, service, and tracked source tree:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/release/Publish-SessionGuardReleaseAssets.ps1 -SelfContained
+```
+
+This writes versioned release assets under `artifacts\releases\<version>\`, including:
+
+- `sessionguard-win11-app-<version>-win-x64.zip`
+- `sessionguard-win11-service-<version>-win-x64.zip`
+- `sessionguard-win11-source-<version>.zip`
+
+Push an annotated `vX.Y.Z` tag to GitHub to trigger the `Release Assets` workflow. That workflow now:
+
+- runs the same repo-owned Windows validation flow used locally
+- publishes self-contained `win-x64` desktop and service binaries
+- uploads the generated zips as workflow artifacts
+- creates or updates the matching GitHub Release and attaches the generated zip assets
+
+The tag must match the version in [`Directory.Build.props`](/C:/Users/decoy/sessionguard-win11/Directory.Build.props), and the release notes file for that tag must exist under [`docs/releases`](/C:/Users/decoy/sessionguard-win11/docs/releases), for example [`docs/releases/v1.0.0.md`](/C:/Users/decoy/sessionguard-win11/docs/releases/v1.0.0.md).
+
 ## Service operations
 
 Publish the service executable and copy config defaults next to it:

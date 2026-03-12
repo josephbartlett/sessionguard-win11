@@ -13,6 +13,42 @@ function Get-SessionGuardPublishRoot {
     return Join-Path (Get-SessionGuardRepositoryRoot) "artifacts\\publish\\SessionGuard.Service"
 }
 
+function Get-SessionGuardDirectoryBuildPropsPath {
+    return Join-Path (Get-SessionGuardRepositoryRoot) "Directory.Build.props"
+}
+
+function Get-SessionGuardProductVersion {
+    $propsPath = Get-SessionGuardDirectoryBuildPropsPath
+    if (-not (Test-Path $propsPath)) {
+        throw "Directory.Build.props was not found at '$propsPath'."
+    }
+
+    [xml]$propsXml = Get-Content $propsPath -Raw
+    $version = [string]$propsXml.Project.PropertyGroup.Version
+    if ([string]::IsNullOrWhiteSpace($version)) {
+        throw "Version was not found in '$propsPath'."
+    }
+
+    return $version.Trim()
+}
+
+function Resolve-SessionGuardVersion {
+    param(
+        [string]$TagOrVersion = ""
+    )
+
+    if ([string]::IsNullOrWhiteSpace($TagOrVersion)) {
+        return Get-SessionGuardProductVersion
+    }
+
+    $normalized = $TagOrVersion.Trim()
+    if ($normalized.StartsWith("v", [System.StringComparison]::OrdinalIgnoreCase)) {
+        $normalized = $normalized.Substring(1)
+    }
+
+    return $normalized
+}
+
 function Get-SessionGuardServiceExePath {
     param(
         [string]$PublishRoot = (Get-SessionGuardPublishRoot)

@@ -1,0 +1,103 @@
+name: Release Assets
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Resolve version
+        id: version
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Validate version metadata
+        run: |
+          [xml]$propsXml = Get-Content Directory.Build.props -Raw
+          $repoVersion = [string]$propsXml.Project.PropertyGroup.Version
+          if ([string]::IsNullOrWhiteSpace($repoVersion)) {
+            throw "Version was not found in Directory.Build.props."
+          }
+
+          if ($repoVersion.Trim() -ne "${{ steps.version.outputs.version }}") {
+            throw "Tag version '${{ steps.version.outputs.version }}' does not match Directory.Build.props version '$repoVersion'."
+          }
+
+      - name: Run Windows validation
+        run: |
+          powershell -ExecutionPolicy Bypass -File scripts/ci/Invoke-WindowsValidation.ps1 -Configuration Release
+
+      - name: Publish release assets
+        run: |
+          powershell -ExecutionPolicy Bypass -File scripts/release/Publish-SessionGuardReleaseAssets.ps1 `
+            -Version "${{ steps.version.outputs.version }}" `
+            -Configuration Release `
+            -Runtime win-x64 `
+            -SelfContained
+
+      - name: Publish validation summary
+        if: always()
+        run: |
+          $summaryPath = "artifacts/ci/windows-validation/validation-summary.md"
+          if (Test-Path $summaryPath) {
+            Get-Content $summaryPath | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+          }
+
+      - name: Upload release artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sessionguard-release-${{ steps.version.outputs.version }}
+          path: |
+            artifacts/releases/${{ steps.version.outputs.version }}/**
+            artifacts/ci/windows-validation/**
+          if-no-files-found: warn
+
+      - name: Create or update GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $version = "${{ steps.version.outputs.version }}"
+          $releaseNotesPath = Join-Path $PWD "docs\\releases\\$tag.md"
+          if (-not (Test-Path $releaseNotesPath)) {
+            throw "Expected release notes at '$releaseNotesPath'."
+          }
+
+          $assetPaths = Get-ChildItem -Path (Join-Path $PWD "artifacts\\releases\\$version") -Filter *.zip |
+            Sort-Object Name |
+            ForEach-Object { $_.FullName }
+
+          if ($assetPaths.Count -eq 0) {
+            throw "No release zip assets were generated for version '$version'."
+          }
+
+          gh release view $tag --json name --jq .name *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release edit $tag --title "SessionGuard $version" --notes-file $releaseNotesPath
+            gh release upload $tag @assetPaths --clobber
+          }
+          else {
+            gh release create $tag @assetPaths --title "SessionGuard $version" --notes-file $releaseNotesPath
+          }
