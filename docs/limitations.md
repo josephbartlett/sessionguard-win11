@@ -41,6 +41,7 @@
 - The local named-pipe control plane is now versioned, but compatibility is still only guaranteed within the local SessionGuard release line.
 - Service installation, update, and start or stop scripts are included, but the workflow is still aimed at local operator deployment rather than enterprise fleet rollout.
 - Published runtime config is now preserved across republish operations and has a bounded schema migration path, but future breaking config redesigns will still need explicit migration steps before they can be claimed upgrade-safe.
+- The combined install path currently registers tray startup for the current user only. If multiple users sign into the same machine, each user would need their own app auto-start registration.
 - A dedicated tray-shell package is not yet part of the shipped workflow.
 
 ## Recovery limitations

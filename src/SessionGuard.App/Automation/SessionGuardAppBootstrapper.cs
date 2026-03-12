@@ -62,7 +62,8 @@ internal static class SessionGuardAppBootstrapper
             controlPlane,
             configurationRepository,
             logger,
-            runtimePaths);
+            runtimePaths,
+            options.ForceStartMinimized);
 
         return new MainWindow(
             viewModel,

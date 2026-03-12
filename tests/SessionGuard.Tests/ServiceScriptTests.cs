@@ -205,6 +205,55 @@ public sealed class ServiceScriptTests
         Assert.Equal(elevated, root.GetProperty("CanExecuteNow").GetBoolean());
     }
 
+    [Fact]
+    public async Task InstallCombined_ValidateOnly_ReportsReadinessForValidBundle()
+    {
+        var repoRoot = GetRepositoryRoot();
+        var publishRoot = Path.Combine(Path.GetTempPath(), "SessionGuard.Tests", Guid.NewGuid().ToString("N"));
+        CopyDirectory(GetBuiltServiceOutputRoot(repoRoot), publishRoot);
+        CopyDirectory(GetBuiltAppOutputRoot(repoRoot), publishRoot);
+
+        var configDirectory = Path.Combine(publishRoot, "config");
+        var configDefaultsDirectory = Path.Combine(publishRoot, "config.defaults");
+        Directory.CreateDirectory(configDirectory);
+        Directory.CreateDirectory(configDefaultsDirectory);
+        File.WriteAllText(Path.Combine(configDirectory, "appsettings.json"), "{\"schemaVersion\":1}");
+        File.WriteAllText(Path.Combine(configDirectory, "protected-processes.json"), "{\"schemaVersion\":1,\"processNames\":[]}");
+        File.WriteAllText(Path.Combine(configDirectory, "policies.json"), "{\"schemaVersion\":1,\"enabled\":true,\"rules\":[]}");
+        File.WriteAllText(Path.Combine(configDefaultsDirectory, "appsettings.json"), "{\"schemaVersion\":1}");
+        File.WriteAllText(Path.Combine(configDefaultsDirectory, "protected-processes.json"), "{\"schemaVersion\":1,\"processNames\":[]}");
+        File.WriteAllText(Path.Combine(configDefaultsDirectory, "policies.json"), "{\"schemaVersion\":1,\"enabled\":true,\"rules\":[]}");
+        File.WriteAllText(Path.Combine(publishRoot, "install-manifest.json"), "{\"ProductVersion\":\"1.0.1\",\"ProtocolVersion\":\"1.2\"}");
+        File.WriteAllText(Path.Combine(publishRoot, "bundle-manifest.json"), "{\"ProductVersion\":\"1.0.1\"}");
+
+        var scriptPath = Path.Combine(repoRoot, "scripts", "install", "Install-SessionGuard.ps1");
+        var installRoot = Path.Combine(Path.GetTempPath(), "SessionGuard.Install", Guid.NewGuid().ToString("N"));
+        var result = await RunPowerShellScriptAsync(
+            scriptPath,
+            "-SkipPublish",
+            "-PublishRoot",
+            publishRoot,
+            "-InstallRoot",
+            installRoot,
+            "-ValidateOnly",
+            "-AsJson");
+
+        Assert.True(result.ExitCode == 0, $"PowerShell exited with {result.ExitCode}. stderr: {result.StandardError}");
+
+        using var document = JsonDocument.Parse(result.StandardOutput);
+        var root = document.RootElement;
+
+        Assert.True(root.GetProperty("AppExecutableExists").GetBoolean());
+        Assert.True(root.GetProperty("ServiceExecutableExists").GetBoolean());
+        Assert.True(root.GetProperty("AppSettingsExists").GetBoolean());
+        Assert.True(root.GetProperty("PoliciesExists").GetBoolean());
+        Assert.True(root.GetProperty("RuntimeValidation").GetProperty("CanRun").GetBoolean());
+        Assert.Contains("--start-minimized", root.GetProperty("StartupCommand").GetString(), StringComparison.OrdinalIgnoreCase);
+
+        var elevated = IsElevated();
+        Assert.Equal(elevated, root.GetProperty("CanInstallNow").GetBoolean());
+    }
+
     private static string GetBuiltServiceOutputRoot(string repoRoot)
     {
         var currentConfiguration = new DirectoryInfo(AppContext.BaseDirectory).Parent?.Parent?.Name;
@@ -241,6 +290,44 @@ public sealed class ServiceScriptTests
 
         throw new DirectoryNotFoundException(
             $"Could not find a built SessionGuard.Service output under '{Path.Combine(repoRoot, "src", "SessionGuard.Service", "bin")}'.");
+    }
+
+    private static string GetBuiltAppOutputRoot(string repoRoot)
+    {
+        var currentConfiguration = new DirectoryInfo(AppContext.BaseDirectory).Parent?.Parent?.Name;
+        var candidateConfigurations = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(currentConfiguration))
+        {
+            candidateConfigurations.Add(currentConfiguration);
+        }
+
+        foreach (var fallbackConfiguration in new[] { "Release", "Debug" })
+        {
+            if (!candidateConfigurations.Contains(fallbackConfiguration, StringComparer.OrdinalIgnoreCase))
+            {
+                candidateConfigurations.Add(fallbackConfiguration);
+            }
+        }
+
+        foreach (var configuration in candidateConfigurations)
+        {
+            var candidateRoot = Path.Combine(
+                repoRoot,
+                "src",
+                "SessionGuard.App",
+                "bin",
+                configuration,
+                "net9.0-windows");
+
+            if (File.Exists(Path.Combine(candidateRoot, "SessionGuard.App.exe")))
+            {
+                return candidateRoot;
+            }
+        }
+
+        throw new DirectoryNotFoundException(
+            $"Could not find a built SessionGuard.App output under '{Path.Combine(repoRoot, "src", "SessionGuard.App", "bin")}'.");
     }
 
     private static void CopyDirectory(string sourceDirectory, string destinationDirectory)

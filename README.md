@@ -33,6 +33,16 @@ It is designed for people who keep live work open for long stretches of time: te
 dotnet build SessionGuard.sln
 ```
 
+### Install from a release bundle
+
+If you downloaded the combined SessionGuard release zip, extract it and run this from an elevated PowerShell session:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\Install-SessionGuard.ps1
+```
+
+That is the preferred end-user path. It installs the background service, registers the tray app to start at sign-in for the current user, and launches the app minimized to the tray unless you opt out.
+
 ### Try the desktop app only
 
 ```powershell
@@ -59,14 +69,32 @@ When this path is active, the app should report `Control plane: Service`.
 
 ### Install the background service
 
-From an elevated PowerShell session:
+Preferred source-repo install path:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/install/Install-SessionGuard.ps1 -SelfContained
+```
+
+This installs the shared SessionGuard runtime to `Program Files\SessionGuard`, installs the Windows Service, registers the app to start at sign-in for the current user, and launches the app minimized to the tray unless you opt out.
+
+Advanced service-only path:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/service/Publish-SessionGuardService.ps1
 powershell -ExecutionPolicy Bypass -File scripts/service/Install-SessionGuardService.ps1
 ```
 
+### Publish a combined installable bundle
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/install/Publish-SessionGuardBundle.ps1 -SelfContained
+```
+
+This produces a shared app-plus-service runtime under `artifacts\publish\SessionGuard`, including root-level `Install-SessionGuard.ps1` and `Uninstall-SessionGuard.ps1` entry points for the extracted bundle.
+
 ### Publish a distributable desktop build
+
+From a normal PowerShell session:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/app/Publish-SessionGuardApp.ps1
@@ -80,7 +108,30 @@ The published desktop executable will be written to `artifacts\publish\SessionGu
 powershell -ExecutionPolicy Bypass -File scripts/release/Publish-SessionGuardReleaseAssets.ps1 -SelfContained
 ```
 
-This produces versioned app, service, and source zip assets under `artifacts\releases\<version>\`.
+This produces versioned bundle, app, service, and source zip assets under `artifacts\releases\<version>\`.
+
+## How SessionGuard Runs
+
+SessionGuard has two processes with different responsibilities:
+
+- **`SessionGuard.Service.exe`**: background engine
+  - runs scans continuously
+  - owns service-backed write actions
+  - auto-starts with Windows when installed as a service
+  - does **not** show a tray icon
+- **`SessionGuard.App.exe`**: tray and dashboard shell
+  - shows the window and the tray icon
+  - talks to the service when it is available
+  - falls back to local read-only monitoring when the service is unavailable
+  - can be registered to auto-start at user sign-in
+
+The tray icon belongs to the app, not the service.
+
+Typical modes:
+
+- **App only**: useful for inspection and local fallback monitoring
+- **App + local service host**: useful for development or manual validation
+- **Installed mode**: service auto-starts with Windows, app auto-starts at sign-in for the installing user and starts minimized to the tray
 
 ## Common Tasks
 
@@ -137,12 +188,39 @@ SessionGuard writes local diagnostics and machine-readable state to:
 
 Published service layouts may also write config migration backups under `state/config-backups/`.
 
+## Install and Uninstall
+
+Install both the service and the tray app startup registration from source:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/install/Install-SessionGuard.ps1 -SelfContained
+```
+
+Install from an extracted release bundle:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\Install-SessionGuard.ps1
+```
+
+Remove the combined install:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/install/Uninstall-SessionGuard.ps1 -RemoveFiles
+```
+
+Or, from an extracted release bundle:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\Uninstall-SessionGuard.ps1 -RemoveFiles
+```
+
 ## Release Automation
 
 Pushing an annotated `vX.Y.Z` tag now triggers the `Release Assets` workflow. That workflow:
 
 - runs the repo-owned Windows validation flow
 - publishes self-contained `win-x64` desktop and service binaries
+- publishes a combined bundle zip that contains both runtimes plus install scripts
 - uploads the generated zip assets
 - creates or updates the matching GitHub Release
 
@@ -151,6 +229,7 @@ The tag must match the version in [`Directory.Build.props`](Directory.Build.prop
 ## Documentation Map
 
 - [Getting started and common operations](docs/getting-started.md)
+- [Runtime model](docs/runtime-model.md)
 - [Manual validation checklist](docs/manual-validation.md)
 - [Architecture](docs/architecture.md)
 - [Product brief](docs/product-brief.md)

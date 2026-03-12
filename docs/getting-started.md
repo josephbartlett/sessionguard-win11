@@ -14,7 +14,22 @@ This guide is the fastest way to get SessionGuard running locally and understand
 dotnet build SessionGuard.sln
 ```
 
-## 2. Try the desktop app without installing anything
+## 2. Install from a downloaded release bundle
+
+If you downloaded the combined release zip instead of cloning the repo, extract it and run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\Install-SessionGuard.ps1
+```
+
+That is the preferred operator path for a real machine. It:
+
+- installs the shared runtime under `Program Files\SessionGuard`
+- installs the Windows Service
+- registers the app to start at user sign-in
+- launches the app minimized to the tray unless you opt out
+
+## 3. Try the desktop app without installing anything
 
 ```powershell
 dotnet run --project src/SessionGuard.App/SessionGuard.App.csproj
@@ -29,7 +44,7 @@ What to expect:
 - if the service is unavailable, the app reports `Control plane: Local fallback`
 - mitigation and approval writes are intentionally disabled in local fallback
 
-## 3. Run with the local service host
+## 4. Run with the local service host
 
 In one PowerShell window:
 
@@ -49,9 +64,22 @@ What to expect:
 - service-owned actions become available
 - the service writes `state/service-health.json`
 
-## 4. Install the Windows Service
+## 5. Install the service and tray app from source
 
-From an elevated PowerShell session:
+Preferred install path from an elevated PowerShell session:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/install/Install-SessionGuard.ps1 -SelfContained
+```
+
+What this does:
+
+- installs the shared runtime under `Program Files\SessionGuard`
+- installs the Windows Service
+- registers the app to start at user sign-in
+- launches the app minimized to the tray unless you opt out
+
+Advanced service-only path:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/service/Publish-SessionGuardService.ps1
@@ -66,7 +94,7 @@ powershell -ExecutionPolicy Bypass -File scripts/service/Update-SessionGuardServ
 powershell -ExecutionPolicy Bypass -File scripts/service/Uninstall-SessionGuardService.ps1
 ```
 
-## 5. Publish a desktop executable
+## 6. Publish a desktop executable
 
 If you want the app as a local distributable folder:
 
@@ -86,11 +114,14 @@ powershell -ExecutionPolicy Bypass -File scripts/release/Publish-SessionGuardRel
 
 Output:
 
+- `artifacts\releases\<version>\sessionguard-win11-bundle-<version>-win-x64.zip`
 - `artifacts\releases\<version>\sessionguard-win11-app-<version>-win-x64.zip`
 - `artifacts\releases\<version>\sessionguard-win11-service-<version>-win-x64.zip`
 - `artifacts\releases\<version>\sessionguard-win11-source-<version>.zip`
 
-## 6. Trigger the GitHub release flow
+The preferred end-user asset is the combined bundle zip because it includes both runtimes plus the top-level install and uninstall scripts.
+
+## 7. Trigger the GitHub release flow
 
 The repo now supports tag-driven binary publishing.
 
@@ -135,6 +166,7 @@ If [`config/policies.json`](../config/policies.json) is malformed or conflicting
 
 ## Where to go next
 
+- [Runtime model](runtime-model.md)
 - [Manual validation checklist](manual-validation.md)
 - [Architecture](architecture.md)
 - [Limitations](limitations.md)

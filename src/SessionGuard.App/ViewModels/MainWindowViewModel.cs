@@ -18,6 +18,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private readonly IConfigurationRepository _configurationRepository;
     private readonly IAppLogger _logger;
     private readonly RuntimePaths _runtimePaths;
+    private readonly bool _forceStartMinimized;
     private readonly DispatcherTimer _timer;
     private readonly EventHandler _timerHandler;
     private readonly SemaphoreSlim _scanLock = new(1, 1);
@@ -99,12 +100,14 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         ISessionGuardControlPlane controlPlane,
         IConfigurationRepository configurationRepository,
         IAppLogger logger,
-        RuntimePaths runtimePaths)
+        RuntimePaths runtimePaths,
+        bool forceStartMinimized = false)
     {
         _controlPlane = controlPlane;
         _configurationRepository = configurationRepository;
         _logger = logger;
         _runtimePaths = runtimePaths;
+        _forceStartMinimized = forceStartMinimized;
 
         ProtectedProcesses = new ObservableCollection<ProtectedProcessMatch>();
         MatchedPolicyRules = new ObservableCollection<PolicyRuleMatch>();
@@ -842,7 +845,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         if (initialLoad)
         {
             ShowDetailedSignals = settings.UiPreferences.ShowDetailedSignals;
-            ShouldStartMinimized = settings.UiPreferences.StartMinimized;
+            ShouldStartMinimized = settings.UiPreferences.StartMinimized || _forceStartMinimized;
         }
     }
 

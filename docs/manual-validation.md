@@ -30,6 +30,14 @@ Use this when you want a structured release-readiness pass without digging throu
 3. Run `powershell -ExecutionPolicy Bypass -File scripts/service/Get-SessionGuardServiceStatus.ps1`.
 4. Confirm the status output reports control-plane reachability and health snapshot details.
 
+## Combined install path
+
+1. Run `powershell -ExecutionPolicy Bypass -File scripts/install/Install-SessionGuard.ps1 -SelfContained` from an elevated shell, or run `powershell -ExecutionPolicy Bypass -File .\Install-SessionGuard.ps1` from an extracted bundle.
+2. Confirm the service is installed and configured for delayed auto-start.
+3. Confirm the current user has a SessionGuard startup registration under the Windows Run key.
+4. Sign out and sign back in, then confirm the app starts minimized and appears in the tray.
+5. Confirm the tray app connects to the service instead of falling back locally.
+
 ## Elevated behavior
 
 1. Launch the app from an elevated shell.
@@ -48,8 +56,9 @@ Use this when you want a structured release-readiness pass without digging throu
 ## Packaging
 
 1. Run `powershell -ExecutionPolicy Bypass -File scripts/release/Publish-SessionGuardReleaseAssets.ps1 -SelfContained`.
-2. Confirm the app, service, and source zip files exist under `artifacts/releases/<version>/`.
-3. Confirm the published desktop app folder contains `SessionGuard.App.exe`.
+2. Confirm the bundle, app, service, and source zip files exist under `artifacts/releases/<version>/`.
+3. Confirm the combined bundle contains `SessionGuard.App.exe`, `SessionGuard.Service.exe`, `Install-SessionGuard.ps1`, `Uninstall-SessionGuard.ps1`, and the supporting install scripts.
+4. Confirm the published desktop app folder contains `SessionGuard.App.exe`.
 
 ## Logs and state
 

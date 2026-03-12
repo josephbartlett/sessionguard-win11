@@ -121,6 +121,8 @@ Short summary of the release.
 - Prefer relative Markdown links inside repo docs so they work on GitHub as well as locally.
 - Avoid calling the current product an "MVP" except when referring to historical pre-1.0 versions or release notes.
 - If a doc or release note describes current status, make sure it reflects what is actually shipped rather than stale planning language.
+- When a feature spans the service and the app, documentation must explicitly say which process owns startup, the tray icon, and privileged actions.
+- When there is a preferred install or operator path, document that path first and label alternative or lower-level flows as advanced.
 - Keep documentation honest about confidence, permissions, and Windows platform boundaries.
 
 ## Logging and diagnostics
