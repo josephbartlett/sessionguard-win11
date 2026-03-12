@@ -207,7 +207,40 @@ public sealed class ServiceScriptTests
 
     private static string GetBuiltServiceOutputRoot(string repoRoot)
     {
-        return Path.Combine(repoRoot, "src", "SessionGuard.Service", "bin", "Debug", "net9.0-windows");
+        var currentConfiguration = new DirectoryInfo(AppContext.BaseDirectory).Parent?.Parent?.Name;
+        var candidateConfigurations = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(currentConfiguration))
+        {
+            candidateConfigurations.Add(currentConfiguration);
+        }
+
+        foreach (var fallbackConfiguration in new[] { "Release", "Debug" })
+        {
+            if (!candidateConfigurations.Contains(fallbackConfiguration, StringComparer.OrdinalIgnoreCase))
+            {
+                candidateConfigurations.Add(fallbackConfiguration);
+            }
+        }
+
+        foreach (var configuration in candidateConfigurations)
+        {
+            var candidateRoot = Path.Combine(
+                repoRoot,
+                "src",
+                "SessionGuard.Service",
+                "bin",
+                configuration,
+                "net9.0-windows");
+
+            if (File.Exists(Path.Combine(candidateRoot, "SessionGuard.Service.exe")))
+            {
+                return candidateRoot;
+            }
+        }
+
+        throw new DirectoryNotFoundException(
+            $"Could not find a built SessionGuard.Service output under '{Path.Combine(repoRoot, "src", "SessionGuard.Service", "bin")}'.");
     }
 
     private static void CopyDirectory(string sourceDirectory, string destinationDirectory)
