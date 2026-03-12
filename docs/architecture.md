@@ -14,6 +14,8 @@ WPF was chosen over WinUI for the MVP because the priority is a stable desktop m
 ## Runtime flow
 
 1. The app and service resolve runtime paths from the repository root or executable location.
+   - published layouts that contain `install-manifest.json` or `config.defaults/` are treated as self-contained runtimes even if they live under the repo tree
+   - source-tree runs still resolve back to the repo root for shared local development config
 2. The desktop app can also boot in a deterministic `--ui-scenario <name>` mode for screenshot automation and UI smoke validation.
 3. The service host owns the authoritative background scan loop and named-pipe control plane when it is running.
 4. The desktop app creates a hybrid control plane:
@@ -23,6 +25,7 @@ WPF was chosen over WinUI for the MVP because the priority is a stable desktop m
    - [`config/appsettings.json`](/C:/Users/decoy/sessionguard-win11/config/appsettings.json)
    - [`config/protected-processes.json`](/C:/Users/decoy/sessionguard-win11/config/protected-processes.json)
    - [`config/policies.json`](/C:/Users/decoy/sessionguard-win11/config/policies.json)
+   - when a published runtime has `config.defaults/`, missing live config files are seeded into `config/` before load
 6. The coordinator runs a scan:
    - protected-process detection
    - workspace-risk heuristic analysis using protected-tool matches plus bounded runtime-process clues
@@ -147,7 +150,8 @@ Before writing managed values, the infrastructure layer captures previous values
 
 ## Configuration and state paths
 
-- `config/`: source-controlled default runtime config for protected processes and app behavior.
+- `config/`: mutable runtime config used by the app and service.
+- `config.defaults/`: shipped default config for published service layouts, used to seed missing live config files without overwriting operator edits.
 - `config/policies.json`: source-controlled default rule definitions for restart windows, blocking rules, and approval requirements.
 - `logs/`: local structured logs created on demand.
 - `state/`: local backup state used for mitigation reset behavior.
@@ -157,6 +161,8 @@ Before writing managed values, the infrastructure layer captures previous values
   - `service-health.json`: service lifecycle and diagnostics snapshot for startup, scan, and pipe health.
 
 The log and state folders are intentionally excluded from source control.
+
+Published service layouts now also include `install-manifest.json` with version, protocol, path, and validation metadata so install scripts can verify they are starting the expected runtime.
 
 ## Service and control plane
 
@@ -168,6 +174,7 @@ The log and state folders are intentionally excluded from source control.
 - owns mitigation commands when reached through the pipe control plane
 - uses the same file logger and mitigation/state services
 - exposes `probe` and `scan-now` console commands for local validation
+- exposes `validate-runtime` so scripts can verify that the published layout is runnable before installation
 
 `SessionGuard.App` currently acts as a tray-aware dashboard client layered over a hybrid control plane. That keeps the background path and the desktop path aligned while full service installation, startup, and dedicated tray-shell packaging are still in progress.
 

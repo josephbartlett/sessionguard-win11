@@ -6,7 +6,8 @@ param(
     [switch]$SkipPublish,
     [switch]$DoNotStart,
     [switch]$ValidateOnly,
-    [switch]$AsJson
+    [switch]$AsJson,
+    [int]$StartupTimeoutSeconds = 30
 )
 
 Set-StrictMode -Version Latest
@@ -29,10 +30,15 @@ if (-not $SkipPublish) {
 }
 
 $serviceExe = Get-SessionGuardServiceExePath -PublishRoot $PublishRoot
+$manifestPath = Get-SessionGuardInstallManifestPath -PublishRoot $PublishRoot
 $appSettingsPath = Join-Path $PublishRoot "config\\appsettings.json"
 $protectedProcessesPath = Join-Path $PublishRoot "config\\protected-processes.json"
+$configDefaultsPath = Join-Path $PublishRoot "config.defaults"
 $serviceExists = Test-SessionGuardServiceExists
 $readinessIssues = New-Object System.Collections.Generic.List[string]
+$readinessWarnings = New-Object System.Collections.Generic.List[string]
+$runtimeValidation = $null
+$installManifest = $null
 
 if (-not (Test-Path $serviceExe)) {
     $readinessIssues.Add("Service executable not found at '$serviceExe'. Run Publish-SessionGuardService.ps1 first or omit -SkipPublish.")
@@ -46,6 +52,44 @@ if (-not (Test-Path $protectedProcessesPath)) {
     $readinessIssues.Add("Missing config\\protected-processes.json in '$PublishRoot'.")
 }
 
+if (-not (Test-Path $configDefaultsPath)) {
+    $readinessWarnings.Add("Published layout is missing config.defaults. Future upgrade-safe config seeding will be unavailable until the service is republished.")
+}
+
+if (Test-Path $manifestPath) {
+    try {
+        $installManifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
+    }
+    catch {
+        $readinessWarnings.Add("Install manifest exists but could not be parsed.")
+    }
+}
+else {
+    $readinessWarnings.Add("Install manifest is missing. Republish the service to record versioned install metadata.")
+}
+
+if (Test-Path $serviceExe) {
+    $runtimeValidation = Invoke-SessionGuardRuntimeValidation -ServiceExecutable $serviceExe -AllowFailure
+    if ($null -eq $runtimeValidation.Report) {
+        $readinessIssues.Add("Service runtime validation did not return a usable report. Republish the service to ensure the runtime layout is complete.")
+    }
+    elseif (-not $runtimeValidation.Report.CanRun) {
+        $details = if ($runtimeValidation.Report.Issues.Count -gt 0) {
+            $runtimeValidation.Report.Issues -join "; "
+        }
+        else {
+            "Unknown runtime validation failure."
+        }
+
+        $readinessIssues.Add("Service runtime validation failed: $details")
+    }
+    elseif ($runtimeValidation.Report.Warnings.Count -gt 0) {
+        foreach ($warning in $runtimeValidation.Report.Warnings) {
+            $readinessWarnings.Add($warning)
+        }
+    }
+}
+
 if (-not $scAvailable) {
     $readinessIssues.Add("sc.exe is not available in the current environment.")
 }
@@ -57,16 +101,22 @@ if (-not $isElevated) {
 $readiness = [pscustomobject]@{
     PublishRoot = $PublishRoot
     ServiceExecutable = $serviceExe
+    InstallManifestPath = $manifestPath
     AppSettingsPath = $appSettingsPath
     ProtectedProcessesPath = $protectedProcessesPath
+    ConfigDefaultsPath = $configDefaultsPath
     Elevated = $isElevated
     ServiceAlreadyInstalled = $serviceExists
     ServiceExecutableExists = Test-Path $serviceExe
     AppSettingsExists = Test-Path $appSettingsPath
     ProtectedProcessesExists = Test-Path $protectedProcessesPath
+    ConfigDefaultsExists = Test-Path $configDefaultsPath
+    InstallManifest = $installManifest
+    RuntimeValidation = if ($null -ne $runtimeValidation) { $runtimeValidation.Report } else { $null }
     ScExeAvailable = $scAvailable
     CanInstallNow = $readinessIssues.Count -eq 0
     Issues = $readinessIssues.ToArray()
+    Warnings = $readinessWarnings.ToArray()
 }
 
 if ($ValidateOnly) {
@@ -90,6 +140,10 @@ if (-not $readiness.ServiceExecutableExists) {
 
 if (-not $readiness.AppSettingsExists -or -not $readiness.ProtectedProcessesExists) {
     throw "Published service layout is missing required config files."
+}
+
+if ($null -eq $readiness.RuntimeValidation -or -not $readiness.RuntimeValidation.CanRun) {
+    throw "Service runtime validation failed. Republish the service and review the validation report before installing."
 }
 
 if ($serviceExists) {
@@ -127,6 +181,8 @@ if ($PSCmdlet.ShouldProcess($script:SessionGuardServiceName, "Install SessionGua
     if (-not $DoNotStart) {
         Start-Service -Name $script:SessionGuardServiceName
         Wait-SessionGuardServiceState -DesiredStatus "Running"
+        $expectedVersion = if ($null -ne $readiness.InstallManifest) { [string]$readiness.InstallManifest.ProductVersion } else { "" }
+        Wait-SessionGuardServiceHealthy -ProbeExecutable $serviceExe -TimeoutSeconds $StartupTimeoutSeconds -ExpectedProductVersion $expectedVersion | Out-Null
     }
 }
 

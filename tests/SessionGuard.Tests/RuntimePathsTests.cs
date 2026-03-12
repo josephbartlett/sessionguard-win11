@@ -17,6 +17,7 @@ public sealed class RuntimePathsTests
 
         Assert.Equal(root, paths.RepositoryRoot);
         Assert.Equal(Path.Combine(root, "config"), paths.ConfigDirectory);
+        Assert.Equal(Path.Combine(root, "config"), paths.ConfigDefaultsDirectory);
         Assert.Equal(Path.Combine(root, "logs"), paths.LogDirectory);
         Assert.Equal(Path.Combine(root, "state"), paths.StateDirectory);
     }
@@ -31,8 +32,39 @@ public sealed class RuntimePathsTests
 
         Assert.Equal(appBaseDirectory, paths.RepositoryRoot);
         Assert.Equal(Path.Combine(appBaseDirectory, "config"), paths.ConfigDirectory);
+        Assert.Equal(Path.Combine(appBaseDirectory, "config"), paths.ConfigDefaultsDirectory);
         Assert.True(Directory.Exists(paths.LogDirectory));
         Assert.True(Directory.Exists(paths.StateDirectory));
+    }
+
+    [Fact]
+    public void Discover_UsesConfigDefaultsDirectoryForPublishedLayout()
+    {
+        var appBaseDirectory = CreateTempRoot();
+        Directory.CreateDirectory(Path.Combine(appBaseDirectory, "config.defaults"));
+
+        var paths = RuntimePaths.Discover(appBaseDirectory);
+
+        Assert.Equal(appBaseDirectory, paths.RepositoryRoot);
+        Assert.Equal(Path.Combine(appBaseDirectory, "config"), paths.ConfigDirectory);
+        Assert.Equal(Path.Combine(appBaseDirectory, "config.defaults"), paths.ConfigDefaultsDirectory);
+        Assert.True(Directory.Exists(paths.ConfigDirectory));
+    }
+
+    [Fact]
+    public void Discover_PrefersPublishedLayoutOverRepositoryRoot_WhenInstallManifestExists()
+    {
+        var root = CreateTempRoot();
+        File.WriteAllText(Path.Combine(root, "SessionGuard.sln"), string.Empty);
+        var appBaseDirectory = Path.Combine(root, "artifacts", "publish", "SessionGuard.Service");
+        Directory.CreateDirectory(Path.Combine(appBaseDirectory, "config.defaults"));
+        File.WriteAllText(Path.Combine(appBaseDirectory, "install-manifest.json"), "{}");
+
+        var paths = RuntimePaths.Discover(appBaseDirectory);
+
+        Assert.Equal(appBaseDirectory, paths.RepositoryRoot);
+        Assert.Equal(Path.Combine(appBaseDirectory, "config"), paths.ConfigDirectory);
+        Assert.Equal(Path.Combine(appBaseDirectory, "config.defaults"), paths.ConfigDefaultsDirectory);
     }
 
     private static string CreateTempRoot()

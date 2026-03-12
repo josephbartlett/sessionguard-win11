@@ -40,6 +40,7 @@
 - Desktop notifications are local tray balloon tips only. They are not Windows toast notifications, do not integrate with a richer action center workflow, and are easiest to notice when the dashboard window is hidden or minimized.
 - The local named-pipe control plane is now versioned, but compatibility is still only guaranteed within the local SessionGuard release line.
 - Service installation and start or stop scripts are now included, but the workflow is still aimed at local power-user validation rather than enterprise deployment.
+- Published runtime config is now preserved across republish operations, but there is still no formal config-schema migration layer for future breaking config changes.
 - A dedicated tray-shell package is not yet part of the shipped workflow.
 
 ## Recovery limitations

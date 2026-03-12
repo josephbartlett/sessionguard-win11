@@ -14,6 +14,7 @@ The repo now includes `SessionGuard.Service`, a background worker/service-host f
 - exposes a local named-pipe control plane
 - version-checks the current control-plane contract
 - can be run locally from the CLI as a console host
+- ships install metadata and runtime validation for published layouts
 
 The repo also now includes a tray-aware WPF shell that prefers the service control plane and falls back locally when the service is unavailable.
 
@@ -80,4 +81,5 @@ Migration path:
 2. move service-only privileged writes behind installable service lifecycle management
 3. split the current WPF dashboard from a lighter always-on tray entry point if that improves operator experience
 4. add service installation, health checks, startup policy, and upgrade-safe persisted state
+   - this is now partially addressed through `install-manifest.json`, runtime self-validation, and publish-time preservation of `config/`, `logs/`, and `state/`
 5. evolve the current advisory workspace snapshot into richer recovery-aware metadata without overstating what can actually be restored

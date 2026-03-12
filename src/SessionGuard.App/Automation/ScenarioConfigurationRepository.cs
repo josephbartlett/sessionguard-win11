@@ -41,6 +41,7 @@ internal sealed class ScenarioConfigurationRepository : IConfigurationRepository
                 Rules = Array.Empty<PolicyRuleDefinition>()
             }.Normalize(),
             configurationDirectory,
+            configurationDirectory,
             Path.Combine(configurationDirectory, $"ui-smoke-{scenario.Name}-appsettings.json"),
             Path.Combine(configurationDirectory, $"ui-smoke-{scenario.Name}-protected-processes.json"),
             Path.Combine(configurationDirectory, $"ui-smoke-{scenario.Name}-policies.json"));

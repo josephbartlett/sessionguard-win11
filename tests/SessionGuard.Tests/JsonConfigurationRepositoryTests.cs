@@ -124,6 +124,94 @@ public sealed class JsonConfigurationRepositoryTests : IDisposable
         Assert.Contains(configuration.PolicyValidation.Issues, issue => issue.Code == "policy-load-failed");
     }
 
+    [Fact]
+    public async Task LoadAsync_SeedsMissingMutableConfigFiles_FromConfigDefaults()
+    {
+        var appBaseDirectory = Path.Combine(_rootPath, "published");
+        var defaultsDirectory = Path.Combine(appBaseDirectory, "config.defaults");
+        Directory.CreateDirectory(defaultsDirectory);
+
+        var settings = """
+        {
+          "scanIntervalSeconds": 45
+        }
+        """;
+        var processes = """
+        {
+          "processNames": [ "pwsh.exe", "Code.exe" ]
+        }
+        """;
+        var policies = """
+        {
+          "enabled": true,
+          "rules": []
+        }
+        """;
+
+        await File.WriteAllTextAsync(Path.Combine(defaultsDirectory, "appsettings.json"), settings);
+        await File.WriteAllTextAsync(Path.Combine(defaultsDirectory, "protected-processes.json"), processes);
+        await File.WriteAllTextAsync(Path.Combine(defaultsDirectory, "policies.json"), policies);
+
+        var runtimePaths = RuntimePaths.Discover(appBaseDirectory);
+        var repository = new JsonConfigurationRepository(runtimePaths);
+
+        var configuration = await repository.LoadAsync();
+
+        Assert.True(File.Exists(Path.Combine(runtimePaths.ConfigDirectory, "appsettings.json")));
+        Assert.True(File.Exists(Path.Combine(runtimePaths.ConfigDirectory, "protected-processes.json")));
+        Assert.True(File.Exists(Path.Combine(runtimePaths.ConfigDirectory, "policies.json")));
+        Assert.Equal(runtimePaths.ConfigDefaultsDirectory, configuration.ConfigurationDefaultsDirectory);
+        Assert.Equal(45, configuration.AppSettings.ScanIntervalSeconds);
+        Assert.Equal(new[] { "Code.exe", "pwsh.exe" }, configuration.ProtectedProcesses.ProcessNames);
+    }
+
+    [Fact]
+    public async Task LoadAsync_DoesNotOverwriteExistingMutableConfig_WhenDefaultsExist()
+    {
+        var appBaseDirectory = Path.Combine(_rootPath, "published");
+        var configDirectory = Path.Combine(appBaseDirectory, "config");
+        var defaultsDirectory = Path.Combine(appBaseDirectory, "config.defaults");
+        Directory.CreateDirectory(configDirectory);
+        Directory.CreateDirectory(defaultsDirectory);
+
+        await File.WriteAllTextAsync(
+            Path.Combine(configDirectory, "appsettings.json"),
+            """
+            {
+              "scanIntervalSeconds": 25
+            }
+            """);
+        await File.WriteAllTextAsync(
+            Path.Combine(configDirectory, "protected-processes.json"),
+            """
+            {
+              "processNames": [ "pwsh.exe" ]
+            }
+            """);
+        await File.WriteAllTextAsync(
+            Path.Combine(defaultsDirectory, "appsettings.json"),
+            """
+            {
+              "scanIntervalSeconds": 120
+            }
+            """);
+        await File.WriteAllTextAsync(
+            Path.Combine(defaultsDirectory, "protected-processes.json"),
+            """
+            {
+              "processNames": [ "chrome.exe" ]
+            }
+            """);
+
+        var runtimePaths = RuntimePaths.Discover(appBaseDirectory);
+        var repository = new JsonConfigurationRepository(runtimePaths);
+
+        var configuration = await repository.LoadAsync();
+
+        Assert.Equal(25, configuration.AppSettings.ScanIntervalSeconds);
+        Assert.Equal(new[] { "pwsh.exe" }, configuration.ProtectedProcesses.ProcessNames);
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_rootPath))

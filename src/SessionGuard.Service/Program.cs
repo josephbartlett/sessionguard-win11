@@ -46,6 +46,9 @@ static async Task<bool> TryHandleUtilityCommandAsync(string[] args)
         case "health":
             Environment.ExitCode = await ExecuteHealthCommandAsync();
             return true;
+        case "validate-runtime":
+            Environment.ExitCode = await ExecuteRuntimeValidationCommandAsync();
+            return true;
         case "help":
         case "--help":
         case "-h":
@@ -93,6 +96,13 @@ static async Task<int> ExecuteHealthCommandAsync()
 
     Console.WriteLine(await File.ReadAllTextAsync(healthPath));
     return 0;
+}
+
+static async Task<int> ExecuteRuntimeValidationCommandAsync()
+{
+    var report = await ServiceRuntimeValidator.ValidateAsync(AppContext.BaseDirectory);
+    Console.WriteLine(JsonSerializer.Serialize(report, SessionGuardJson.Indented));
+    return report.CanRun ? 0 : 4;
 }
 
 static async Task<int> ExecuteApprovalCommandAsync(bool clearApproval)
@@ -168,4 +178,5 @@ static void PrintHelp()
     Console.WriteLine("  approve-restart Grant a temporary restart approval window through the running service.");
     Console.WriteLine("  clear-approval  Clear the temporary restart approval window through the running service.");
     Console.WriteLine("  health          Print the latest persisted service health snapshot JSON.");
+    Console.WriteLine("  validate-runtime Validate the runtime layout and configuration next to the executable.");
 }

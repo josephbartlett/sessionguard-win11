@@ -62,11 +62,18 @@ public sealed class ServiceScriptTests
     {
         var repoRoot = GetRepositoryRoot();
         var publishRoot = Path.Combine(Path.GetTempPath(), "SessionGuard.Tests", Guid.NewGuid().ToString("N"));
+        CopyDirectory(GetBuiltServiceOutputRoot(repoRoot), publishRoot);
+
         var configDirectory = Path.Combine(publishRoot, "config");
+        var configDefaultsDirectory = Path.Combine(publishRoot, "config.defaults");
         Directory.CreateDirectory(configDirectory);
-        File.WriteAllText(Path.Combine(publishRoot, "SessionGuard.Service.exe"), string.Empty);
+        Directory.CreateDirectory(configDefaultsDirectory);
         File.WriteAllText(Path.Combine(configDirectory, "appsettings.json"), "{}");
         File.WriteAllText(Path.Combine(configDirectory, "protected-processes.json"), "{\"processNames\":[]}");
+        File.WriteAllText(Path.Combine(configDirectory, "policies.json"), "{\"enabled\":true,\"rules\":[]}");
+        File.WriteAllText(Path.Combine(configDefaultsDirectory, "appsettings.json"), "{}");
+        File.WriteAllText(Path.Combine(configDefaultsDirectory, "protected-processes.json"), "{\"processNames\":[]}");
+        File.WriteAllText(Path.Combine(configDefaultsDirectory, "policies.json"), "{\"enabled\":true,\"rules\":[]}");
 
         var scriptPath = Path.Combine(repoRoot, "scripts", "service", "Install-SessionGuardService.ps1");
         var result = await RunPowerShellScriptAsync(
@@ -85,7 +92,9 @@ public sealed class ServiceScriptTests
         Assert.True(root.GetProperty("ServiceExecutableExists").GetBoolean());
         Assert.True(root.GetProperty("AppSettingsExists").GetBoolean());
         Assert.True(root.GetProperty("ProtectedProcessesExists").GetBoolean());
+        Assert.True(root.GetProperty("ConfigDefaultsExists").GetBoolean());
         Assert.True(root.GetProperty("ScExeAvailable").GetBoolean());
+        Assert.True(root.GetProperty("RuntimeValidation").GetProperty("CanRun").GetBoolean());
 
         var elevated = IsElevated();
         Assert.Equal(elevated, root.GetProperty("CanInstallNow").GetBoolean());
@@ -101,6 +110,28 @@ public sealed class ServiceScriptTests
                 issues.EnumerateArray().Select(item => item.GetString()),
                 issue => issue is not null &&
                          issue.Contains("elevated PowerShell session", StringComparison.OrdinalIgnoreCase));
+        }
+    }
+
+    private static string GetBuiltServiceOutputRoot(string repoRoot)
+    {
+        return Path.Combine(repoRoot, "src", "SessionGuard.Service", "bin", "Debug", "net9.0-windows");
+    }
+
+    private static void CopyDirectory(string sourceDirectory, string destinationDirectory)
+    {
+        Directory.CreateDirectory(destinationDirectory);
+
+        foreach (var filePath in Directory.GetFiles(sourceDirectory))
+        {
+            var destinationPath = Path.Combine(destinationDirectory, Path.GetFileName(filePath));
+            File.Copy(filePath, destinationPath, overwrite: true);
+        }
+
+        foreach (var directoryPath in Directory.GetDirectories(sourceDirectory))
+        {
+            var destinationPath = Path.Combine(destinationDirectory, Path.GetFileName(directoryPath));
+            CopyDirectory(directoryPath, destinationPath);
         }
     }
 

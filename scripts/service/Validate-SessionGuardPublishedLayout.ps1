@@ -25,6 +25,8 @@ if ($LASTEXITCODE -ne 0) {
 
 $serviceExe = Get-SessionGuardServiceExePath -PublishRoot $PublishRoot
 $configDirectory = Join-Path $PublishRoot "config"
+$configDefaultsDirectory = Join-Path $PublishRoot "config.defaults"
+$manifestPath = Get-SessionGuardInstallManifestPath -PublishRoot $PublishRoot
 $currentScanPath = Join-Path $PublishRoot "state\\current-scan.json"
 $healthPath = Join-Path $PublishRoot "state\\service-health.json"
 
@@ -38,6 +40,26 @@ if (-not (Test-Path (Join-Path $configDirectory "appsettings.json"))) {
 
 if (-not (Test-Path (Join-Path $configDirectory "protected-processes.json"))) {
     throw "Published layout is missing config\\protected-processes.json."
+}
+
+$defaultsAppSettingsPath = Join-Path $configDefaultsDirectory "appsettings.json"
+$defaultsProtectedProcessesPath = Join-Path $configDefaultsDirectory "protected-processes.json"
+if (-not (Test-Path $defaultsAppSettingsPath) -or -not (Test-Path $defaultsProtectedProcessesPath)) {
+    throw "Published layout is missing upgrade-safe config.defaults content."
+}
+
+if (-not (Test-Path $manifestPath)) {
+    throw "Published layout is missing install-manifest.json."
+}
+
+$validation = Invoke-SessionGuardRuntimeValidation -ServiceExecutable $serviceExe
+if (-not $validation.Report.CanRun) {
+    throw "Published layout runtime validation failed."
+}
+
+$manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
+if ($manifest.ProductVersion -ne $validation.Report.ProductVersion) {
+    throw "Install manifest product version does not match the validated service runtime."
 }
 
 $service = $null
@@ -76,6 +98,10 @@ try {
         throw "Status script did not report control-plane reachability and health for the published layout."
     }
 
+    if ($status.Health.ProductVersion -ne $manifest.ProductVersion) {
+        throw "Published layout health snapshot product version did not match install-manifest.json."
+    }
+
     [pscustomobject]@{
         PublishRoot = $PublishRoot
         ProbeExecutable = $serviceExe
@@ -85,6 +111,9 @@ try {
         ControlPlaneReachable = $status.ControlPlaneReachable
         HealthState = $status.Health.HealthState
         HostMode = $status.Health.HostMode
+        ProductVersion = $status.Health.ProductVersion
+        ManifestProductVersion = $manifest.ProductVersion
+        RuntimeValidated = $validation.Report.CanRun
     }
 }
 finally {

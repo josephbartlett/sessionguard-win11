@@ -12,9 +12,16 @@ $ErrorActionPreference = "Stop"
 $service = Get-Service -Name $script:SessionGuardServiceName -ErrorAction SilentlyContinue
 $probeExe = Get-SessionGuardProbeExePath -PreferredPath $ProbeExecutable
 $healthPath = Get-SessionGuardServiceHealthPath -ProbeExecutable $probeExe
+$manifestPath = if ($null -ne $probeExe) {
+    Get-SessionGuardInstallManifestPath -PublishRoot (Split-Path -Parent $probeExe)
+} else {
+    Get-SessionGuardInstallManifestPath
+}
 $probeSucceeded = $false
 $probeOutput = $null
 $healthSnapshot = $null
+$installManifest = $null
+$runtimeValidation = $null
 
 if ($null -ne $probeExe) {
     try {
@@ -36,6 +43,18 @@ if (Test-Path $healthPath) {
     }
 }
 
+if (Test-Path $manifestPath) {
+    try {
+        $installManifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
+    }
+    catch {
+    }
+}
+
+if ($null -ne $probeExe -and (Test-Path $probeExe)) {
+    $runtimeValidation = Invoke-SessionGuardRuntimeValidation -ServiceExecutable $probeExe -AllowFailure
+}
+
 $status = [pscustomobject]@{
     ServiceName = $script:SessionGuardServiceName
     Installed = $null -ne $service
@@ -43,9 +62,12 @@ $status = [pscustomobject]@{
     StartType = if ($null -ne $service) { $service.StartType.ToString() } else { "Unknown" }
     ProbeExecutable = $probeExe
     HealthFilePath = $healthPath
+    InstallManifestPath = $manifestPath
     ControlPlaneReachable = $probeSucceeded
     ProbeOutput = if ($probeOutput) { [string]::Join([Environment]::NewLine, $probeOutput) } else { "" }
     Health = $healthSnapshot
+    InstallManifest = $installManifest
+    RuntimeValidation = if ($null -ne $runtimeValidation) { $runtimeValidation.Report } else { $null }
 }
 
 if ($AsJson) {

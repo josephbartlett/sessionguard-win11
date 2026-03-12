@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Text.Json;
 using SessionGuard.Core.Models;
 using SessionGuard.Core.Services;
@@ -190,7 +189,7 @@ public sealed class SessionGuardServiceHealthReporter
         return new ServiceHealthSnapshot(
             SessionGuardServiceMetadata.ServiceName,
             SessionGuardServiceMetadata.DisplayName,
-            ResolveProductVersion(),
+            ServiceVersionInfo.ResolveProductVersion(),
             hostMode,
             "Starting",
             SessionControlProtocol.Version,
@@ -214,20 +213,5 @@ public sealed class SessionGuardServiceHealthReporter
         }
 
         return lastSuccessfulScanAt.HasValue ? "Running" : "Starting";
-    }
-
-    private static string ResolveProductVersion()
-    {
-        var assembly = typeof(SessionGuardServiceHealthReporter).Assembly;
-        var informationalVersion = assembly
-            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
-            .InformationalVersion;
-
-        if (!string.IsNullOrWhiteSpace(informationalVersion))
-        {
-            return informationalVersion;
-        }
-
-        return assembly.GetName().Version?.ToString() ?? "0.0.0";
     }
 }

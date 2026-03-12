@@ -21,6 +21,14 @@ function Get-SessionGuardServiceExePath {
     return Join-Path $PublishRoot "SessionGuard.Service.exe"
 }
 
+function Get-SessionGuardInstallManifestPath {
+    param(
+        [string]$PublishRoot = (Get-SessionGuardPublishRoot)
+    )
+
+    return Join-Path $PublishRoot "install-manifest.json"
+}
+
 function Get-SessionGuardServiceHealthPath {
     param(
         [string]$ProbeExecutable = ""
@@ -142,4 +150,114 @@ function Invoke-SessionGuardSc {
     }
 
     return $output
+}
+
+function Invoke-SessionGuardRuntimeValidation {
+    param(
+        [string]$ServiceExecutable,
+        [switch]$AllowFailure
+    )
+
+    if ([string]::IsNullOrWhiteSpace($ServiceExecutable) -or -not (Test-Path $ServiceExecutable)) {
+        return [pscustomobject]@{
+            Available = $false
+            ExitCode = $null
+            Report = $null
+            Error = "Service executable not found."
+            RawOutput = ""
+        }
+    }
+
+    try {
+        $output = & $ServiceExecutable validate-runtime 2>&1
+        $exitCode = $LASTEXITCODE
+        $rawOutput = if ($output) { [string]::Join([Environment]::NewLine, $output) } else { "" }
+        $report = $null
+
+        if (-not [string]::IsNullOrWhiteSpace($rawOutput)) {
+            try {
+                $report = $rawOutput | ConvertFrom-Json
+            }
+            catch {
+            }
+        }
+
+        if (-not $AllowFailure -and ($exitCode -ne 0 -or $null -eq $report -or -not $report.CanRun)) {
+            $details = if ($null -ne $report) {
+                $report.Issues -join "; "
+            }
+            elseif (-not [string]::IsNullOrWhiteSpace($rawOutput)) {
+                $rawOutput
+            }
+            else {
+                "No validation output was returned."
+            }
+
+            throw "Service runtime validation failed: $details"
+        }
+
+        return [pscustomobject]@{
+            Available = $true
+            ExitCode = $exitCode
+            Report = $report
+            Error = if ($exitCode -eq 0) { "" } else { $rawOutput }
+            RawOutput = $rawOutput
+        }
+    }
+    catch {
+        if (-not $AllowFailure) {
+            throw
+        }
+
+        return [pscustomobject]@{
+            Available = $true
+            ExitCode = $LASTEXITCODE
+            Report = $null
+            Error = $_.Exception.Message
+            RawOutput = ""
+        }
+    }
+}
+
+function Wait-SessionGuardServiceHealthy {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ProbeExecutable,
+
+        [int]$TimeoutSeconds = 30,
+
+        [string]$ExpectedProductVersion = ""
+    )
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    $healthPath = Get-SessionGuardServiceHealthPath -ProbeExecutable $ProbeExecutable
+
+    do {
+        $probeOutput = & $ProbeExecutable probe 2>&1
+        $probeReady = $LASTEXITCODE -eq 0
+        $health = $null
+
+        if (Test-Path $healthPath) {
+            try {
+                $health = Get-Content $healthPath -Raw | ConvertFrom-Json
+            }
+            catch {
+            }
+        }
+
+        if ($probeReady -and $null -ne $health -and $health.HealthState -eq "Running") {
+            if ([string]::IsNullOrWhiteSpace($ExpectedProductVersion) -or
+                $health.ProductVersion -eq $ExpectedProductVersion) {
+                return [pscustomobject]@{
+                    ControlPlaneReachable = $true
+                    Health = $health
+                    HealthPath = $healthPath
+                }
+            }
+        }
+
+        Start-Sleep -Milliseconds 500
+    } while ((Get-Date) -lt $deadline)
+
+    throw "Timed out waiting for SessionGuard service health to reach a running state."
 }

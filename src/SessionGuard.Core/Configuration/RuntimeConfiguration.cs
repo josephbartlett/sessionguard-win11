@@ -7,6 +7,7 @@ public sealed record RuntimeConfiguration(
     ProtectedProcessCatalog ProtectedProcesses,
     PolicyConfiguration Policies,
     string ConfigurationDirectory,
+    string ConfigurationDefaultsDirectory,
     string AppSettingsPath,
     string ProtectedProcessesPath,
     string PoliciesPath)

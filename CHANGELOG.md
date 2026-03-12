@@ -4,7 +4,12 @@ All notable changes to this project should be recorded here in reverse chronolog
 
 ## Unreleased
 
-No unreleased changes yet.
+- Hardened the published service layout so mutable runtime config stays in `config/` while shipped defaults are copied to `config.defaults/`.
+- Added runtime self-validation through `SessionGuard.Service.exe validate-runtime` and surfaced that validation in the install and status scripts.
+- Added `install-manifest.json` to published service layouts with version, protocol, path, and validation metadata.
+- Updated publish behavior to preserve existing `config/`, `logs/`, and `state/` folders when republishing into the same service root.
+- Updated service installation to verify post-start health and control-plane reachability after a successful start.
+- Expanded tests for published-layout path discovery and default-config seeding.
 
 ## 0.5.3 - 2026-03-11
 

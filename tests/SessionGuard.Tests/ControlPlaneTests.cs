@@ -185,6 +185,7 @@ public sealed class ControlPlaneTests
                 }
             }.Normalize(),
             "config",
+            "config",
             "config\\appsettings.json",
             "config\\protected-processes.json",
             "config\\policies.json");
@@ -267,6 +268,7 @@ public sealed class ControlPlaneTests
                     }
                 }
             }.Normalize(),
+            "config",
             "config",
             "config\\appsettings.json",
             "config\\protected-processes.json",

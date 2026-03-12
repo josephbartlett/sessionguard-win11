@@ -95,6 +95,24 @@ Exit criteria:
 - approval-window precedence is deterministic and explained in the UI
 - automated coverage exists for invalid config, conflicts, approval expiry, and operator-facing timing transitions
 
+### v1.0.0 Service Install Hardening
+
+Purpose:
+Make the service path safer to install, republish, and operate repeatedly on a real machine without losing local operator state.
+
+Current status:
+- published service layouts now separate mutable runtime config in `config/` from shipped defaults in `config.defaults/`
+- published service layouts now include `install-manifest.json` with version, protocol, and validation metadata
+- the service now exposes `validate-runtime` so scripts can verify the runtime layout before install or start
+- publish now preserves existing `config/`, `logs/`, and `state/` directories when republishing into the same service root
+- install now verifies post-start health and control-plane reachability instead of treating `Start-Service` alone as success
+
+Exit criteria:
+- republishing does not overwrite operator-edited runtime config
+- install and status tooling can verify the exact runtime version they are managing
+- published layouts work the same way inside or outside the repo tree
+- service start verification depends on health and control-plane reachability, not only SCM state
+
 ### 0.5.3 Operator UX Refinement
 
 Purpose:

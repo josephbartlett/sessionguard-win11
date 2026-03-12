@@ -9,6 +9,13 @@ namespace SessionGuard.Infrastructure.Configuration;
 
 public sealed class JsonConfigurationRepository : IConfigurationRepository
 {
+    private static readonly string[] ManagedConfigFiles =
+    {
+        "appsettings.json",
+        "protected-processes.json",
+        "policies.json"
+    };
+
     private readonly RuntimePaths _paths;
 
     public JsonConfigurationRepository(RuntimePaths paths)
@@ -20,6 +27,8 @@ public sealed class JsonConfigurationRepository : IConfigurationRepository
 
     public async Task<RuntimeConfiguration> LoadAsync(CancellationToken cancellationToken = default)
     {
+        await EnsureMutableConfigurationFilesAsync(cancellationToken);
+
         var appSettingsPath = Path.Combine(_paths.ConfigDirectory, "appsettings.json");
         var protectedProcessesPath = Path.Combine(_paths.ConfigDirectory, "protected-processes.json");
         var policiesPath = Path.Combine(_paths.ConfigDirectory, "policies.json");
@@ -82,11 +91,44 @@ public sealed class JsonConfigurationRepository : IConfigurationRepository
             protectedProcessCatalog.Normalize(),
             policies,
             _paths.ConfigDirectory,
+            _paths.ConfigDefaultsDirectory,
             appSettingsPath,
             protectedProcessesPath,
             policiesPath)
         {
             PolicyValidation = policyValidation
         };
+    }
+
+    private Task EnsureMutableConfigurationFilesAsync(CancellationToken cancellationToken)
+    {
+        if (string.Equals(_paths.ConfigDirectory, _paths.ConfigDefaultsDirectory, StringComparison.OrdinalIgnoreCase) ||
+            !Directory.Exists(_paths.ConfigDefaultsDirectory))
+        {
+            return Task.CompletedTask;
+        }
+
+        Directory.CreateDirectory(_paths.ConfigDirectory);
+
+        foreach (var fileName in ManagedConfigFiles)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var livePath = Path.Combine(_paths.ConfigDirectory, fileName);
+            if (File.Exists(livePath))
+            {
+                continue;
+            }
+
+            var defaultsPath = Path.Combine(_paths.ConfigDefaultsDirectory, fileName);
+            if (!File.Exists(defaultsPath))
+            {
+                continue;
+            }
+
+            File.Copy(defaultsPath, livePath, overwrite: false);
+        }
+
+        return Task.CompletedTask;
     }
 }
