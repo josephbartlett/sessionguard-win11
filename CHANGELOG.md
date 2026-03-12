@@ -13,6 +13,9 @@ All notable changes to this project should be recorded here in reverse chronolog
 - Added `schemaVersion` to the shipped JSON config files and a bounded legacy-to-current config migration path.
 - Added `SessionGuard.Service.exe upgrade-config` plus a PowerShell wrapper script for upgrading published runtime config in place with backups.
 - Added migration inspection into runtime validation so install-readiness checks can detect legacy or unsupported config schema versions.
+- Added `Update-SessionGuardServiceDeployment.ps1` as a one-command stop, republish, reinstall, restart, and running-version verification path for installed service deployments.
+- Expanded status reporting with the installed service image path so deployment tooling can verify the service is running the expected binary.
+- Expanded PowerShell script coverage for the new deployment-upgrade validate-only flow.
 
 ## 0.5.3 - 2026-03-11
 

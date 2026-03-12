@@ -29,6 +29,111 @@ function Get-SessionGuardInstallManifestPath {
     return Join-Path $PublishRoot "install-manifest.json"
 }
 
+function Get-SessionGuardInstallManifest {
+    param(
+        [string]$PublishRoot = (Get-SessionGuardPublishRoot)
+    )
+
+    $manifestPath = Get-SessionGuardInstallManifestPath -PublishRoot $PublishRoot
+    if (-not (Test-Path $manifestPath)) {
+        return $null
+    }
+
+    try {
+        return Get-Content $manifestPath -Raw | ConvertFrom-Json
+    }
+    catch {
+        return $null
+    }
+}
+
+function Convert-SessionGuardServicePathNameToExecutablePath {
+    param(
+        [string]$PathName
+    )
+
+    if ([string]::IsNullOrWhiteSpace($PathName)) {
+        return $null
+    }
+
+    $trimmedPath = $PathName.Trim()
+    if ($trimmedPath.StartsWith('"')) {
+        $endQuote = $trimmedPath.IndexOf('"', 1)
+        if ($endQuote -gt 1) {
+            return $trimmedPath.Substring(1, $endQuote - 1)
+        }
+    }
+
+    $exeIndex = $trimmedPath.IndexOf(".exe", [System.StringComparison]::OrdinalIgnoreCase)
+    if ($exeIndex -ge 0) {
+        return $trimmedPath.Substring(0, $exeIndex + 4)
+    }
+
+    return $trimmedPath.Split(' ')[0]
+}
+
+function Get-SessionGuardInstalledServiceConfiguration {
+    $service = Get-Service -Name $script:SessionGuardServiceName -ErrorAction SilentlyContinue
+    if ($null -eq $service) {
+        return $null
+    }
+
+    $cimService = $null
+    try {
+        $cimService = Get-CimInstance -ClassName Win32_Service -Filter "Name='$script:SessionGuardServiceName'" -ErrorAction Stop
+    }
+    catch {
+    }
+
+    $imagePath = $null
+    if ($null -ne $cimService) {
+        $imagePath = Convert-SessionGuardServicePathNameToExecutablePath -PathName $cimService.PathName
+    }
+
+    $publishRoot = if ([string]::IsNullOrWhiteSpace($imagePath)) {
+        $null
+    }
+    else {
+        Split-Path -Parent $imagePath
+    }
+
+    [pscustomobject]@{
+        Exists = $true
+        ServiceName = $script:SessionGuardServiceName
+        Status = $service.Status.ToString()
+        StartType = $service.StartType.ToString()
+        PathName = if ($null -ne $cimService) { $cimService.PathName } else { "" }
+        ImagePath = $imagePath
+        PublishRoot = $publishRoot
+    }
+}
+
+function Convert-SessionGuardPathToComparableValue {
+    param(
+        [string]$Path
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Path)) {
+        return ""
+    }
+
+    return [System.IO.Path]::GetFullPath($Path).TrimEnd('\').ToUpperInvariant()
+}
+
+function Test-SessionGuardPathMatch {
+    param(
+        [string]$Left,
+        [string]$Right
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Left) -or [string]::IsNullOrWhiteSpace($Right)) {
+        return $false
+    }
+
+    return (Convert-SessionGuardPathToComparableValue -Path $Left) -eq
+        (Convert-SessionGuardPathToComparableValue -Path $Right)
+}
+
 function Get-SessionGuardServiceHealthPath {
     param(
         [string]$ProbeExecutable = ""

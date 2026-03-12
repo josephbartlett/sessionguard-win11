@@ -106,6 +106,7 @@ Current status:
 - the service now exposes `validate-runtime` so scripts can verify the runtime layout before install or start
 - publish now preserves existing `config/`, `logs/`, and `state/` directories when republishing into the same service root
 - install now verifies post-start health and control-plane reachability instead of treating `Start-Service` alone as success
+- the service tooling now includes a one-command deployment update flow that stops the live service, republishes into the target root, reinstalls, restarts, and verifies the running version against `install-manifest.json`
 
 Exit criteria:
 - republishing does not overwrite operator-edited runtime config

@@ -159,10 +159,22 @@ Install the Windows Service from an elevated PowerShell session:
 powershell -ExecutionPolicy Bypass -File scripts/service/Install-SessionGuardService.ps1
 ```
 
+Update an existing installed service in one command. This stops the current service, republishes into the live service root by default, reinstalls, restarts, and verifies the running version against `install-manifest.json`:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/service/Update-SessionGuardServiceDeployment.ps1
+```
+
 Validate install readiness without modifying the machine:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/service/Install-SessionGuardService.ps1 -ValidateOnly
+```
+
+Validate the upgrade path without changing the machine or republishing:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/service/Update-SessionGuardServiceDeployment.ps1 -SkipPublish -ValidateOnly
 ```
 
 Validate the runtime layout and config next to the published service executable:
@@ -260,14 +272,15 @@ src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe clear
 17. Run `powershell -ExecutionPolicy Bypass -File scripts/service/Validate-SessionGuardPublishedLayout.ps1` and confirm the published layout works outside the repo root.
 18. Remove the `schemaVersion` field from a published config file, run `powershell -ExecutionPolicy Bypass -File scripts/service/Upgrade-SessionGuardServiceConfig.ps1`, and confirm the file is upgraded and a backup appears under `state/config-backups/`.
 19. Edit a published config file under `artifacts\publish\SessionGuard.Service\config\`, rerun `Publish-SessionGuardService.ps1`, and confirm the edit is preserved while `config.defaults\` is refreshed.
-20. Minimize or close the dashboard window and confirm SessionGuard remains available in the notification area.
-21. Trigger a state with restart pressure, then confirm the policy card explains whether restart is blocked, requires approval, or has an active approval window.
-22. Stop the service or force local fallback, then confirm the mitigation and approval buttons are disabled, the dashboard explains that those write actions are service-owned, and the tray surface reports local fallback.
-23. Grant and clear a temporary restart approval window from the dashboard or `SessionGuard.Service.exe approve-restart` while the service path is active and confirm the policy status changes.
-24. Minimize the app to the tray while the service path is active, then confirm tray balloon notifications appear for service transitions or approval timing events when they occur.
-25. Start a protected terminal, browser, or editor session and confirm the workspace safety table explains why the session is considered risky.
-26. Introduce a temporary mistake into [`config/policies.json`](/C:/Users/decoy/sessionguard-win11/config/policies.json), trigger a scan, and confirm the policy card stays up, reports configuration errors, and leaves the rest of the dashboard functional.
-27. Inspect `state/current-scan.json`, `state/workspace-snapshot.json`, `state/policy-approval.json`, `state/service-health.json`, and `state/config-backups/` and confirm the latest status and migration artifacts are serialized by the service or local fallback path.
+20. If the service is already installed, run `powershell -ExecutionPolicy Bypass -File scripts/service/Update-SessionGuardServiceDeployment.ps1` from an elevated shell and confirm it restarts the service and verifies the running version successfully.
+21. Minimize or close the dashboard window and confirm SessionGuard remains available in the notification area.
+22. Trigger a state with restart pressure, then confirm the policy card explains whether restart is blocked, requires approval, or has an active approval window.
+23. Stop the service or force local fallback, then confirm the mitigation and approval buttons are disabled, the dashboard explains that those write actions are service-owned, and the tray surface reports local fallback.
+24. Grant and clear a temporary restart approval window from the dashboard or `SessionGuard.Service.exe approve-restart` while the service path is active and confirm the policy status changes.
+25. Minimize the app to the tray while the service path is active, then confirm tray balloon notifications appear for service transitions or approval timing events when they occur.
+26. Start a protected terminal, browser, or editor session and confirm the workspace safety table explains why the session is considered risky.
+27. Introduce a temporary mistake into [`config/policies.json`](/C:/Users/decoy/sessionguard-win11/config/policies.json), trigger a scan, and confirm the policy card stays up, reports configuration errors, and leaves the rest of the dashboard functional.
+28. Inspect `state/current-scan.json`, `state/workspace-snapshot.json`, `state/policy-approval.json`, `state/service-health.json`, and `state/config-backups/` and confirm the latest status and migration artifacts are serialized by the service or local fallback path.
 
 ## What the MVP does not do
 

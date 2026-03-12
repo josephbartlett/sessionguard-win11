@@ -10,6 +10,7 @@ $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "common.ps1")
 
 $service = Get-Service -Name $script:SessionGuardServiceName -ErrorAction SilentlyContinue
+$installedService = Get-SessionGuardInstalledServiceConfiguration
 $probeExe = Get-SessionGuardProbeExePath -PreferredPath $ProbeExecutable
 $healthPath = Get-SessionGuardServiceHealthPath -ProbeExecutable $probeExe
 $manifestPath = if ($null -ne $probeExe) {
@@ -60,6 +61,13 @@ $status = [pscustomobject]@{
     Installed = $null -ne $service
     Status = if ($null -ne $service) { $service.Status.ToString() } else { "NotInstalled" }
     StartType = if ($null -ne $service) { $service.StartType.ToString() } else { "Unknown" }
+    InstalledImagePath = if ($null -ne $installedService) { $installedService.ImagePath } else { "" }
+    InstalledPublishRoot = if ($null -ne $installedService) { $installedService.PublishRoot } else { "" }
+    InstalledPathMatchesProbeExecutable = if ($null -ne $installedService -and $null -ne $probeExe) {
+        Test-SessionGuardPathMatch -Left $installedService.ImagePath -Right $probeExe
+    } else {
+        $false
+    }
     ProbeExecutable = $probeExe
     HealthFilePath = $healthPath
     InstallManifestPath = $manifestPath

@@ -28,6 +28,9 @@ public sealed class ServiceScriptTests
         Assert.Equal("SessionGuardService", root.GetProperty("ServiceName").GetString());
         Assert.True(root.TryGetProperty("ControlPlaneReachable", out _));
         Assert.True(root.TryGetProperty("HealthFilePath", out _));
+        Assert.True(root.TryGetProperty("InstalledImagePath", out _));
+        Assert.True(root.TryGetProperty("InstalledPublishRoot", out _));
+        Assert.True(root.TryGetProperty("InstalledPathMatchesProbeExecutable", out _));
     }
 
     [Fact]
@@ -153,6 +156,53 @@ public sealed class ServiceScriptTests
 
         var appSettings = JsonDocument.Parse(File.ReadAllText(Path.Combine(configDirectory, "appsettings.json")));
         Assert.Equal(1, appSettings.RootElement.GetProperty("schemaVersion").GetInt32());
+    }
+
+    [Fact]
+    public async Task UpdateServiceDeployment_ValidateOnly_ReportsUpgradePlanForValidLayout()
+    {
+        var repoRoot = GetRepositoryRoot();
+        var publishRoot = Path.Combine(Path.GetTempPath(), "SessionGuard.Tests", Guid.NewGuid().ToString("N"));
+        CopyDirectory(GetBuiltServiceOutputRoot(repoRoot), publishRoot);
+
+        var configDirectory = Path.Combine(publishRoot, "config");
+        var configDefaultsDirectory = Path.Combine(publishRoot, "config.defaults");
+        Directory.CreateDirectory(configDirectory);
+        Directory.CreateDirectory(configDefaultsDirectory);
+        File.WriteAllText(Path.Combine(configDirectory, "appsettings.json"), "{}");
+        File.WriteAllText(Path.Combine(configDirectory, "protected-processes.json"), "{\"processNames\":[]}");
+        File.WriteAllText(Path.Combine(configDirectory, "policies.json"), "{\"enabled\":true,\"rules\":[]}");
+        File.WriteAllText(Path.Combine(configDefaultsDirectory, "appsettings.json"), "{\"schemaVersion\":1}");
+        File.WriteAllText(Path.Combine(configDefaultsDirectory, "protected-processes.json"), "{\"schemaVersion\":1,\"processNames\":[]}");
+        File.WriteAllText(Path.Combine(configDefaultsDirectory, "policies.json"), "{\"schemaVersion\":1,\"enabled\":true,\"rules\":[]}");
+        File.WriteAllText(
+            Path.Combine(publishRoot, "install-manifest.json"),
+            "{\"ProductVersion\":\"0.0-test\",\"ProtocolVersion\":\"1.2\"}");
+
+        var scriptPath = Path.Combine(repoRoot, "scripts", "service", "Update-SessionGuardServiceDeployment.ps1");
+        var result = await RunPowerShellScriptAsync(
+            scriptPath,
+            "-SkipPublish",
+            "-PublishRoot",
+            publishRoot,
+            "-ValidateOnly",
+            "-AsJson");
+
+        Assert.True(result.ExitCode == 0, $"PowerShell exited with {result.ExitCode}. stderr: {result.StandardError}");
+
+        using var document = JsonDocument.Parse(result.StandardOutput);
+        var root = document.RootElement;
+
+        Assert.Equal(publishRoot, root.GetProperty("TargetPublishRoot").GetString());
+        Assert.False(root.GetProperty("WillPublish").GetBoolean());
+        Assert.True(root.GetProperty("DotnetAvailable").GetBoolean());
+        Assert.True(root.TryGetProperty("WillStopService", out _));
+        Assert.True(root.TryGetProperty("InstalledService", out _));
+        Assert.True(root.GetProperty("InstallReadiness").GetProperty("ServiceExecutableExists").GetBoolean());
+        Assert.True(root.GetProperty("InstallReadiness").GetProperty("RuntimeValidation").GetProperty("CanRun").GetBoolean());
+
+        var elevated = IsElevated();
+        Assert.Equal(elevated, root.GetProperty("CanExecuteNow").GetBoolean());
     }
 
     private static string GetBuiltServiceOutputRoot(string repoRoot)
