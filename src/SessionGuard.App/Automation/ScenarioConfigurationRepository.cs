@@ -24,7 +24,7 @@ internal sealed class ScenarioConfigurationRepository : IConfigurationRepository
                 UiPreferences = new UiPreferences
                 {
                     StartMinimized = false,
-                    ShowDetailedSignals = true
+                    ShowDetailedSignals = false
                 },
                 WarningBehavior = new WarningBehaviorOptions
                 {

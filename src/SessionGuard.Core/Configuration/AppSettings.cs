@@ -29,7 +29,7 @@ public sealed class UiPreferences
 {
     public bool StartMinimized { get; init; }
 
-    public bool ShowDetailedSignals { get; init; } = true;
+    public bool ShowDetailedSignals { get; init; }
 
     public UiPreferences Normalize()
     {

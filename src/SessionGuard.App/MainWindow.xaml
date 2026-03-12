@@ -9,18 +9,18 @@
         Title="SessionGuard"
         Width="1260"
         Height="860"
-        MinWidth="1080"
+        MinWidth="1040"
         MinHeight="720"
         Background="{StaticResource WindowBackgroundBrush}">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <Grid Margin="24">
+        <Grid Margin="28">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
             <DockPanel Grid.Row="0" LastChildFill="False">
-                <StackPanel DockPanel.Dock="Left">
+                <StackPanel DockPanel.Dock="Left" MaxWidth="640">
                     <TextBlock FontSize="30"
                                FontWeight="SemiBold"
                                Foreground="{StaticResource PrimaryTextBrush}"
@@ -31,33 +31,37 @@
                                TextWrapping="Wrap" />
                 </StackPanel>
 
-                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
+                <StackPanel DockPanel.Dock="Right"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Top">
                     <Button Style="{StaticResource PrimaryActionButtonStyle}"
                             AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.ScanNowButton}"
                             Command="{Binding ScanNowCommand}"
                             Content="Scan now" />
-                    <Button Style="{StaticResource SecondaryActionButtonStyle}"
+                    <Button Style="{StaticResource QuietActionButtonStyle}"
                             AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.WindowsUpdateOptionsButton}"
                             Command="{Binding OpenWindowsUpdateSettingsCommand}"
                             Content="Windows Update options" />
                 </StackPanel>
             </DockPanel>
 
-            <Grid Grid.Row="1" Margin="0,22,0,0">
+            <Grid Grid.Row="1" Margin="0,24,0,0">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="380" />
+                    <ColumnDefinition Width="440" />
                     <ColumnDefinition Width="16" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Grid.Column="0">
-                    <Border Margin="0,16,0,0" Style="{StaticResource CardBorderStyle}">
+                    <Border Style="{StaticResource CardBorderStyle}">
                         <StackPanel>
                             <TextBlock FontSize="14"
                                        FontWeight="SemiBold"
                                        Foreground="{StaticResource SecondaryTextBrush}"
                                        Text="Current status" />
-                            <Border Margin="0,12,0,0"
+
+                            <Border Margin="0,14,0,0"
                                     Padding="14,8"
                                     HorizontalAlignment="Left"
                                     Background="{Binding StatusBrush}"
@@ -69,24 +73,16 @@
                                            Text="{Binding CurrentStatusText}" />
                             </Border>
 
-                            <TextBlock Margin="0,14,0,0"
+                            <TextBlock Margin="0,16,0,0"
+                                       FontSize="22"
+                                       FontWeight="SemiBold"
                                        Foreground="{StaticResource PrimaryTextBrush}"
-                                       AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.StatusSummaryText}"
-                                       Text="{Binding StatusSummary}"
+                                       Text="{Binding FriendlyStatusHeadline}"
                                        TextWrapping="Wrap" />
-                            <TextBlock Margin="0,10,0,0"
-                                       Foreground="{StaticResource SecondaryTextBrush}"
-                                       AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.SignalOverviewText}"
-                                       Text="{Binding SignalOverviewText}"
-                                       TextWrapping="Wrap" />
-                            <TextBlock Margin="0,6,0,0"
-                                       Foreground="{StaticResource SecondaryTextBrush}"
-                                       Text="{Binding ProviderCoverageText}"
-                                       TextWrapping="Wrap" />
-                            <TextBlock Margin="0,6,0,0"
-                                       Foreground="{StaticResource SecondaryTextBrush}"
-                                       AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.ConnectionModeText}"
-                                       Text="{Binding ConnectionModeText}"
+
+                            <TextBlock Margin="0,8,0,0"
+                                       Foreground="{StaticResource PrimaryTextBrush}"
+                                       Text="{Binding FriendlyStatusBody}"
                                        TextWrapping="Wrap" />
 
                             <UniformGrid Margin="0,18,0,0" Columns="2">
@@ -95,7 +91,7 @@
                                         Background="#F8FAFC"
                                         CornerRadius="10">
                                     <StackPanel>
-                                        <TextBlock Foreground="{StaticResource SecondaryTextBrush}" Text="Restart risk" />
+                                        <TextBlock Foreground="{StaticResource SecondaryTextBrush}" Text="Disruption risk" />
                                         <TextBlock Margin="0,8,0,0"
                                                    FontSize="16"
                                                    FontWeight="SemiBold"
@@ -110,7 +106,7 @@
                                         Background="#F8FAFC"
                                         CornerRadius="10">
                                     <StackPanel>
-                                        <TextBlock Foreground="{StaticResource SecondaryTextBrush}" Text="Protection mode" />
+                                        <TextBlock Foreground="{StaticResource SecondaryTextBrush}" Text="SessionGuard mode" />
                                         <TextBlock Margin="0,8,0,0"
                                                    FontSize="16"
                                                    FontWeight="SemiBold"
@@ -125,7 +121,7 @@
                                         Background="#F8FAFC"
                                         CornerRadius="10">
                                     <StackPanel>
-                                        <TextBlock Foreground="{StaticResource SecondaryTextBrush}" Text="Pending restart" />
+                                        <TextBlock Foreground="{StaticResource SecondaryTextBrush}" Text="Windows restart" />
                                         <TextBlock Margin="0,8,0,0"
                                                    FontSize="16"
                                                    FontWeight="SemiBold"
@@ -140,7 +136,7 @@
                                         Background="#F8FAFC"
                                         CornerRadius="10">
                                     <StackPanel>
-                                        <TextBlock Foreground="{StaticResource SecondaryTextBrush}" Text="Admin access" />
+                                        <TextBlock Foreground="{StaticResource SecondaryTextBrush}" Text="Action access" />
                                         <TextBlock Margin="0,8,0,0"
                                                    FontSize="16"
                                                    FontWeight="SemiBold"
@@ -152,37 +148,17 @@
                                 </Border>
                             </UniformGrid>
 
-                            <CheckBox Margin="0,8,0,0"
-                                      Content="Guard mode enabled"
-                                      FontWeight="SemiBold"
-                                      IsChecked="{Binding GuardModeEnabled}" />
-
-                            <TextBlock Margin="0,12,0,0"
+                            <TextBlock Margin="0,6,0,0"
+                                       Foreground="{StaticResource PrimaryTextBrush}"
+                                       Text="{Binding ActiveWorkSummaryText}"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Margin="0,8,0,0"
+                                       Foreground="{StaticResource SecondaryTextBrush}"
+                                       Text="{Binding ServiceModeSummaryText}"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Margin="0,8,0,0"
                                        Foreground="{StaticResource SecondaryTextBrush}"
                                        Text="{Binding LastScanText}" />
-                            <TextBlock Margin="0,6,0,0"
-                                       Foreground="{StaticResource SecondaryTextBrush}"
-                                       Text="{Binding ProtectedProcessSummary}"
-                                       TextWrapping="Wrap" />
-                            <TextBlock Margin="0,6,0,0"
-                                       Foreground="{StaticResource SecondaryTextBrush}"
-                                       AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.WorkspaceSummaryText}"
-                                       Text="{Binding WorkspaceSummaryText}"
-                                       TextWrapping="Wrap" />
-                            <TextBlock Margin="0,6,0,0"
-                                       Foreground="{StaticResource SecondaryTextBrush}"
-                                       AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.WorkspaceConfidenceText}"
-                                       Text="{Binding WorkspaceConfidenceText}"
-                                       TextWrapping="Wrap" />
-                            <TextBlock Margin="0,6,0,0"
-                                       Foreground="{StaticResource SecondaryTextBrush}"
-                                       AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.WorkspaceSnapshotText}"
-                                       Text="{Binding WorkspaceSnapshotText}"
-                                       TextWrapping="Wrap" />
-                            <TextBlock Margin="0,12,0,0"
-                                       Foreground="{StaticResource PrimaryTextBrush}"
-                                       Text="{Binding LastActionMessage}"
-                                       TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
 
@@ -191,63 +167,34 @@
                             <TextBlock FontSize="14"
                                        FontWeight="SemiBold"
                                        Foreground="{StaticResource SecondaryTextBrush}"
-                                       Text="Actions" />
-
-                            <WrapPanel Margin="0,14,0,0">
-                                <Button Style="{StaticResource PrimaryActionButtonStyle}"
-                                        Command="{Binding ApplyMitigationsCommand}"
-                                        Content="Apply recommended mitigation" />
-                                <Button Style="{StaticResource SecondaryActionButtonStyle}"
-                                        Command="{Binding ResetMitigationsCommand}"
-                                        Content="Reset managed settings" />
-                            </WrapPanel>
-                            <TextBlock Margin="0,10,0,0"
-                                       Foreground="{StaticResource SecondaryTextBrush}"
-                                       AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.ServiceActionAvailabilityText}"
-                                       Text="{Binding ServiceActionAvailabilityText}"
-                                       TextWrapping="Wrap" />
-
-                            <WrapPanel Margin="0,12,0,0">
-                                <Button Style="{StaticResource SecondaryActionButtonStyle}"
-                                        Command="{Binding OpenConfigCommand}"
-                                        Content="Open config" />
-                                <Button Style="{StaticResource SecondaryActionButtonStyle}"
-                                        Command="{Binding OpenPoliciesCommand}"
-                                        Content="Open policies" />
-                                <Button Style="{StaticResource SecondaryActionButtonStyle}"
-                                        Command="{Binding OpenLogsCommand}"
-                                        Content="Open logs" />
-                            </WrapPanel>
-
-                            <TextBlock Margin="0,16,0,0"
-                                       FontSize="14"
+                                       Text="What to do now" />
+                            <TextBlock Margin="0,14,0,0"
+                                       FontSize="22"
                                        FontWeight="SemiBold"
-                                       Foreground="{StaticResource SecondaryTextBrush}"
-                                       Text="Recommendations" />
-
-                            <ItemsControl Margin="0,8,0,0" ItemsSource="{Binding Recommendations}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Margin="0,0,0,8"
-                                                   Foreground="{StaticResource PrimaryTextBrush}"
-                                                   Text="{Binding}"
-                                                   TextWrapping="Wrap" />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-
+                                       Foreground="{StaticResource PrimaryTextBrush}"
+                                       Text="{Binding RecommendedActionHeadline}"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Margin="0,10,0,0"
+                                       Foreground="{StaticResource PrimaryTextBrush}"
+                                       Text="{Binding RecommendedActionDescription}"
+                                       TextWrapping="Wrap" />
+                            <Button Margin="0,16,0,0"
+                                    Width="220"
+                                    HorizontalAlignment="Left"
+                                    Style="{StaticResource PrimaryActionButtonStyle}"
+                                    AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.RecommendedActionButton}"
+                                    Command="{Binding RecommendedActionCommand}"
+                                    Content="{Binding RecommendedActionButtonText}"
+                                    Visibility="{Binding RecommendedActionVisible, Converter={StaticResource BooleanToVisibilityConverter}}" />
                             <TextBlock Margin="0,12,0,0"
                                        Foreground="{StaticResource SecondaryTextBrush}"
-                                       Text="{Binding ConfigurationDirectoryText}"
+                                       Text="{Binding RecommendedActionSupportText}"
                                        TextWrapping="Wrap" />
-                            <TextBlock Margin="0,4,0,0"
+                            <TextBlock Margin="0,12,0,0"
                                        Foreground="{StaticResource SecondaryTextBrush}"
-                                       Text="{Binding PolicyDirectoryText}"
-                                       TextWrapping="Wrap" />
-                            <TextBlock Margin="0,4,0,0"
-                                       Foreground="{StaticResource SecondaryTextBrush}"
-                                       Text="{Binding LogDirectoryText}"
-                                       TextWrapping="Wrap" />
+                                       Text="{Binding LastActionMessage}"
+                                       TextWrapping="Wrap"
+                                       Visibility="{Binding HasLastActionMessage, Converter={StaticResource BooleanToVisibilityConverter}}" />
                         </StackPanel>
                     </Border>
                 </StackPanel>
@@ -258,296 +205,441 @@
                             <TextBlock FontSize="14"
                                        FontWeight="SemiBold"
                                        Foreground="{StaticResource SecondaryTextBrush}"
-                                       Text="Policy engine" />
+                                       Text="Why SessionGuard is saying this" />
+                            <TextBlock Margin="0,14,0,0"
+                                       FontSize="22"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource PrimaryTextBrush}"
+                                       Text="{Binding FriendlyReasonHeadline}"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Margin="0,8,0,0"
+                                       Foreground="{StaticResource PrimaryTextBrush}"
+                                       Text="{Binding FriendlyReasonBody}"
+                                       TextWrapping="Wrap" />
                             <TextBlock Margin="0,12,0,0"
-                                       Foreground="{StaticResource PrimaryTextBrush}"
-                                       AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.PolicyDecisionText}"
-                                       Text="{Binding PolicyDecisionText}"
-                                       TextWrapping="Wrap" />
-                            <TextBlock Margin="0,8,0,0"
-                                       Foreground="{StaticResource PrimaryTextBrush}"
-                                       AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.PolicySummaryText}"
-                                       Text="{Binding PolicySummaryText}"
+                                       Foreground="{StaticResource SecondaryTextBrush}"
+                                       Text="{Binding FriendlyProtectionSummary}"
                                        TextWrapping="Wrap" />
                             <TextBlock Margin="0,8,0,0"
                                        Foreground="{StaticResource SecondaryTextBrush}"
-                                       AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.PolicyApprovalText}"
-                                       Text="{Binding PolicyApprovalText}"
+                                       Text="{Binding WorkspaceSummaryText}"
                                        TextWrapping="Wrap" />
                             <TextBlock Margin="0,8,0,0"
                                        Foreground="{StaticResource SecondaryTextBrush}"
-                                       AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.PolicyDiagnosticsText}"
-                                       Text="{Binding PolicyDiagnosticsText}"
+                                       Text="{Binding ProtectedProcessSummary}"
                                        TextWrapping="Wrap" />
-                            <TextBlock Margin="0,8,0,0"
-                                       Foreground="{StaticResource SecondaryTextBrush}"
-                                       AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.PolicyTimingText}"
-                                       Text="{Binding PolicyTimingText}"
-                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
 
-                            <ItemsControl Margin="0,10,0,0" ItemsSource="{Binding PolicyValidationIssues}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Margin="0,0,0,6"
+                    <Border Margin="0,16,0,0" Style="{StaticResource CardBorderStyle}">
+                        <Expander IsExpanded="{Binding ShowDetailedSignals}"
+                                  AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.AdvancedDetailsExpander}">
+                            <Expander.Header>
+                                <StackPanel>
+                                    <TextBlock FontSize="14"
+                                               FontWeight="SemiBold"
+                                               Foreground="{StaticResource SecondaryTextBrush}"
+                                               Text="Advanced details" />
+                                    <TextBlock Margin="0,4,0,0"
+                                               Foreground="{StaticResource SecondaryTextBrush}"
+                                               Text="Open this if you want the technical reason, advanced controls, or file shortcuts."
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Expander.Header>
+
+                            <StackPanel Margin="0,16,0,0">
+                                <Border Background="#F8FAFC"
+                                        BorderBrush="{StaticResource CardBorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="12"
+                                        Padding="16">
+                                    <StackPanel>
+                                        <TextBlock FontSize="14"
+                                                   FontWeight="SemiBold"
                                                    Foreground="{StaticResource SecondaryTextBrush}"
+                                                   Text="Restart protection details" />
+                                        <TextBlock Margin="0,12,0,0"
+                                                   Foreground="{StaticResource PrimaryTextBrush}"
+                                                   AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.PolicyDecisionText}"
+                                                   Text="{Binding PolicyDecisionText}"
+                                                   TextWrapping="Wrap" />
+                                        <TextBlock Margin="0,8,0,0"
+                                                   Foreground="{StaticResource PrimaryTextBrush}"
+                                                   AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.PolicySummaryText}"
+                                                   Text="{Binding PolicySummaryText}"
+                                                   TextWrapping="Wrap" />
+                                        <TextBlock Margin="0,8,0,0"
+                                                   Foreground="{StaticResource SecondaryTextBrush}"
+                                                   AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.PolicyApprovalText}"
+                                                   Text="{Binding PolicyApprovalText}"
+                                                   TextWrapping="Wrap" />
+                                        <TextBlock Margin="0,8,0,0"
+                                                   Foreground="{StaticResource SecondaryTextBrush}"
+                                                   AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.PolicyDiagnosticsText}"
+                                                   Text="{Binding PolicyDiagnosticsText}"
+                                                   TextWrapping="Wrap" />
+                                        <TextBlock Margin="0,8,0,0"
+                                                   Foreground="{StaticResource SecondaryTextBrush}"
+                                                   AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.PolicyTimingText}"
+                                                   Text="{Binding PolicyTimingText}"
+                                                   TextWrapping="Wrap" />
+
+                                        <ItemsControl Margin="0,10,0,0" ItemsSource="{Binding PolicyValidationIssues}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Margin="0,0,0,6"
+                                                               Foreground="{StaticResource SecondaryTextBrush}"
+                                                               TextWrapping="Wrap">
+                                                        <Run FontWeight="SemiBold" Text="{Binding SeverityLabel}" />
+                                                        <Run Text=": " />
+                                                        <Run Text="{Binding DisplayText}" />
+                                                    </TextBlock>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
+                                        <WrapPanel Margin="0,12,0,0">
+                                            <Button Style="{StaticResource PrimaryActionButtonStyle}"
+                                                    AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.GrantApprovalButton}"
+                                                    Command="{Binding GrantRestartApprovalCommand}"
+                                                    Content="Grant approval window"
+                                                    Visibility="{Binding ShowGrantApprovalAction, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                            <Button Style="{StaticResource SecondaryActionButtonStyle}"
+                                                    AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.ClearApprovalButton}"
+                                                    Command="{Binding ClearRestartApprovalCommand}"
+                                                    Content="Clear approval"
+                                                    Visibility="{Binding ShowClearApprovalAction, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                        </WrapPanel>
+                                        <TextBlock Margin="0,10,0,0"
+                                                   Foreground="{StaticResource SecondaryTextBrush}"
+                                                   AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.ServiceActionAvailabilityText}"
+                                                   Text="{Binding ServiceActionAvailabilityText}"
+                                                   TextWrapping="Wrap" />
+                                        <DataGrid Margin="0,14,0,0"
+                                                  x:Name="PolicyRulesGrid"
+                                                  AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.PolicyRulesGrid}"
+                                                  AutoGenerateColumns="False"
+                                                  CanUserAddRows="False"
+                                                  HeadersVisibility="Column"
+                                                  IsReadOnly="True"
+                                                  MinRowHeight="34"
+                                                  ItemsSource="{Binding MatchedPolicyRules}">
+                                            <DataGrid.Columns>
+                                                <DataGridTemplateColumn Width="230" Header="Rule">
+                                                    <DataGridTemplateColumn.CellTemplate>
+                                                        <DataTemplate>
+                                                            <TextBlock Text="{Binding Title}" TextWrapping="Wrap" />
+                                                        </DataTemplate>
+                                                    </DataGridTemplateColumn.CellTemplate>
+                                                </DataGridTemplateColumn>
+                                                <DataGridTextColumn Width="120" Binding="{Binding KindLabel}" Header="Type" />
+                                                <DataGridTextColumn Width="120" Binding="{Binding OutcomeLabel}" Header="Outcome" />
+                                                <DataGridTextColumn Width="70" Binding="{Binding Priority}" Header="Priority" />
+                                                <DataGridTemplateColumn Width="*" Header="Why it matched">
+                                                    <DataGridTemplateColumn.CellTemplate>
+                                                        <DataTemplate>
+                                                            <TextBlock Text="{Binding Reason}" TextWrapping="Wrap" />
+                                                        </DataTemplate>
+                                                    </DataGridTemplateColumn.CellTemplate>
+                                                </DataGridTemplateColumn>
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                        <TextBlock Margin="0,8,0,0"
+                                                   Foreground="{StaticResource SecondaryTextBrush}"
+                                                   Text="No policy rules matched during the latest scan."
                                                    TextWrapping="Wrap">
-                                            <Run FontWeight="SemiBold" Text="{Binding SeverityLabel}" />
-                                            <Run Text=": " />
-                                            <Run Text="{Binding DisplayText}" />
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding ElementName=PolicyRulesGrid, Path=HasItems}" Value="False">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
                                         </TextBlock>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
 
-                            <WrapPanel Margin="0,12,0,0">
-                                <Button Style="{StaticResource PrimaryActionButtonStyle}"
-                                        AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.GrantApprovalButton}"
-                                        Command="{Binding GrantRestartApprovalCommand}"
-                                        Content="Grant approval window" />
-                                <Button Style="{StaticResource SecondaryActionButtonStyle}"
-                                        AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.ClearApprovalButton}"
-                                        Command="{Binding ClearRestartApprovalCommand}"
-                                        Content="Clear approval" />
-                            </WrapPanel>
-                            <TextBlock Margin="0,10,0,0"
-                                       Foreground="{StaticResource SecondaryTextBrush}"
-                                       Text="{Binding ServiceActionAvailabilityText}"
-                                       TextWrapping="Wrap" />
+                                        <TextBlock Margin="0,16,0,0"
+                                                   FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{StaticResource SecondaryTextBrush}"
+                                                   Text="Evaluation trace" />
+                                        <ItemsControl Margin="0,8,0,0" ItemsSource="{Binding PolicyEvaluationTraceItems}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Margin="0,0,0,8"
+                                                               Foreground="{StaticResource PrimaryTextBrush}"
+                                                               Text="{Binding}"
+                                                               TextWrapping="Wrap" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
 
-                            <DataGrid Margin="0,14,0,0"
-                                      x:Name="PolicyRulesGrid"
-                                      AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.PolicyRulesGrid}"
-                                      AutoGenerateColumns="False"
-                                      CanUserAddRows="False"
-                                      HeadersVisibility="Column"
-                                      IsReadOnly="True"
-                                      MinRowHeight="34"
-                                      ItemsSource="{Binding MatchedPolicyRules}">
-                                <DataGrid.Columns>
-                                    <DataGridTemplateColumn Width="230" Header="Rule">
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding Title}" TextWrapping="Wrap" />
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
-                                    <DataGridTextColumn Width="120" Binding="{Binding KindLabel}" Header="Type" />
-                                    <DataGridTextColumn Width="120" Binding="{Binding OutcomeLabel}" Header="Outcome" />
-                                    <DataGridTextColumn Width="70" Binding="{Binding Priority}" Header="Priority" />
-                                    <DataGridTemplateColumn Width="*" Header="Why it matched">
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding Reason}" TextWrapping="Wrap" />
-                                            </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
-                                </DataGrid.Columns>
-                            </DataGrid>
-                            <TextBlock Margin="0,8,0,0"
-                                       Foreground="{StaticResource SecondaryTextBrush}"
-                                       Text="No policy rules matched during the latest scan."
-                                       TextWrapping="Wrap">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding ElementName=PolicyRulesGrid, Path=HasItems}" Value="False">
-                                                <Setter Property="Visibility" Value="Visible" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-
-                            <TextBlock Margin="0,16,0,0"
-                                       FontSize="14"
-                                       FontWeight="SemiBold"
-                                       Foreground="{StaticResource SecondaryTextBrush}"
-                                       Text="Evaluation trace" />
-                            <ItemsControl Margin="0,8,0,0" ItemsSource="{Binding PolicyEvaluationTraceItems}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Margin="0,0,0,8"
-                                                   Foreground="{StaticResource PrimaryTextBrush}"
-                                                   Text="{Binding}"
+                                <Border Margin="0,16,0,0"
+                                        Background="#F8FAFC"
+                                        BorderBrush="{StaticResource CardBorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="12"
+                                        Padding="16">
+                                    <StackPanel>
+                                        <TextBlock FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{StaticResource SecondaryTextBrush}"
+                                                   Text="Active apps and sessions" />
+                                        <TextBlock Margin="0,12,0,0"
+                                                   Foreground="{StaticResource SecondaryTextBrush}"
+                                                   AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.WorkspaceSummaryText}"
+                                                   Text="{Binding WorkspaceSummaryText}"
                                                    TextWrapping="Wrap" />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
-                    </Border>
-
-                    <Border Style="{StaticResource CardBorderStyle}">
-                        <StackPanel>
-                            <TextBlock FontSize="14"
-                                       FontWeight="SemiBold"
-                                       Foreground="{StaticResource SecondaryTextBrush}"
-                                       Text="Workspace safety signals" />
-                            <DataGrid Margin="0,14,0,0"
-                                      x:Name="WorkspaceRiskGrid"
-                                      AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.WorkspaceRiskGrid}"
-                                      AutoGenerateColumns="False"
-                                      CanUserAddRows="False"
-                                      HeadersVisibility="Column"
-                                      IsReadOnly="True"
-                                      ItemsSource="{Binding WorkspaceRiskItems}">
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn Width="200" Binding="{Binding Title}" Header="Group" />
-                                    <DataGridTextColumn Width="120" Binding="{Binding CategoryLabel}" Header="Category" />
-                                    <DataGridTextColumn Width="110" Binding="{Binding Severity}" Header="Severity" />
-                                    <DataGridTextColumn Width="110" Binding="{Binding Confidence}" Header="Confidence" />
-                                    <DataGridTextColumn Width="90" Binding="{Binding InstanceCount}" Header="Instances" />
-                                    <DataGridTemplateColumn Width="*" Header="Processes">
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding ProcessSummary}" TextWrapping="Wrap" />
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
-                                </DataGrid.Columns>
-                            </DataGrid>
-                            <TextBlock Margin="0,8,0,0"
-                                       Foreground="{StaticResource SecondaryTextBrush}"
-                                       Text="No workspace-risk groups are active in the current scan."
-                                       TextWrapping="Wrap">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding ElementName=WorkspaceRiskGrid, Path=HasItems}" Value="False">
-                                                <Setter Property="Visibility" Value="Visible" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-
-                            <ItemsControl Margin="0,12,0,0" ItemsSource="{Binding WorkspaceRiskItems}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Margin="0,0,0,8"
-                                                   Foreground="{StaticResource PrimaryTextBrush}"
-                                                   Text="{Binding Reason}"
+                                        <TextBlock Margin="0,6,0,0"
+                                                   Foreground="{StaticResource SecondaryTextBrush}"
+                                                   AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.WorkspaceConfidenceText}"
+                                                   Text="{Binding WorkspaceConfidenceText}"
                                                    TextWrapping="Wrap" />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
-                    </Border>
-
-                    <Border Margin="0,16,0,0" Style="{StaticResource CardBorderStyle}">
-                        <StackPanel>
-                            <TextBlock FontSize="14"
-                                       FontWeight="SemiBold"
-                                       Foreground="{StaticResource SecondaryTextBrush}"
-                                       Text="Protected process matches" />
-                            <DataGrid Margin="0,14,0,0"
-                                      x:Name="ProtectedProcessesGrid"
-                                      AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.ProtectedProcessesGrid}"
-                                      AutoGenerateColumns="False"
-                                      CanUserAddRows="False"
-                                      HeadersVisibility="Column"
-                                      IsReadOnly="True"
-                                      ItemsSource="{Binding ProtectedProcesses}">
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn Width="*" Binding="{Binding DisplayName}" Header="Process" />
-                                    <DataGridTextColumn Width="140" Binding="{Binding InstanceCount}" Header="Instances" />
-                                </DataGrid.Columns>
-                            </DataGrid>
-                            <TextBlock Margin="0,8,0,0"
-                                       Foreground="{StaticResource SecondaryTextBrush}"
-                                       Text="No protected processes were detected in the current scan."
-                                       TextWrapping="Wrap">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding ElementName=ProtectedProcessesGrid, Path=HasItems}" Value="False">
-                                                <Setter Property="Visibility" Value="Visible" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                        </StackPanel>
-                    </Border>
-
-                    <Border Margin="0,16,0,0" Style="{StaticResource CardBorderStyle}">
-                        <StackPanel>
-                            <TextBlock FontSize="14"
-                                       FontWeight="SemiBold"
-                                       Foreground="{StaticResource SecondaryTextBrush}"
-                                       Text="Restart indicators" />
-                            <DataGrid Margin="0,14,0,0"
-                                      AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.RestartIndicatorsGrid}"
-                                      AutoGenerateColumns="False"
-                                      CanUserAddRows="False"
-                                      HeadersVisibility="Column"
-                                      IsReadOnly="True"
-                                      ItemsSource="{Binding RestartIndicators}">
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn Width="180" Binding="{Binding Provider}" Header="Provider" />
-                                    <DataGridTextColumn Width="220" Binding="{Binding Source}" Header="Signal" />
-                                    <DataGridTextColumn Width="140" Binding="{Binding Category}" Header="Category" />
-                                    <DataGridCheckBoxColumn Width="90" Binding="{Binding IsActive}" Header="Active" />
-                                    <DataGridTextColumn Width="100" Binding="{Binding Confidence}" Header="Confidence" />
-                                    <DataGridCheckBoxColumn Width="120" Binding="{Binding LimitedVisibility}" Header="Limited view" />
-                                </DataGrid.Columns>
-                            </DataGrid>
-
-                            <ItemsControl Margin="0,12,0,0"
-                                          Visibility="{Binding ShowDetailedSignals, Converter={StaticResource BooleanToVisibilityConverter}}"
-                                          ItemsSource="{Binding RestartIndicators}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Margin="0,0,0,8"
-                                                   Foreground="{StaticResource PrimaryTextBrush}"
-                                                   Text="{Binding Summary}"
+                                        <TextBlock Margin="0,6,0,0"
+                                                   Foreground="{StaticResource SecondaryTextBrush}"
+                                                   AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.WorkspaceSnapshotText}"
+                                                   Text="{Binding WorkspaceSnapshotText}"
                                                    TextWrapping="Wrap" />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
-                    </Border>
 
-                    <Border Margin="0,16,0,0" Style="{StaticResource CardBorderStyle}">
-                        <StackPanel>
-                            <TextBlock FontSize="14"
-                                       FontWeight="SemiBold"
-                                       Foreground="{StaticResource SecondaryTextBrush}"
-                                       Text="Managed mitigation state" />
-                            <DataGrid Margin="0,14,0,0"
-                                      x:Name="ManagedMitigationsGrid"
-                                      AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.ManagedMitigationsGrid}"
-                                      AutoGenerateColumns="False"
-                                      CanUserAddRows="False"
-                                      HeadersVisibility="Column"
-                                      IsReadOnly="True"
-                                      ItemsSource="{Binding ManagedMitigations}">
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn Width="220" Binding="{Binding DisplayName}" Header="Setting" />
-                                    <DataGridCheckBoxColumn Width="80" Binding="{Binding IsApplied}" Header="Applied" />
-                                    <DataGridTextColumn Width="130" Binding="{Binding CurrentValue}" Header="Current" />
-                                    <DataGridTextColumn Width="130" Binding="{Binding RecommendedValue}" Header="Recommended" />
-                                    <DataGridCheckBoxColumn Width="120" Binding="{Binding RequiresElevation}" Header="Needs admin" />
-                                </DataGrid.Columns>
-                            </DataGrid>
-                            <TextBlock Margin="0,8,0,0"
-                                       Foreground="{StaticResource SecondaryTextBrush}"
-                                       Text="No managed mitigation settings are active in the current scan."
-                                       TextWrapping="Wrap">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding ElementName=ManagedMitigationsGrid, Path=HasItems}" Value="False">
-                                                <Setter Property="Visibility" Value="Visible" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                        </StackPanel>
+                                        <DataGrid Margin="0,14,0,0"
+                                                  x:Name="WorkspaceRiskGrid"
+                                                  AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.WorkspaceRiskGrid}"
+                                                  AutoGenerateColumns="False"
+                                                  CanUserAddRows="False"
+                                                  HeadersVisibility="Column"
+                                                  IsReadOnly="True"
+                                                  ItemsSource="{Binding WorkspaceRiskItems}">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Width="200" Binding="{Binding Title}" Header="Group" />
+                                                <DataGridTextColumn Width="120" Binding="{Binding CategoryLabel}" Header="Category" />
+                                                <DataGridTextColumn Width="110" Binding="{Binding Severity}" Header="Severity" />
+                                                <DataGridTextColumn Width="110" Binding="{Binding Confidence}" Header="Confidence" />
+                                                <DataGridTextColumn Width="90" Binding="{Binding InstanceCount}" Header="Instances" />
+                                                <DataGridTemplateColumn Width="*" Header="Processes">
+                                                    <DataGridTemplateColumn.CellTemplate>
+                                                        <DataTemplate>
+                                                            <TextBlock Text="{Binding ProcessSummary}" TextWrapping="Wrap" />
+                                                        </DataTemplate>
+                                                    </DataGridTemplateColumn.CellTemplate>
+                                                </DataGridTemplateColumn>
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                        <TextBlock Margin="0,8,0,0"
+                                                   Foreground="{StaticResource SecondaryTextBrush}"
+                                                   Text="No workspace-risk groups are active in the current scan."
+                                                   TextWrapping="Wrap">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding ElementName=WorkspaceRiskGrid, Path=HasItems}" Value="False">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+
+                                        <ItemsControl Margin="0,12,0,0" ItemsSource="{Binding WorkspaceRiskItems}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Margin="0,0,0,8"
+                                                               Foreground="{StaticResource PrimaryTextBrush}"
+                                                               Text="{Binding Reason}"
+                                                               TextWrapping="Wrap" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
+                                        <TextBlock Margin="0,16,0,0"
+                                                   FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{StaticResource SecondaryTextBrush}"
+                                                   Text="Protected apps" />
+                                        <DataGrid Margin="0,12,0,0"
+                                                  x:Name="ProtectedProcessesGrid"
+                                                  AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.ProtectedProcessesGrid}"
+                                                  AutoGenerateColumns="False"
+                                                  CanUserAddRows="False"
+                                                  HeadersVisibility="Column"
+                                                  IsReadOnly="True"
+                                                  ItemsSource="{Binding ProtectedProcesses}">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Width="*" Binding="{Binding DisplayName}" Header="Process" />
+                                                <DataGridTextColumn Width="140" Binding="{Binding InstanceCount}" Header="Instances" />
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                        <TextBlock Margin="0,8,0,0"
+                                                   Foreground="{StaticResource SecondaryTextBrush}"
+                                                   Text="No protected processes were detected in the current scan."
+                                                   TextWrapping="Wrap">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding ElementName=ProtectedProcessesGrid, Path=HasItems}" Value="False">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </Border>
+                                <Border Margin="0,16,0,0"
+                                        Background="#F8FAFC"
+                                        BorderBrush="{StaticResource CardBorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="12"
+                                        Padding="16">
+                                    <StackPanel>
+                                        <TextBlock FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{StaticResource SecondaryTextBrush}"
+                                                   Text="Technical restart signals" />
+                                        <TextBlock Margin="0,12,0,0"
+                                                   Foreground="{StaticResource PrimaryTextBrush}"
+                                                   AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.StatusSummaryText}"
+                                                   Text="{Binding StatusSummary}"
+                                                   TextWrapping="Wrap" />
+                                        <TextBlock Margin="0,8,0,0"
+                                                   Foreground="{StaticResource SecondaryTextBrush}"
+                                                   AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.SignalOverviewText}"
+                                                   Text="{Binding SignalOverviewText}"
+                                                   TextWrapping="Wrap" />
+                                        <TextBlock Margin="0,8,0,0"
+                                                   Foreground="{StaticResource SecondaryTextBrush}"
+                                                   AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.ProviderCoverageText}"
+                                                   Text="{Binding ProviderCoverageText}"
+                                                   TextWrapping="Wrap" />
+                                        <TextBlock Margin="0,8,0,0"
+                                                   Foreground="{StaticResource SecondaryTextBrush}"
+                                                   AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.ConnectionModeText}"
+                                                   Text="{Binding ConnectionModeText}"
+                                                   TextWrapping="Wrap" />
+
+                                        <DataGrid Margin="0,14,0,0"
+                                                  AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.RestartIndicatorsGrid}"
+                                                  AutoGenerateColumns="False"
+                                                  CanUserAddRows="False"
+                                                  HeadersVisibility="Column"
+                                                  IsReadOnly="True"
+                                                  ItemsSource="{Binding RestartIndicators}">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Width="180" Binding="{Binding Provider}" Header="Provider" />
+                                                <DataGridTextColumn Width="220" Binding="{Binding Source}" Header="Signal" />
+                                                <DataGridTextColumn Width="140" Binding="{Binding Category}" Header="Category" />
+                                                <DataGridCheckBoxColumn Width="90" Binding="{Binding IsActive}" Header="Active" />
+                                                <DataGridTextColumn Width="100" Binding="{Binding Confidence}" Header="Confidence" />
+                                                <DataGridCheckBoxColumn Width="120" Binding="{Binding LimitedVisibility}" Header="Limited view" />
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+
+                                        <ItemsControl Margin="0,12,0,0"
+                                                      Visibility="{Binding ShowDetailedSignals, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                      ItemsSource="{Binding RestartIndicators}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Margin="0,0,0,8"
+                                                               Foreground="{StaticResource PrimaryTextBrush}"
+                                                               Text="{Binding Summary}"
+                                                               TextWrapping="Wrap" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Margin="0,16,0,0"
+                                        Background="#F8FAFC"
+                                        BorderBrush="{StaticResource CardBorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="12"
+                                        Padding="16">
+                                    <StackPanel>
+                                        <TextBlock FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{StaticResource SecondaryTextBrush}"
+                                                   Text="System settings managed by SessionGuard" />
+                                        <WrapPanel Margin="0,14,0,0">
+                                            <Button Style="{StaticResource PrimaryActionButtonStyle}"
+                                                    Command="{Binding ApplyMitigationsCommand}"
+                                                    Content="Apply recommended protections"
+                                                    Visibility="{Binding ShowApplyMitigationsAction, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                            <Button Style="{StaticResource SecondaryActionButtonStyle}"
+                                                    Command="{Binding ResetMitigationsCommand}"
+                                                    Content="Reset managed settings"
+                                                    Visibility="{Binding ShowResetMitigationsAction, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                        </WrapPanel>
+
+                                        <DataGrid Margin="0,14,0,0"
+                                                  x:Name="ManagedMitigationsGrid"
+                                                  AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.ManagedMitigationsGrid}"
+                                                  AutoGenerateColumns="False"
+                                                  CanUserAddRows="False"
+                                                  HeadersVisibility="Column"
+                                                  IsReadOnly="True"
+                                                  ItemsSource="{Binding ManagedMitigations}">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Width="220" Binding="{Binding DisplayName}" Header="Setting" />
+                                                <DataGridCheckBoxColumn Width="80" Binding="{Binding IsApplied}" Header="Applied" />
+                                                <DataGridTextColumn Width="130" Binding="{Binding CurrentValue}" Header="Current" />
+                                                <DataGridTextColumn Width="130" Binding="{Binding RecommendedValue}" Header="Recommended" />
+                                                <DataGridCheckBoxColumn Width="120" Binding="{Binding RequiresElevation}" Header="Needs admin" />
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                        <TextBlock Margin="0,8,0,0"
+                                                   Foreground="{StaticResource SecondaryTextBrush}"
+                                                   Text="No managed restart settings are active in the current scan."
+                                                   TextWrapping="Wrap">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding ElementName=ManagedMitigationsGrid, Path=HasItems}" Value="False">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+
+                                        <CheckBox Margin="0,14,0,0"
+                                                  Content="Keep guard mode enabled"
+                                                  IsChecked="{Binding GuardModeEnabled}" />
+
+                                        <WrapPanel Margin="0,14,0,0">
+                                            <Button Style="{StaticResource SecondaryActionButtonStyle}"
+                                                    Command="{Binding OpenConfigCommand}"
+                                                    Content="Open config" />
+                                            <Button Style="{StaticResource SecondaryActionButtonStyle}"
+                                                    Command="{Binding OpenPoliciesCommand}"
+                                                    Content="Open policies" />
+                                            <Button Style="{StaticResource SecondaryActionButtonStyle}"
+                                                    Command="{Binding OpenLogsCommand}"
+                                                    Content="Open logs" />
+                                        </WrapPanel>
+
+                                        <TextBlock Margin="0,12,0,0"
+                                                   Foreground="{StaticResource SecondaryTextBrush}"
+                                                   Text="{Binding ConfigurationDirectoryText}"
+                                                   TextWrapping="Wrap" />
+                                        <TextBlock Margin="0,4,0,0"
+                                                   Foreground="{StaticResource SecondaryTextBrush}"
+                                                   Text="{Binding PolicyDirectoryText}"
+                                                   TextWrapping="Wrap" />
+                                        <TextBlock Margin="0,4,0,0"
+                                                   Foreground="{StaticResource SecondaryTextBrush}"
+                                                   Text="{Binding LogDirectoryText}"
+                                                   TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Expander>
                     </Border>
                 </StackPanel>
             </Grid>

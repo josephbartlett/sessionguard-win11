@@ -24,7 +24,7 @@ SessionGuard does not guarantee prevention of every OS-driven restart path, and 
 
 ## MVP capabilities
 
-- Dashboard showing current status, restart risk, protection mode, pending restart state, protected process matches, workspace safety signals, mitigation status, and last scan time.
+- Overview-first dashboard showing current status, what to do next, and why SessionGuard is warning; technical tables and file shortcuts stay under collapsed `Advanced details`.
 - Configurable protected process detection from [`config/protected-processes.json`](/C:/Users/decoy/sessionguard-win11/config/protected-processes.json).
 - Configurable policy rules from [`config/policies.json`](/C:/Users/decoy/sessionguard-win11/config/policies.json) for:
   - restart windows
@@ -255,10 +255,10 @@ src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe clear
 
 1. Run `powershell -ExecutionPolicy Bypass -File scripts/ui/Run-UiSmoke.ps1`.
 2. Run `powershell -ExecutionPolicy Bypass -File scripts/ci/Invoke-WindowsValidation.ps1` if you want the same validation flow used by GitHub Actions.
-3. Inspect the screenshots under `artifacts/ui/smoke/` or `artifacts/ci/windows-validation/ui-smoke/` and confirm the scenarios render without clipped text, broken layout, or missing sections.
+3. Inspect the screenshots under `artifacts/ui/smoke/` or `artifacts/ci/windows-validation/ui-smoke/` and confirm the scenarios render without clipped text, broken layout, missing sections, or an unexpectedly expanded `Advanced details` section.
 4. Build the solution and launch the app in a normal PowerShell session.
-5. Confirm the dashboard renders current status, risk, workspace safety signals, restart indicators, protected process matches, and mitigation state.
-6. Confirm the restart indicator table shows multiple providers and that the pending-restart field can read `Pending`, `Not detected`, or `Ambiguous / review signals` depending on the signal mix.
+5. Confirm the dashboard opens with a calm overview showing current status, what to do now, and why SessionGuard is warning.
+6. Expand `Advanced details` and confirm the restart indicators, protected apps, workspace safety tables, policy details, and mitigation state are still available.
 7. Start a protected tool such as Windows Terminal or VS Code and confirm the dashboard detects it on the next scan or after pressing `Scan now`.
 8. Edit [`config/protected-processes.json`](/C:/Users/decoy/sessionguard-win11/config/protected-processes.json), save the file, and verify the next scan uses the updated list.
 9. Launch the app from an elevated shell, apply the recommended mitigation, and confirm the mitigation state changes to applied.

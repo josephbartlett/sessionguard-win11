@@ -10,6 +10,7 @@ public static class UiSmokeAutomationIds
     public const string AdminAccessText = "AdminAccessText";
     public const string StatusSummaryText = "StatusSummaryText";
     public const string SignalOverviewText = "SignalOverviewText";
+    public const string ProviderCoverageText = "ProviderCoverageText";
     public const string ConnectionModeText = "ConnectionModeText";
     public const string PolicyDecisionText = "PolicyDecisionText";
     public const string PolicySummaryText = "PolicySummaryText";
@@ -29,4 +30,6 @@ public static class UiSmokeAutomationIds
     public const string GrantApprovalButton = "GrantApprovalButton";
     public const string ClearApprovalButton = "ClearApprovalButton";
     public const string WindowsUpdateOptionsButton = "WindowsUpdateOptionsButton";
+    public const string AdvancedDetailsExpander = "AdvancedDetailsExpander";
+    public const string RecommendedActionButton = "RecommendedActionButton";
 }

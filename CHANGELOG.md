@@ -4,6 +4,10 @@ All notable changes to this project should be recorded here in reverse chronolog
 
 ## Unreleased
 
+- Simplified the WPF dashboard into an overview-first layout with clearer plain-language status and a single recommended next step.
+- Moved restart indicators, policy diagnostics, workspace tables, mitigation controls, and file shortcuts under a collapsed `Advanced details` section so the default UI is quieter.
+- Updated the UI smoke harness so screenshots capture the default overview while the automation still expands `Advanced details` for technical assertions.
+
 ## 1.0.0 - 2026-03-12
 
 - Shipped the full SessionGuard platform baseline: restart-signal inspection, workspace-risk heuristics, policy engine, tray-aware desktop shell, and service-backed monitoring.

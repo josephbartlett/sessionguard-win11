@@ -411,7 +411,7 @@ public static class UiSmokeScenarioCatalog
             new Dictionary<string, string>(StringComparer.Ordinal)
             {
                 [UiSmokeAutomationIds.CurrentStatusText] = "Mitigated / Deferred",
-                [UiSmokeAutomationIds.ProtectionModeText] = "Policy approval window active",
+                [UiSmokeAutomationIds.ProtectionModeText] = "Approval active",
                 [UiSmokeAutomationIds.AdminAccessText] = "Elevated",
                 [UiSmokeAutomationIds.PolicyDecisionText] = "Policy decision: Approval window active",
                 [UiSmokeAutomationIds.ConnectionModeText] = "Control plane: Service (background service is authoritative)",

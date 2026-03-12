@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 using FlaUI.Core.AutomationElements;
+using FlaUI.Core.AutomationElements.PatternElements;
 using FlaUI.UIA3;
 using SessionGuard.Core.Automation;
 using FlaUIApp = FlaUI.Core.Application;
@@ -57,6 +58,13 @@ internal static class Program
 
             VerifyRequiredElement(window, UiSmokeAutomationIds.ScanNowButton);
             VerifyRequiredElement(window, UiSmokeAutomationIds.WindowsUpdateOptionsButton);
+            VerifyRequiredElement(window, UiSmokeAutomationIds.AdvancedDetailsExpander);
+            WaitForOverviewState(window, scenario);
+
+            var screenshotPath = Path.Combine(outputDirectory, $"{scenario.Name}.png");
+            WindowCapture.SaveToFile(process.MainWindowHandle, screenshotPath);
+
+            ExpandAdvancedDetails(window);
             VerifyRequiredElement(window, UiSmokeAutomationIds.PolicyDecisionText);
             VerifyRequiredElement(window, UiSmokeAutomationIds.PolicyDiagnosticsText);
             VerifyRequiredElement(window, UiSmokeAutomationIds.PolicyTimingText);
@@ -71,9 +79,6 @@ internal static class Program
             {
                 WaitForText(window, expectedText.Key, expectedText.Value);
             }
-
-            var screenshotPath = Path.Combine(outputDirectory, $"{scenario.Name}.png");
-            WindowCapture.SaveToFile(process.MainWindowHandle, screenshotPath);
 
             return new SmokeResult(
                 scenario.Name,
@@ -173,6 +178,43 @@ internal static class Program
         }
 
         return window.FindFirstDescendant(cf => cf.ByAutomationId(automationId));
+    }
+
+    private static void WaitForOverviewState(Window window, UiSmokeScenario scenario)
+    {
+        var overviewAutomationIds = new[]
+        {
+            UiSmokeAutomationIds.CurrentStatusText,
+            UiSmokeAutomationIds.RestartRiskText,
+            UiSmokeAutomationIds.PendingRestartText,
+            UiSmokeAutomationIds.ProtectionModeText,
+            UiSmokeAutomationIds.AdminAccessText
+        };
+
+        foreach (var automationId in overviewAutomationIds)
+        {
+            if (scenario.ExpectedTexts.TryGetValue(automationId, out var expectedText))
+            {
+                WaitForText(window, automationId, expectedText);
+            }
+        }
+    }
+
+    private static void ExpandAdvancedDetails(Window window)
+    {
+        if (WaitForElement(window, UiSmokeAutomationIds.PolicyDecisionText, TimeSpan.FromMilliseconds(250)) is not null)
+        {
+            return;
+        }
+
+        var expander = VerifyRequiredElement(window, UiSmokeAutomationIds.AdvancedDetailsExpander);
+        var expandable = new ExpandCollapseAutomationElement(expander.FrameworkAutomationElement);
+        expandable.Expand();
+
+        if (WaitForElement(window, UiSmokeAutomationIds.PolicyDecisionText, TimeSpan.FromSeconds(5)) is null)
+        {
+            throw new InvalidOperationException("Advanced details did not expand, so the technical dashboard sections could not be verified.");
+        }
     }
 
     private static async Task StopProcessAsync(Process process)
