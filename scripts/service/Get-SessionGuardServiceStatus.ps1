@@ -71,7 +71,7 @@ $status = [pscustomobject]@{
 }
 
 if ($AsJson) {
-    $status | ConvertTo-Json -Compress
+    $status | ConvertTo-Json -Depth 8 -Compress
 }
 else {
     $status

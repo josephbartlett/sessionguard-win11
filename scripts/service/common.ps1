@@ -219,6 +219,73 @@ function Invoke-SessionGuardRuntimeValidation {
     }
 }
 
+function Invoke-SessionGuardConfigUpgrade {
+    param(
+        [string]$ServiceExecutable,
+        [switch]$AllowFailure
+    )
+
+    if ([string]::IsNullOrWhiteSpace($ServiceExecutable) -or -not (Test-Path $ServiceExecutable)) {
+        return [pscustomobject]@{
+            Available = $false
+            ExitCode = $null
+            Report = $null
+            Error = "Service executable not found."
+            RawOutput = ""
+        }
+    }
+
+    try {
+        $output = & $ServiceExecutable upgrade-config 2>&1
+        $exitCode = $LASTEXITCODE
+        $rawOutput = if ($output) { [string]::Join([Environment]::NewLine, $output) } else { "" }
+        $report = $null
+
+        if (-not [string]::IsNullOrWhiteSpace($rawOutput)) {
+            try {
+                $report = $rawOutput | ConvertFrom-Json
+            }
+            catch {
+            }
+        }
+
+        if (-not $AllowFailure -and ($exitCode -ne 0 -or $null -eq $report -or $report.HasErrors)) {
+            $details = if ($null -ne $report) {
+                $report.Issues -join "; "
+            }
+            elseif (-not [string]::IsNullOrWhiteSpace($rawOutput)) {
+                $rawOutput
+            }
+            else {
+                "No upgrade output was returned."
+            }
+
+            throw "Service config upgrade failed: $details"
+        }
+
+        return [pscustomobject]@{
+            Available = $true
+            ExitCode = $exitCode
+            Report = $report
+            Error = if ($exitCode -eq 0) { "" } else { $rawOutput }
+            RawOutput = $rawOutput
+        }
+    }
+    catch {
+        if (-not $AllowFailure) {
+            throw
+        }
+
+        return [pscustomobject]@{
+            Available = $true
+            ExitCode = $LASTEXITCODE
+            Report = $null
+            Error = $_.Exception.Message
+            RawOutput = ""
+        }
+    }
+}
+
 function Wait-SessionGuardServiceHealthy {
     param(
         [Parameter(Mandatory = $true)]

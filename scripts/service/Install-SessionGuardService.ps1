@@ -39,6 +39,7 @@ $readinessIssues = New-Object System.Collections.Generic.List[string]
 $readinessWarnings = New-Object System.Collections.Generic.List[string]
 $runtimeValidation = $null
 $installManifest = $null
+$upgradeReport = $null
 
 if (-not (Test-Path $serviceExe)) {
     $readinessIssues.Add("Service executable not found at '$serviceExe'. Run Publish-SessionGuardService.ps1 first or omit -SkipPublish.")
@@ -88,6 +89,8 @@ if (Test-Path $serviceExe) {
             $readinessWarnings.Add($warning)
         }
     }
+
+    $upgradeReport = $runtimeValidation.Report.ConfigUpgrade
 }
 
 if (-not $scAvailable) {
@@ -112,6 +115,7 @@ $readiness = [pscustomobject]@{
     ProtectedProcessesExists = Test-Path $protectedProcessesPath
     ConfigDefaultsExists = Test-Path $configDefaultsPath
     InstallManifest = $installManifest
+    ConfigUpgrade = $upgradeReport
     RuntimeValidation = if ($null -ne $runtimeValidation) { $runtimeValidation.Report } else { $null }
     ScExeAvailable = $scAvailable
     CanInstallNow = $readinessIssues.Count -eq 0
@@ -121,7 +125,7 @@ $readiness = [pscustomobject]@{
 
 if ($ValidateOnly) {
     if ($AsJson) {
-        $readiness | ConvertTo-Json -Compress
+        $readiness | ConvertTo-Json -Depth 8 -Compress
     }
     else {
         $readiness
@@ -144,6 +148,12 @@ if (-not $readiness.AppSettingsExists -or -not $readiness.ProtectedProcessesExis
 
 if ($null -eq $readiness.RuntimeValidation -or -not $readiness.RuntimeValidation.CanRun) {
     throw "Service runtime validation failed. Republish the service and review the validation report before installing."
+}
+
+$upgrade = Invoke-SessionGuardConfigUpgrade -ServiceExecutable $serviceExe
+$upgradeReport = $upgrade.Report
+if ($null -eq $upgradeReport -or $upgradeReport.HasErrors) {
+    throw "Service config upgrade failed. Review the reported migration issues before installing."
 }
 
 if ($serviceExists) {

@@ -49,6 +49,9 @@ static async Task<bool> TryHandleUtilityCommandAsync(string[] args)
         case "validate-runtime":
             Environment.ExitCode = await ExecuteRuntimeValidationCommandAsync();
             return true;
+        case "upgrade-config":
+            Environment.ExitCode = await ExecuteConfigUpgradeCommandAsync();
+            return true;
         case "help":
         case "--help":
         case "-h":
@@ -103,6 +106,15 @@ static async Task<int> ExecuteRuntimeValidationCommandAsync()
     var report = await ServiceRuntimeValidator.ValidateAsync(AppContext.BaseDirectory);
     Console.WriteLine(JsonSerializer.Serialize(report, SessionGuardJson.Indented));
     return report.CanRun ? 0 : 4;
+}
+
+static async Task<int> ExecuteConfigUpgradeCommandAsync()
+{
+    var paths = RuntimePaths.Discover(AppContext.BaseDirectory);
+    var upgradeService = new ConfigurationUpgradeService(paths);
+    var report = await upgradeService.UpgradeAsync();
+    Console.WriteLine(JsonSerializer.Serialize(report, SessionGuardJson.Indented));
+    return report.HasErrors ? 5 : 0;
 }
 
 static async Task<int> ExecuteApprovalCommandAsync(bool clearApproval)
@@ -179,4 +191,5 @@ static void PrintHelp()
     Console.WriteLine("  clear-approval  Clear the temporary restart approval window through the running service.");
     Console.WriteLine("  health          Print the latest persisted service health snapshot JSON.");
     Console.WriteLine("  validate-runtime Validate the runtime layout and configuration next to the executable.");
+    Console.WriteLine("  upgrade-config  Upgrade runtime config files in place to the latest supported schema.");
 }

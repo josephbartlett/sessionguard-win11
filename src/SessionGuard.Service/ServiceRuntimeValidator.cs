@@ -11,6 +11,8 @@ public static class ServiceRuntimeValidator
         CancellationToken cancellationToken = default)
     {
         var paths = RuntimePaths.Discover(baseDirectory);
+        var upgradeService = new ConfigurationUpgradeService(paths);
+        var configUpgrade = await upgradeService.InspectAsync(cancellationToken);
         var appSettingsPath = Path.Combine(paths.ConfigDirectory, "appsettings.json");
         var protectedProcessesPath = Path.Combine(paths.ConfigDirectory, "protected-processes.json");
         var policiesPath = Path.Combine(paths.ConfigDirectory, "policies.json");
@@ -23,6 +25,21 @@ public static class ServiceRuntimeValidator
         var warnings = new List<string>();
         var policyValidationHasErrors = false;
         var policyValidationSummary = "Policy config: not evaluated.";
+
+        if (configUpgrade.HasErrors)
+        {
+            foreach (var issue in configUpgrade.Issues)
+            {
+                issues.Add(issue);
+            }
+        }
+        else
+        {
+            foreach (var warning in configUpgrade.Warnings)
+            {
+                warnings.Add(warning);
+            }
+        }
 
         try
         {
@@ -82,6 +99,7 @@ public static class ServiceRuntimeValidator
             protectedProcessesExistsAfter,
             policiesExistsAfter,
             CanRun: issues.Count == 0,
+            ConfigUpgrade: configUpgrade,
             PolicyValidationHasErrors: policyValidationHasErrors,
             PolicyValidationSummary: policyValidationSummary,
             SeededFiles: seededFiles,

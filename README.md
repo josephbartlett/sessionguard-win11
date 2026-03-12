@@ -60,6 +60,10 @@ SessionGuard does not guarantee prevention of every OS-driven restart path, and 
   - mutable runtime config in `config/`
   - shipped defaults in `config.defaults/`
   - `install-manifest.json` metadata for versioned service installs
+- Schema-versioned runtime config with:
+  - `schemaVersion` in the shipped JSON config files
+  - automatic legacy-config upgrade with backups for published service layouts
+  - a dedicated upgrade entry point for published service roots
 - Runtime self-validation through `SessionGuard.Service.exe validate-runtime`
 - Machine-readable scan snapshot at `state/current-scan.json` shared by the desktop app and service path.
 - Advisory workspace metadata snapshot at `state/workspace-snapshot.json` when workspace-risk heuristics are active.
@@ -167,6 +171,12 @@ Validate the runtime layout and config next to the published service executable:
 artifacts\publish\SessionGuard.Service\SessionGuard.Service.exe validate-runtime
 ```
 
+Upgrade a published service layout's runtime config to the latest supported schema:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/service/Upgrade-SessionGuardServiceConfig.ps1
+```
+
 Query service status and control-plane reachability:
 
 ```powershell
@@ -215,6 +225,7 @@ src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe clear
 - Edit [`config/appsettings.json`](/C:/Users/decoy/sessionguard-win11/config/appsettings.json) to change scan interval, warning behavior, approval-expiry warning lead time, active hours defaults, and UI preferences.
 - Edit [`config/protected-processes.json`](/C:/Users/decoy/sessionguard-win11/config/protected-processes.json) to add or remove protected processes without rebuilding.
 - Edit [`config/policies.json`](/C:/Users/decoy/sessionguard-win11/config/policies.json) to change restart windows, process or workspace blocking rules, and approval requirements without rebuilding.
+- The shipped config files now include `schemaVersion`. Versionless legacy config is still supported, but published service layouts now upgrade it in place and write backups before mutating it.
 - Published service layouts now keep operator-edited runtime config under `config/` and preserve shipped defaults under `config.defaults/`. Missing runtime config files are seeded from `config.defaults/` on startup instead of forcing a full republish.
 - If `config/policies.json` is malformed or contains conflicting rules, SessionGuard now keeps scanning and surfaces the policy diagnostics in the dashboard instead of failing the entire refresh path.
 - App logs are written to `logs/sessionguard-app-YYYYMMDD.log`.
@@ -224,6 +235,7 @@ src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe clear
 - When workspace-risk heuristics are active, advisory metadata is also written to `state/workspace-snapshot.json`.
 - Temporary restart approval state is written to `state/policy-approval.json` so the policy engine can survive app or service restarts until the window expires.
 - The service health snapshot is written to `state/service-health.json` so status tooling can show startup, scan, control-plane health, and approval-state recovery without scraping logs.
+- Automatic config migration backups are written to `state/config-backups/<timestamp>/` in published service layouts when legacy config is upgraded in place.
 - UI smoke screenshots and the smoke summary are written to `artifacts/ui/smoke/`.
 - CI-oriented validation outputs, including test results and UI smoke artifacts, are written to `artifacts/ci/windows-validation/`.
 
@@ -246,15 +258,16 @@ src\SessionGuard.Service\bin\Debug\net9.0-windows\SessionGuard.Service.exe clear
 15. Run `artifacts\publish\SessionGuard.Service\SessionGuard.Service.exe validate-runtime` and confirm it reports `CanRun: true` for the published layout.
 16. Run `powershell -ExecutionPolicy Bypass -File scripts/service/Install-SessionGuardService.ps1 -ValidateOnly` and confirm it reports install readiness or a clear elevation requirement without changing the machine.
 17. Run `powershell -ExecutionPolicy Bypass -File scripts/service/Validate-SessionGuardPublishedLayout.ps1` and confirm the published layout works outside the repo root.
-18. Edit a published config file under `artifacts\publish\SessionGuard.Service\config\`, rerun `Publish-SessionGuardService.ps1`, and confirm the edit is preserved while `config.defaults\` is refreshed.
-19. Minimize or close the dashboard window and confirm SessionGuard remains available in the notification area.
-20. Trigger a state with restart pressure, then confirm the policy card explains whether restart is blocked, requires approval, or has an active approval window.
-21. Stop the service or force local fallback, then confirm the mitigation and approval buttons are disabled, the dashboard explains that those write actions are service-owned, and the tray surface reports local fallback.
-22. Grant and clear a temporary restart approval window from the dashboard or `SessionGuard.Service.exe approve-restart` while the service path is active and confirm the policy status changes.
-23. Minimize the app to the tray while the service path is active, then confirm tray balloon notifications appear for service transitions or approval timing events when they occur.
-24. Start a protected terminal, browser, or editor session and confirm the workspace safety table explains why the session is considered risky.
-25. Introduce a temporary mistake into [`config/policies.json`](/C:/Users/decoy/sessionguard-win11/config/policies.json), trigger a scan, and confirm the policy card stays up, reports configuration errors, and leaves the rest of the dashboard functional.
-26. Inspect `state/current-scan.json`, `state/workspace-snapshot.json`, `state/policy-approval.json`, and `state/service-health.json` and confirm the latest status is serialized by the service or local fallback path.
+18. Remove the `schemaVersion` field from a published config file, run `powershell -ExecutionPolicy Bypass -File scripts/service/Upgrade-SessionGuardServiceConfig.ps1`, and confirm the file is upgraded and a backup appears under `state/config-backups/`.
+19. Edit a published config file under `artifacts\publish\SessionGuard.Service\config\`, rerun `Publish-SessionGuardService.ps1`, and confirm the edit is preserved while `config.defaults\` is refreshed.
+20. Minimize or close the dashboard window and confirm SessionGuard remains available in the notification area.
+21. Trigger a state with restart pressure, then confirm the policy card explains whether restart is blocked, requires approval, or has an active approval window.
+22. Stop the service or force local fallback, then confirm the mitigation and approval buttons are disabled, the dashboard explains that those write actions are service-owned, and the tray surface reports local fallback.
+23. Grant and clear a temporary restart approval window from the dashboard or `SessionGuard.Service.exe approve-restart` while the service path is active and confirm the policy status changes.
+24. Minimize the app to the tray while the service path is active, then confirm tray balloon notifications appear for service transitions or approval timing events when they occur.
+25. Start a protected terminal, browser, or editor session and confirm the workspace safety table explains why the session is considered risky.
+26. Introduce a temporary mistake into [`config/policies.json`](/C:/Users/decoy/sessionguard-win11/config/policies.json), trigger a scan, and confirm the policy card stays up, reports configuration errors, and leaves the rest of the dashboard functional.
+27. Inspect `state/current-scan.json`, `state/workspace-snapshot.json`, `state/policy-approval.json`, `state/service-health.json`, and `state/config-backups/` and confirm the latest status and migration artifacts are serialized by the service or local fallback path.
 
 ## What the MVP does not do
 

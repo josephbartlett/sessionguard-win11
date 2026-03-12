@@ -10,6 +10,9 @@ All notable changes to this project should be recorded here in reverse chronolog
 - Updated publish behavior to preserve existing `config/`, `logs/`, and `state/` folders when republishing into the same service root.
 - Updated service installation to verify post-start health and control-plane reachability after a successful start.
 - Expanded tests for published-layout path discovery and default-config seeding.
+- Added `schemaVersion` to the shipped JSON config files and a bounded legacy-to-current config migration path.
+- Added `SessionGuard.Service.exe upgrade-config` plus a PowerShell wrapper script for upgrading published runtime config in place with backups.
+- Added migration inspection into runtime validation so install-readiness checks can detect legacy or unsupported config schema versions.
 
 ## 0.5.3 - 2026-03-11
 

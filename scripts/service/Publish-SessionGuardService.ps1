@@ -107,6 +107,7 @@ try {
         throw "Expected published service executable at '$serviceExe'."
     }
 
+    $upgrade = Invoke-SessionGuardConfigUpgrade -ServiceExecutable $serviceExe
     $validation = Invoke-SessionGuardRuntimeValidation -ServiceExecutable $serviceExe
 
     $manifest = [ordered]@{
@@ -124,6 +125,7 @@ try {
         ConfigDefaultsDirectory = $validation.Report.ConfigDefaultsDirectory
         LogDirectory = $validation.Report.LogDirectory
         StateDirectory = $validation.Report.StateDirectory
+        ConfigUpgrade = $upgrade.Report
         Validation = $validation.Report
     }
 

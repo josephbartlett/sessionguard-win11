@@ -1,3 +1,5 @@
+using SessionGuard.Infrastructure.Configuration;
+
 namespace SessionGuard.Service;
 
 public sealed record ServiceRuntimeValidationReport(
@@ -19,6 +21,7 @@ public sealed record ServiceRuntimeValidationReport(
     bool ProtectedProcessesExistsAfterLoad,
     bool PoliciesExistsAfterLoad,
     bool CanRun,
+    ConfigurationUpgradeReport ConfigUpgrade,
     bool PolicyValidationHasErrors,
     string PolicyValidationSummary,
     IReadOnlyList<string> SeededFiles,

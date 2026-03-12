@@ -26,6 +26,7 @@ WPF was chosen over WinUI for the MVP because the priority is a stable desktop m
    - [`config/protected-processes.json`](/C:/Users/decoy/sessionguard-win11/config/protected-processes.json)
    - [`config/policies.json`](/C:/Users/decoy/sessionguard-win11/config/policies.json)
    - when a published runtime has `config.defaults/`, missing live config files are seeded into `config/` before load
+   - versionless legacy config files are inspected against the current config schema and can be upgraded in place by the published service tooling
 6. The coordinator runs a scan:
    - protected-process detection
    - workspace-risk heuristic analysis using protected-tool matches plus bounded runtime-process clues
@@ -159,10 +160,18 @@ Before writing managed values, the infrastructure layer captures previous values
   - `workspace-snapshot.json`: advisory workspace-risk metadata written only when heuristics detect risky activity.
   - `policy-approval.json`: temporary approval-window state used by the policy engine.
   - `service-health.json`: service lifecycle and diagnostics snapshot for startup, scan, and pipe health.
+  - `config-backups/`: backup copies created when published service config is upgraded in place to a newer schema version.
 
 The log and state folders are intentionally excluded from source control.
 
 Published service layouts now also include `install-manifest.json` with version, protocol, path, and validation metadata so install scripts can verify they are starting the expected runtime.
+
+The config-upgrade path is intentionally bounded:
+
+- the current schema version is tracked per JSON config file
+- versionless legacy config is treated as schema version `0`
+- the current upgrade path only performs safe additive migration to schema version `1`
+- unsupported future schema versions are treated as hard validation failures instead of being silently rewritten
 
 ## Service and control plane
 

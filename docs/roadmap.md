@@ -113,6 +113,22 @@ Exit criteria:
 - published layouts work the same way inside or outside the repo tree
 - service start verification depends on health and control-plane reachability, not only SCM state
 
+### v1.0.0 Config Upgrade Hardening
+
+Purpose:
+Make published service upgrades safer by versioning the runtime config files and giving the operator a repeatable migration path with backups.
+
+Current status:
+- shipped config files now include `schemaVersion`
+- published service tooling can inspect and upgrade versionless legacy config in place
+- config upgrades create timestamped backups under `state/config-backups/`
+- published layouts expose a dedicated `upgrade-config` command and PowerShell wrapper script
+
+Exit criteria:
+- legacy published config can be upgraded without hand-editing JSON
+- install validation can detect unsupported or future config schema versions
+- config upgrades preserve a backup copy before mutating the runtime file
+
 ### 0.5.3 Operator UX Refinement
 
 Purpose:

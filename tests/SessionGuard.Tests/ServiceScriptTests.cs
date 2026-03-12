@@ -95,6 +95,9 @@ public sealed class ServiceScriptTests
         Assert.True(root.GetProperty("ConfigDefaultsExists").GetBoolean());
         Assert.True(root.GetProperty("ScExeAvailable").GetBoolean());
         Assert.True(root.GetProperty("RuntimeValidation").GetProperty("CanRun").GetBoolean());
+        Assert.Contains(
+            root.GetProperty("ConfigUpgrade").GetProperty("Files").EnumerateArray(),
+            file => file.GetProperty("RequiresUpgrade").GetBoolean());
 
         var elevated = IsElevated();
         Assert.Equal(elevated, root.GetProperty("CanInstallNow").GetBoolean());
@@ -111,6 +114,45 @@ public sealed class ServiceScriptTests
                 issue => issue is not null &&
                          issue.Contains("elevated PowerShell session", StringComparison.OrdinalIgnoreCase));
         }
+    }
+
+    [Fact]
+    public async Task UpgradeServiceConfig_UpgradesLegacyConfigAndCreatesBackup()
+    {
+        var repoRoot = GetRepositoryRoot();
+        var publishRoot = Path.Combine(Path.GetTempPath(), "SessionGuard.Tests", Guid.NewGuid().ToString("N"));
+        CopyDirectory(GetBuiltServiceOutputRoot(repoRoot), publishRoot);
+
+        var configDirectory = Path.Combine(publishRoot, "config");
+        var configDefaultsDirectory = Path.Combine(publishRoot, "config.defaults");
+        Directory.CreateDirectory(configDirectory);
+        Directory.CreateDirectory(configDefaultsDirectory);
+        File.WriteAllText(Path.Combine(configDirectory, "appsettings.json"), "{ \"scanIntervalSeconds\": 45 }");
+        File.WriteAllText(Path.Combine(configDirectory, "protected-processes.json"), "{ \"processNames\": [\"pwsh.exe\"] }");
+        File.WriteAllText(Path.Combine(configDirectory, "policies.json"), "{ \"enabled\": true, \"rules\": [] }");
+        File.WriteAllText(Path.Combine(configDefaultsDirectory, "appsettings.json"), "{ \"schemaVersion\": 1, \"scanIntervalSeconds\": 30 }");
+        File.WriteAllText(Path.Combine(configDefaultsDirectory, "protected-processes.json"), "{ \"schemaVersion\": 1, \"processNames\": [] }");
+        File.WriteAllText(Path.Combine(configDefaultsDirectory, "policies.json"), "{ \"schemaVersion\": 1, \"enabled\": true, \"rules\": [] }");
+
+        var scriptPath = Path.Combine(repoRoot, "scripts", "service", "Upgrade-SessionGuardServiceConfig.ps1");
+        var result = await RunPowerShellScriptAsync(
+            scriptPath,
+            "-PublishRoot",
+            publishRoot,
+            "-AsJson");
+
+        Assert.True(result.ExitCode == 0, $"PowerShell exited with {result.ExitCode}. stderr: {result.StandardError}");
+
+        using var document = JsonDocument.Parse(result.StandardOutput);
+        var root = document.RootElement;
+
+        Assert.True(root.GetProperty("UpgradedAnyFiles").GetBoolean());
+        var backupDirectory = root.GetProperty("BackupDirectory").GetString();
+        Assert.False(string.IsNullOrWhiteSpace(backupDirectory));
+        Assert.True(Directory.Exists(backupDirectory!));
+
+        var appSettings = JsonDocument.Parse(File.ReadAllText(Path.Combine(configDirectory, "appsettings.json")));
+        Assert.Equal(1, appSettings.RootElement.GetProperty("schemaVersion").GetInt32());
     }
 
     private static string GetBuiltServiceOutputRoot(string repoRoot)

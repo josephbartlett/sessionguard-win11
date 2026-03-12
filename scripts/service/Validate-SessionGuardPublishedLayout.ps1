@@ -52,6 +52,7 @@ if (-not (Test-Path $manifestPath)) {
     throw "Published layout is missing install-manifest.json."
 }
 
+$upgrade = Invoke-SessionGuardConfigUpgrade -ServiceExecutable $serviceExe
 $validation = Invoke-SessionGuardRuntimeValidation -ServiceExecutable $serviceExe
 if (-not $validation.Report.CanRun) {
     throw "Published layout runtime validation failed."
@@ -113,6 +114,7 @@ try {
         HostMode = $status.Health.HostMode
         ProductVersion = $status.Health.ProductVersion
         ManifestProductVersion = $manifest.ProductVersion
+        ConfigUpgradeApplied = $upgrade.Report.UpgradedAnyFiles
         RuntimeValidated = $validation.Report.CanRun
     }
 }
