@@ -4,6 +4,16 @@ All notable changes to this project should be recorded here in reverse chronolog
 
 ## Unreleased
 
+## 1.0.0 - 2026-03-12
+
+- Shipped the full SessionGuard platform baseline: restart-signal inspection, workspace-risk heuristics, policy engine, tray-aware desktop shell, and service-backed monitoring.
+- Hardened the service lifecycle with publish preservation, runtime validation, install manifests, config schema migration, and a one-command deployment update flow.
+- Tightened the service boundary so mitigation writes and approval changes remain service-owned while local fallback stays read-only for those actions.
+- Added deterministic Windows validation with UI smoke automation, local and CI entry points, and packaged screenshot artifacts.
+- Added operator-facing diagnostics for policy validation, approval timing, service health, published-layout validation, and config-backup visibility.
+- Corrected Windows `sc.exe` service-creation argument formatting so elevated install and update flows work reliably on a real machine.
+- Added `Update-SessionGuardServiceDeployment.ps1` as the supported upgrade path for installed service deployments.
+
 - Hardened the published service layout so mutable runtime config stays in `config/` while shipped defaults are copied to `config.defaults/`.
 - Added runtime self-validation through `SessionGuard.Service.exe validate-runtime` and surfaced that validation in the install and status scripts.
 - Added `install-manifest.json` to published service layouts with version, protocol, path, and validation metadata.
@@ -16,6 +26,7 @@ All notable changes to this project should be recorded here in reverse chronolog
 - Added `Update-SessionGuardServiceDeployment.ps1` as a one-command stop, republish, reinstall, restart, and running-version verification path for installed service deployments.
 - Expanded status reporting with the installed service image path so deployment tooling can verify the service is running the expected binary.
 - Expanded PowerShell script coverage for the new deployment-upgrade validate-only flow.
+- Corrected Windows `sc.exe` service-creation argument formatting so elevated install and update flows work reliably on a real machine.
 
 ## 0.5.3 - 2026-03-11
 

@@ -107,6 +107,7 @@ Current status:
 - publish now preserves existing `config/`, `logs/`, and `state/` directories when republishing into the same service root
 - install now verifies post-start health and control-plane reachability instead of treating `Start-Service` alone as success
 - the service tooling now includes a one-command deployment update flow that stops the live service, republishes into the target root, reinstalls, restarts, and verifies the running version against `install-manifest.json`
+- elevated validation on this branch now includes a clean fresh install and a live in-place upgrade from `v0.5.3`
 
 Exit criteria:
 - republishing does not overwrite operator-edited runtime config
@@ -124,6 +125,7 @@ Current status:
 - published service tooling can inspect and upgrade versionless legacy config in place
 - config upgrades create timestamped backups under `state/config-backups/`
 - published layouts expose a dedicated `upgrade-config` command and PowerShell wrapper script
+- a live `v0.5.3` to `1.0.0` upgrade on this branch upgraded legacy runtime config in place and wrote timestamped backups during the deployment update flow
 
 Exit criteria:
 - legacy published config can be upgraded without hand-editing JSON

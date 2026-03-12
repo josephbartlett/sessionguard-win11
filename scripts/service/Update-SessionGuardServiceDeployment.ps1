@@ -38,10 +38,6 @@ $willStopService = $null -ne $installedService -and $installedService.Status -ne
 $preManifest = Get-SessionGuardInstallManifest -PublishRoot $PublishRoot
 
 $installReadinessJson = & $installScript -SkipPublish -PublishRoot $PublishRoot -ValidateOnly -AsJson
-if ($LASTEXITCODE -ne 0) {
-    throw "Install readiness check failed before deployment orchestration."
-}
-
 $installReadiness = $installReadinessJson | ConvertFrom-Json
 $validateIssues = New-Object System.Collections.Generic.List[string]
 foreach ($issue in $installReadiness.Issues) {
@@ -99,26 +95,20 @@ if ($willStopService) {
 }
 
 if (-not $SkipPublish) {
-    $publishArguments = @(
-        "-Configuration", $Configuration,
-        "-Runtime", $Runtime,
-        "-OutputDir", $PublishRoot
-    )
+    $publishParameters = @{
+        Configuration = $Configuration
+        Runtime = $Runtime
+        OutputDir = $PublishRoot
+    }
 
     if ($SelfContained.IsPresent) {
-        $publishArguments += "-SelfContained"
+        $publishParameters.SelfContained = $true
     }
 
-    & $publishScript @publishArguments | Out-Host
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to publish SessionGuard.Service during deployment update."
-    }
+    & $publishScript @publishParameters | Out-Host
 }
 
 & $installScript -SkipPublish -PublishRoot $PublishRoot -StartupTimeoutSeconds $StartupTimeoutSeconds | Out-Host
-if ($LASTEXITCODE -ne 0) {
-    throw "Failed to install or restart SessionGuard service during deployment update."
-}
 
 $manifest = Get-SessionGuardInstallManifest -PublishRoot $PublishRoot
 if ($null -eq $manifest) {
@@ -126,10 +116,6 @@ if ($null -eq $manifest) {
 }
 
 $statusJson = & $statusScript -ProbeExecutable $serviceExe -AsJson
-if ($LASTEXITCODE -ne 0) {
-    throw "Failed to query SessionGuard service status after deployment update."
-}
-
 $status = $statusJson | ConvertFrom-Json
 if (-not $status.ControlPlaneReachable) {
     throw "SessionGuard service control plane was not reachable after deployment update."

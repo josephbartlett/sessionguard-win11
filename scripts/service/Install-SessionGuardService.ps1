@@ -90,7 +90,13 @@ if (Test-Path $serviceExe) {
         }
     }
 
-    $upgradeReport = $runtimeValidation.Report.ConfigUpgrade
+    if ($null -ne $runtimeValidation.Report -and
+        ($runtimeValidation.Report.PSObject.Properties.Name -contains "ConfigUpgrade")) {
+        $upgradeReport = $runtimeValidation.Report.ConfigUpgrade
+    }
+    elseif ($null -ne $runtimeValidation.Report) {
+        $readinessWarnings.Add("Service runtime validation came from a legacy build and does not expose config-upgrade metadata.")
+    }
 }
 
 if (-not $scAvailable) {
@@ -175,16 +181,21 @@ if ($PSCmdlet.ShouldProcess($script:SessionGuardServiceName, "Install SessionGua
     Invoke-SessionGuardSc @(
         "create",
         $script:SessionGuardServiceName,
-        "binPath= $quotedExe",
-        "start= delayed-auto",
-        "DisplayName= $script:SessionGuardServiceDisplayName"
+        "binPath=",
+        $quotedExe,
+        "start=",
+        "delayed-auto",
+        "DisplayName=",
+        $script:SessionGuardServiceDisplayName
     ) | Out-Null
     Invoke-SessionGuardSc @("description", $script:SessionGuardServiceName, $script:SessionGuardServiceDescription) | Out-Null
     Invoke-SessionGuardSc @(
         "failure",
         $script:SessionGuardServiceName,
-        "reset= 86400",
-        "actions= restart/5000/restart/15000//"
+        "reset=",
+        "86400",
+        "actions=",
+        "restart/5000/restart/15000//"
     ) | Out-Null
     Invoke-SessionGuardSc @("failureflag", $script:SessionGuardServiceName, "1") | Out-Null
 
