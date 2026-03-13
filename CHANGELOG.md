@@ -2,6 +2,13 @@
 
 All notable changes to this project should be recorded here in reverse chronological order.
 
+## 1.1.3 - 2026-03-13
+
+- Fixed the combined installer so a blocked post-install tray launch no longer makes the whole install look failed.
+- Changed the immediate post-install app launch path to prefer the interactive shell context instead of depending on the elevated installer process.
+- Added install-path diagnostics for post-install app launch attempts and warnings.
+- Updated install docs and the generated setup README to explain that a blocked immediate launch does not invalidate the install.
+
 ## 1.1.2 - 2026-03-13
 
 - Simplified the top-level README so it works better as a public repo front door instead of mixing end-user, operator, contributor, and release-engineering detail.
