@@ -58,7 +58,6 @@ internal static class Program
             VerifyRequiredElement(window, UiSmokeAutomationIds.SimpleViewButton);
             VerifyRequiredElement(window, UiSmokeAutomationIds.TechnicalViewButton);
             VerifyRequiredElement(window, UiSmokeAutomationIds.ScanNowButton);
-            VerifyRequiredElement(window, UiSmokeAutomationIds.WindowsUpdateOptionsButton);
             WaitForOverviewState(window, scenario);
 
             var overviewScreenshotPath = Path.Combine(outputDirectory, $"{scenario.Name}.png");
@@ -74,6 +73,7 @@ internal static class Program
             VerifyRequiredElement(window, UiSmokeAutomationIds.WorkspaceRiskGrid);
             VerifyRequiredElement(window, UiSmokeAutomationIds.RestartIndicatorsGrid);
             VerifyRequiredElement(window, UiSmokeAutomationIds.ManagedMitigationsGrid);
+            VerifyRequiredElement(window, UiSmokeAutomationIds.WindowsUpdateOptionsButton);
 
             foreach (var expectedText in scenario.ExpectedTexts)
             {

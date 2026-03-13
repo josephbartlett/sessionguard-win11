@@ -7,105 +7,106 @@
         mc:Ignorable="d"
         AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.MainWindow}"
         Title="SessionGuard"
-        Width="1260"
-        Height="860"
-        MinWidth="1040"
-        MinHeight="720"
+        WindowStartupLocation="CenterScreen"
+        Width="860"
+        Height="840"
+        MinWidth="760"
+        MinHeight="700"
         Background="{StaticResource WindowBackgroundBrush}">
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <Grid Margin="28">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
+    <ScrollViewer x:Name="RootScrollViewer"
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+        <Grid Width="{Binding ElementName=RootScrollViewer, Path=ViewportWidth}">
+            <Grid Margin="28"
+                  MaxWidth="760"
+                  HorizontalAlignment="Center">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
 
-            <DockPanel Grid.Row="0" LastChildFill="False">
-                <StackPanel DockPanel.Dock="Left" MaxWidth="640">
-                    <TextBlock FontSize="30"
-                               FontWeight="SemiBold"
-                               Foreground="{StaticResource PrimaryTextBrush}"
-                               Text="SessionGuard" />
-                    <TextBlock Margin="0,8,0,0"
-                               Foreground="{StaticResource SecondaryTextBrush}"
-                               Text="Reduce surprise Windows restart disruption without disabling Windows Update."
-                               TextWrapping="Wrap" />
-                </StackPanel>
+                <StackPanel Grid.Row="0">
+                    <StackPanel MaxWidth="620">
+                        <TextBlock FontSize="30"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource PrimaryTextBrush}"
+                                   Text="SessionGuard" />
+                        <TextBlock Margin="0,8,0,0"
+                                   Foreground="{StaticResource SecondaryTextBrush}"
+                                   Text="Reduce surprise Windows restart disruption without disabling Windows Update."
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
 
-                <StackPanel DockPanel.Dock="Right"
-                            HorizontalAlignment="Right"
-                            VerticalAlignment="Top">
-                    <Border Margin="0,0,0,10"
-                            Padding="4"
-                            Background="#EEF2F6"
-                            CornerRadius="14">
-                        <StackPanel Orientation="Horizontal">
-                            <Button AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.SimpleViewButton}"
-                                    Command="{Binding SetSimpleViewCommand}"
-                                    Content="Simple view">
-                                <Button.Style>
-                                    <Style TargetType="Button">
-                                        <Setter Property="Padding" Value="12,8" />
-                                        <Setter Property="MinWidth" Value="108" />
-                                        <Setter Property="Foreground" Value="{StaticResource SecondaryTextBrush}" />
-                                        <Setter Property="Background" Value="Transparent" />
-                                        <Setter Property="BorderThickness" Value="0" />
-                                        <Setter Property="FontWeight" Value="SemiBold" />
-                                        <Setter Property="Cursor" Value="Hand" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding SimpleViewEnabled}" Value="True">
-                                                <Setter Property="Background" Value="{StaticResource PrimaryButtonBrush}" />
-                                                <Setter Property="Foreground" Value="White" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
-                            <Button AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.TechnicalViewButton}"
-                                    Command="{Binding SetTechnicalViewCommand}"
-                                    Content="Technical view">
-                                <Button.Style>
-                                    <Style TargetType="Button">
-                                        <Setter Property="Padding" Value="12,8" />
-                                        <Setter Property="MinWidth" Value="118" />
-                                        <Setter Property="Foreground" Value="{StaticResource SecondaryTextBrush}" />
-                                        <Setter Property="Background" Value="Transparent" />
-                                        <Setter Property="BorderThickness" Value="0" />
-                                        <Setter Property="FontWeight" Value="SemiBold" />
-                                        <Setter Property="Cursor" Value="Hand" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding TechnicalViewEnabled}" Value="True">
-                                                <Setter Property="Background" Value="{StaticResource PrimaryButtonBrush}" />
-                                                <Setter Property="Foreground" Value="White" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
+                    <StackPanel Margin="0,18,0,0"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Top">
+                        <Border Margin="0,0,0,10"
+                                Padding="4"
+                                Background="#EEF2F6"
+                                CornerRadius="14">
+                            <StackPanel Orientation="Horizontal">
+                                <Button AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.SimpleViewButton}"
+                                        Command="{Binding SetSimpleViewCommand}"
+                                        Content="Simple view">
+                                    <Button.Style>
+                                        <Style TargetType="Button">
+                                            <Setter Property="Padding" Value="12,8" />
+                                            <Setter Property="MinWidth" Value="108" />
+                                            <Setter Property="Foreground" Value="{StaticResource SecondaryTextBrush}" />
+                                            <Setter Property="Background" Value="Transparent" />
+                                            <Setter Property="BorderThickness" Value="0" />
+                                            <Setter Property="FontWeight" Value="SemiBold" />
+                                            <Setter Property="Cursor" Value="Hand" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding SimpleViewEnabled}" Value="True">
+                                                    <Setter Property="Background" Value="{StaticResource PrimaryButtonBrush}" />
+                                                    <Setter Property="Foreground" Value="White" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                                <Button AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.TechnicalViewButton}"
+                                        Command="{Binding SetTechnicalViewCommand}"
+                                        Content="Technical view">
+                                    <Button.Style>
+                                        <Style TargetType="Button">
+                                            <Setter Property="Padding" Value="12,8" />
+                                            <Setter Property="MinWidth" Value="118" />
+                                            <Setter Property="Foreground" Value="{StaticResource SecondaryTextBrush}" />
+                                            <Setter Property="Background" Value="Transparent" />
+                                            <Setter Property="BorderThickness" Value="0" />
+                                            <Setter Property="FontWeight" Value="SemiBold" />
+                                            <Setter Property="Cursor" Value="Hand" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding TechnicalViewEnabled}" Value="True">
+                                                    <Setter Property="Background" Value="{StaticResource PrimaryButtonBrush}" />
+                                                    <Setter Property="Foreground" Value="White" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                            </StackPanel>
+                        </Border>
+
+                        <StackPanel Orientation="Horizontal"
+                                    HorizontalAlignment="Right">
+                            <Button Style="{StaticResource SecondaryActionButtonStyle}"
+                                    AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.ScanNowButton}"
+                                    Command="{Binding ScanNowCommand}"
+                                    Content="Scan now" />
+                            <Button Style="{StaticResource SecondaryActionButtonStyle}"
+                                    AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.HideToTrayButton}"
+                                    Click="OnHideToTrayClick"
+                                    Content="Hide to tray"
+                                    Visibility="{Binding TrayShellEnabled, Converter={StaticResource BooleanToVisibilityConverter}}" />
                         </StackPanel>
-                    </Border>
-
-                    <StackPanel Orientation="Horizontal"
-                                HorizontalAlignment="Right">
-                        <Button Style="{StaticResource PrimaryActionButtonStyle}"
-                                AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.ScanNowButton}"
-                                Command="{Binding ScanNowCommand}"
-                                Content="Scan now" />
-                        <Button Style="{StaticResource QuietActionButtonStyle}"
-                                AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.WindowsUpdateOptionsButton}"
-                                Command="{Binding OpenWindowsUpdateSettingsCommand}"
-                                Content="Windows Update options" />
                     </StackPanel>
                 </StackPanel>
-            </DockPanel>
 
-            <Grid Grid.Row="1" Margin="0,24,0,0">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="440" />
-                    <ColumnDefinition Width="16" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-
-                <StackPanel Grid.Column="0">
+                <StackPanel Grid.Row="1" Margin="0,24,0,0">
+                <StackPanel>
                     <Border Style="{StaticResource CardBorderStyle}">
                         <StackPanel>
                             <TextBlock FontSize="14"
@@ -211,6 +212,10 @@
                             <TextBlock Margin="0,8,0,0"
                                        Foreground="{StaticResource SecondaryTextBrush}"
                                        Text="{Binding LastScanText}" />
+                            <TextBlock Margin="0,10,0,0"
+                                       Foreground="{StaticResource SecondaryTextBrush}"
+                                       Text="{Binding TrayWorkflowText}"
+                                       TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
 
@@ -251,7 +256,7 @@
                     </Border>
                 </StackPanel>
 
-                <StackPanel Grid.Column="2">
+                <StackPanel Margin="0,16,0,0">
                     <Border Style="{StaticResource CardBorderStyle}">
                         <StackPanel>
                             <TextBlock FontSize="14"
@@ -290,7 +295,7 @@
                             <TextBlock FontSize="14"
                                        FontWeight="SemiBold"
                                        Foreground="{StaticResource SecondaryTextBrush}"
-                                       Text="View mode" />
+                                       Text="Advanced details" />
                             <TextBlock Margin="0,10,0,0"
                                        FontSize="22"
                                        FontWeight="SemiBold"
@@ -303,7 +308,7 @@
                                        TextWrapping="Wrap" />
                             <TextBlock Margin="0,12,0,0"
                                        Foreground="{StaticResource SecondaryTextBrush}"
-                                       Text="Use the toggle in the top-right corner whenever you want to switch between the calm overview and the full diagnostic workspace."
+                                       Text="The tray menu is the quick daily path. Open technical view only when you need raw restart signals, policy matches, or managed-setting details."
                                        TextWrapping="Wrap" />
 
                             <StackPanel Margin="0,18,0,0"
@@ -675,6 +680,10 @@
 
                                         <WrapPanel Margin="0,14,0,0">
                                             <Button Style="{StaticResource SecondaryActionButtonStyle}"
+                                                    AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.WindowsUpdateOptionsButton}"
+                                                    Command="{Binding OpenWindowsUpdateSettingsCommand}"
+                                                    Content="Windows Update options" />
+                                            <Button Style="{StaticResource SecondaryActionButtonStyle}"
                                                     Command="{Binding OpenConfigCommand}"
                                                     Content="Open config" />
                                             <Button Style="{StaticResource SecondaryActionButtonStyle}"
@@ -702,6 +711,7 @@
                             </StackPanel>
                         </StackPanel>
                     </Border>
+                </StackPanel>
                 </StackPanel>
             </Grid>
         </Grid>

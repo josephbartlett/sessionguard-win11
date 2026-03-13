@@ -41,10 +41,13 @@ WPF was chosen over WinUI because the priority was a stable Windows desktop appl
    - `Unknown / Limited Visibility`
 8. The service or local fallback path persists `state/current-scan.json`; when workspace risk is present it also writes `state/workspace-snapshot.json`, and the WPF view model updates the dashboard.
 9. Core operator-alert evaluation turns scan transitions into:
+   - tray summary, next-step, and context text for the notify-icon menu
    - policy-timing summary text for the dashboard
-   - compact tray status text for the notify-icon context menu
    - desktop notification events for service fallback, policy transitions, and approval timing
-10. When guard mode is enabled, the WPF shell can raise the dashboard on a high-risk transition and otherwise stay minimized in the tray.
+10. The WPF shell now behaves as a tray-first client:
+   - installed startup prefers a quiet tray launch
+   - repeated app launches reuse the existing tray instance
+   - the full dashboard is opened on demand for explanation and technical review
 
 ## Restart signal inspection
 
@@ -185,11 +188,11 @@ The config-upgrade path is intentionally bounded:
 - exposes `probe` and `scan-now` console commands for local validation
 - exposes `validate-runtime` so scripts can verify that the published layout is runnable before installation
 
-`SessionGuard.App` currently acts as a tray-aware dashboard client layered over a hybrid control plane. That keeps the background path and the desktop path aligned while still leaving room for a lighter dedicated tray shell later if the product needs one.
+`SessionGuard.App` currently acts as a tray-first dashboard client layered over a hybrid control plane. That keeps the background path and the desktop path aligned while still leaving room for a lighter dedicated tray shell later if the product needs one.
 
 The desktop shell also derives an operator-alert layer from shared scan status:
 
-- the tray menu shows compact status, mode, policy, and timing lines
+- the tray menu shows summary, next-step, and context lines first, with raw status details behind them
 - the view model emits notification events instead of letting the window shell infer policy transitions itself
 - approval timing is surfaced explicitly so operators can see whether an approval is active, expiring soon, expired, or was cleared early
 

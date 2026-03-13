@@ -53,6 +53,12 @@ dotnet run --project src/SessionGuard.App/SessionGuard.App.csproj
 
 This is the fastest way to try SessionGuard. In this mode the app can still monitor restart state, but service-owned write actions stay unavailable if the background service is not running.
 
+What to expect:
+
+- the app opens in `Simple view`
+- closing the window keeps it running in the tray
+- if you launch the app again while it is already running, SessionGuard reuses the existing tray app instead of opening a second copy
+
 ### Run the app with the local service host
 
 In one PowerShell window:
@@ -122,10 +128,12 @@ SessionGuard has two processes with different responsibilities:
   - auto-starts with Windows when installed as a service
   - does **not** show a tray icon
 - **`SessionGuard.App.exe`**: tray and dashboard shell
+  - starts as a tray-first shell in installed mode
   - shows the window and the tray icon
   - talks to the service when it is available
   - falls back to local read-only monitoring when the service is unavailable
   - can be registered to auto-start at user sign-in
+  - reuses the already-running tray app when launched again
   - must be run as administrator if you want it to request service-owned mitigation or approval changes
 
 The tray icon belongs to the app, not the service.
@@ -135,6 +143,8 @@ Typical modes:
 - **App only**: useful for inspection and local fallback monitoring
 - **App + local service host**: useful for development or manual validation
 - **Installed mode**: service auto-starts with Windows, app auto-starts at sign-in for the installing user and starts minimized to the tray
+
+In normal installed use, the tray menu is the daily path. Open the dashboard when you need a fuller explanation or want the technical tables.
 
 ## Common Tasks
 
@@ -178,6 +188,7 @@ Published service layouts preserve live runtime config under `config/` and shipp
 - mitigation apply or reset actions require elevation because they write under `HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate`
 - guard-mode changes, restart approval changes, and mitigation writes are service-owned and require an elevated app session when connected to the service
 - if the app falls back locally, mitigation and approval actions become read-only on purpose
+- new installs now default `warningBehavior.raiseWindowOnHighRisk` to `false`, so SessionGuard prefers tray-first attention unless you opt into raising the dashboard
 
 ## Logs and State
 

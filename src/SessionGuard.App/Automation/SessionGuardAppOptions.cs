@@ -3,9 +3,12 @@ namespace SessionGuard.App.Automation;
 public sealed record SessionGuardAppOptions(
     string? UiScenarioName,
     bool DisableTrayIcon,
-    bool ForceStartMinimized)
+    bool ForceStartMinimized,
+    bool DisableSingleInstance)
 {
     public bool UseTrayIcon => !DisableTrayIcon && string.IsNullOrWhiteSpace(UiScenarioName);
+
+    public bool EnableSingleInstance => !DisableSingleInstance && string.IsNullOrWhiteSpace(UiScenarioName);
 
     public static SessionGuardAppOptions Parse(IEnumerable<string> args)
     {
@@ -16,6 +19,10 @@ public sealed record SessionGuardAppOptions(
             StringComparison.OrdinalIgnoreCase);
         var forceStartMinimized = string.Equals(
             Environment.GetEnvironmentVariable("SESSIONGUARD_START_MINIMIZED"),
+            "1",
+            StringComparison.OrdinalIgnoreCase);
+        var disableSingleInstance = string.Equals(
+            Environment.GetEnvironmentVariable("SESSIONGUARD_DISABLE_SINGLE_INSTANCE"),
             "1",
             StringComparison.OrdinalIgnoreCase);
 
@@ -49,6 +56,10 @@ public sealed record SessionGuardAppOptions(
                 string.Equals(argument, "--ui-smoke", StringComparison.OrdinalIgnoreCase))
             {
                 disableTrayIcon = true;
+                if (string.Equals(argument, "--ui-smoke", StringComparison.OrdinalIgnoreCase))
+                {
+                    disableSingleInstance = true;
+                }
                 continue;
             }
 
@@ -62,6 +73,7 @@ public sealed record SessionGuardAppOptions(
         return new SessionGuardAppOptions(
             string.IsNullOrWhiteSpace(uiScenarioName) ? null : uiScenarioName.Trim(),
             disableTrayIcon,
-            forceStartMinimized);
+            forceStartMinimized,
+            disableSingleInstance);
     }
 }

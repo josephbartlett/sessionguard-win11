@@ -27,8 +27,9 @@ This is the user-facing shell.
 
 It:
 
-- shows the dashboard window
+- starts as a tray-first shell when installed with `--start-minimized`
 - creates the tray icon
+- shows the dashboard window on demand
 - displays notifications
 - talks to the service over the local control plane when the service is available
 - can run in a normal user session for monitoring only
@@ -59,8 +60,8 @@ You launch `SessionGuard.App.exe` without the service running.
 
 What you get:
 
-- dashboard
 - tray icon
+- dashboard on demand
 - local fallback monitoring
 
 What you do not get:
@@ -90,7 +91,8 @@ What happens:
 
 - the service is installed as a Windows Service with delayed auto-start
 - the app is registered to start at user sign-in with `--start-minimized`
-- the app launches to the tray for the installing user
+- the app launches quietly to the tray for the installing user
+- launching the app again reuses the running tray app instead of starting a second copy
 
 This is the intended always-on operator setup.
 
@@ -116,6 +118,13 @@ If you install SessionGuard using alternate credentials or a different signed-in
 The tray icon belongs to the **app**.
 
 The service never owns the tray icon. That is the correct Windows model.
+
+## Launch behavior after install
+
+- sign-in startup launches the app to the tray
+- closing the dashboard keeps SessionGuard running in the tray
+- launching `SessionGuard.App.exe` again brings the existing app forward instead of starting a second copy
+- the tray menu is meant to be the quick daily workflow
 
 ## Distribution shape
 

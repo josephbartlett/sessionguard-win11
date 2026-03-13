@@ -117,6 +117,13 @@ The items below are not promises. They are the most likely next areas of value b
 Purpose:
 Make SessionGuard feel like a calm background utility that is understandable from the tray first and the dashboard second.
 
+Current progress on this branch:
+
+- quieter default dashboard layout with fewer always-visible controls
+- tray summary, next-step, and context lines driven from the operator alert model
+- single-instance app activation so relaunching reuses the existing tray app
+- installed startup validation confirming the app starts hidden to the tray and relaunch opens the dashboard instead of creating duplicates
+
 Planned work:
 
 - tighter tray workflow and clearer tray status

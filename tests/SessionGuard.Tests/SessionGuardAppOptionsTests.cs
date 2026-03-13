@@ -10,6 +10,7 @@ public sealed class SessionGuardAppOptionsTests
         var options = SessionGuardAppOptions.Parse(new[] { "--start-minimized" });
 
         Assert.True(options.UseTrayIcon);
+        Assert.True(options.EnableSingleInstance);
         Assert.True(options.ForceStartMinimized);
     }
 
@@ -19,6 +20,7 @@ public sealed class SessionGuardAppOptionsTests
         var options = SessionGuardAppOptions.Parse(new[] { "--ui-smoke", "--start-minimized" });
 
         Assert.False(options.UseTrayIcon);
+        Assert.False(options.EnableSingleInstance);
         Assert.True(options.ForceStartMinimized);
     }
 }

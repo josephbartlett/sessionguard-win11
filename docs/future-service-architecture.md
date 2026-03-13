@@ -18,7 +18,7 @@ The repo now includes `SessionGuard.Service`, a background worker/service-host f
 
 The repo also includes a tray-aware WPF shell that prefers the service control plane and falls back locally when the service is unavailable.
 
-The main remaining future split is no longer "service or no service." It is whether SessionGuard should grow a lighter dedicated tray shell, richer notifications, and a cleaner packaging story beyond the current dashboard-first experience.
+The main remaining future split is no longer "service or no service." It is whether SessionGuard should grow a lighter dedicated tray shell, richer notifications, and a cleaner packaging story beyond the current tray-first dashboard shell.
 
 ## Proposed components
 

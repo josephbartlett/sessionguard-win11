@@ -19,6 +19,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private readonly IAppLogger _logger;
     private readonly RuntimePaths _runtimePaths;
     private readonly bool _forceStartMinimized;
+    private readonly bool _trayShellEnabled;
     private readonly DispatcherTimer _timer;
     private readonly EventHandler _timerHandler;
     private readonly SemaphoreSlim _scanLock = new(1, 1);
@@ -89,10 +90,16 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private string _policyDirectoryText = string.Empty;
     private string _logDirectoryText = string.Empty;
     private string _trayTooltipText = "SessionGuard";
+    private string _traySummaryText = "Summary: waiting for the first scan";
+    private string _trayNextStepText = "Next: waiting for the first scan";
+    private string _trayContextText = "Context: waiting for the first scan";
     private string _trayStatusText = "Status: not yet scanned";
     private string _trayModeText = "Mode: not yet scanned";
     private string _trayPolicyText = "Policy: not yet scanned";
     private string _trayTimingText = "Timing: not yet scanned";
+    private string _trayPrimaryActionText = string.Empty;
+    private TrayPrimaryActionKind _trayPrimaryActionKind = TrayPrimaryActionKind.None;
+    private bool _trayPrimaryActionVisible;
     private string _policiesPath = string.Empty;
     private Brush _statusBrush = CreateBrush("#64748B");
     private Brush _riskBrush = CreateBrush("#64748B");
@@ -102,13 +109,15 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         IConfigurationRepository configurationRepository,
         IAppLogger logger,
         RuntimePaths runtimePaths,
-        bool forceStartMinimized = false)
+        bool forceStartMinimized = false,
+        bool trayShellEnabled = true)
     {
         _controlPlane = controlPlane;
         _configurationRepository = configurationRepository;
         _logger = logger;
         _runtimePaths = runtimePaths;
         _forceStartMinimized = forceStartMinimized;
+        _trayShellEnabled = trayShellEnabled;
 
         ProtectedProcesses = new ObservableCollection<ProtectedProcessMatch>();
         MatchedPolicyRules = new ObservableCollection<PolicyRuleMatch>();
@@ -536,10 +545,34 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         private set => SetProperty(ref _logDirectoryText, value);
     }
 
+    public bool TrayShellEnabled => _trayShellEnabled;
+
+    public string TrayWorkflowText => _trayShellEnabled
+        ? "Close the window to keep SessionGuard running in the tray. Use the tray menu for quick actions and reopen the dashboard only when you need more context."
+        : "This run is not using the tray shell, so the window stays in the foreground until you close it.";
+
     public string TrayTooltipText
     {
         get => _trayTooltipText;
         private set => SetProperty(ref _trayTooltipText, value);
+    }
+
+    public string TraySummaryText
+    {
+        get => _traySummaryText;
+        private set => SetProperty(ref _traySummaryText, value);
+    }
+
+    public string TrayNextStepText
+    {
+        get => _trayNextStepText;
+        private set => SetProperty(ref _trayNextStepText, value);
+    }
+
+    public string TrayContextText
+    {
+        get => _trayContextText;
+        private set => SetProperty(ref _trayContextText, value);
     }
 
     public string TrayStatusText
@@ -564,6 +597,24 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     {
         get => _trayTimingText;
         private set => SetProperty(ref _trayTimingText, value);
+    }
+
+    public string TrayPrimaryActionText
+    {
+        get => _trayPrimaryActionText;
+        private set => SetProperty(ref _trayPrimaryActionText, value);
+    }
+
+    public bool TrayPrimaryActionVisible
+    {
+        get => _trayPrimaryActionVisible;
+        private set => SetProperty(ref _trayPrimaryActionVisible, value);
+    }
+
+    internal TrayPrimaryActionKind TrayPrimaryActionKind
+    {
+        get => _trayPrimaryActionKind;
+        private set => SetProperty(ref _trayPrimaryActionKind, value);
     }
 
     public Brush StatusBrush
@@ -703,10 +754,16 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
                 WorkspaceConfidenceText = "Workspace confidence: unavailable";
                 WorkspaceSnapshotText = "Workspace snapshot: unavailable";
                 TrayTooltipText = "SessionGuard - Unavailable";
+                TraySummaryText = "Summary: SessionGuard could not refresh.";
+                TrayNextStepText = "Next: retry after checking the service and config.";
+                TrayContextText = "Context: monitoring and managed changes are unavailable until the scan path recovers.";
                 TrayStatusText = "Status: unavailable";
                 TrayModeText = "Mode: unavailable";
                 TrayPolicyText = "Policy: unavailable";
                 TrayTimingText = "Timing: unavailable";
+                TrayPrimaryActionKind = TrayPrimaryActionKind.RecommendedAction;
+                TrayPrimaryActionText = "Scan now";
+                TrayPrimaryActionVisible = true;
                 LastActionMessage = $"Scan failed: {exception.Message}";
                 StatusBrush = CreateBrush("#64748B");
                 RiskBrush = CreateBrush("#64748B");
@@ -838,6 +895,16 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         ShowDetailedSignals = enabled;
     }
 
+    internal void ShowSimpleView()
+    {
+        SetTechnicalView(false);
+    }
+
+    internal void ShowTechnicalView()
+    {
+        SetTechnicalView(true);
+    }
+
     private void ApplyConfiguration(RuntimeConfiguration configuration, bool initialLoad)
     {
         var settings = configuration.AppSettings;
@@ -916,6 +983,9 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             _warningBehavior.ApprovalExpiryWarningLeadMinutes);
         PolicyTimingText = operatorAlert.PolicyTimingText;
         TrayTooltipText = operatorAlert.Tray.TooltipText;
+        TraySummaryText = operatorAlert.Tray.SummaryLine;
+        TrayNextStepText = operatorAlert.Tray.NextStepLine;
+        TrayContextText = operatorAlert.Tray.ContextLine;
         TrayStatusText = operatorAlert.Tray.StatusLine;
         TrayModeText = operatorAlert.Tray.ModeLine;
         TrayPolicyText = operatorAlert.Tray.PolicyLine;
@@ -969,6 +1039,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         ShowApplyMitigationsAction = status.CanPerformServiceWrites && result.Mitigations.Any(mitigation => !mitigation.IsApplied);
         ShowResetMitigationsAction = status.CanPerformServiceWrites && result.Mitigations.Any(mitigation => mitigation.IsApplied);
         ConfigureRecommendedAction(status, result);
+        ConfigureTrayPrimaryAction(result);
     }
 
     private void ConfigureRecommendedAction(SessionControlStatus status, SessionScanResult result)
@@ -1086,6 +1157,33 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         RecommendedActionSupportText = supportText;
         RecommendedActionButtonText = buttonText ?? string.Empty;
         RecommendedActionVisible = kind != RecommendedActionKind.None && !string.IsNullOrWhiteSpace(buttonText);
+    }
+
+    private void ConfigureTrayPrimaryAction(SessionScanResult result)
+    {
+        if (RecommendedActionVisible)
+        {
+            TrayPrimaryActionKind = TrayPrimaryActionKind.RecommendedAction;
+            TrayPrimaryActionText = RecommendedActionButtonText;
+            TrayPrimaryActionVisible = true;
+            return;
+        }
+
+        if (result.RestartPending ||
+            result.Workspace.HasRisk ||
+            result.HasAmbiguousSignals ||
+            result.LimitedVisibility ||
+            result.Policy.HasBlockingRules)
+        {
+            TrayPrimaryActionKind = TrayPrimaryActionKind.OpenDashboard;
+            TrayPrimaryActionText = "Open dashboard";
+            TrayPrimaryActionVisible = true;
+            return;
+        }
+
+        TrayPrimaryActionKind = TrayPrimaryActionKind.None;
+        TrayPrimaryActionText = string.Empty;
+        TrayPrimaryActionVisible = false;
     }
 
     private static string BuildFriendlyStatusHeadline(SessionScanResult result)

@@ -27,6 +27,7 @@ public static class UiSmokeAutomationIds
     public const string RestartIndicatorsGrid = "RestartIndicatorsGrid";
     public const string ManagedMitigationsGrid = "ManagedMitigationsGrid";
     public const string ScanNowButton = "ScanNowButton";
+    public const string HideToTrayButton = "HideToTrayButton";
     public const string GrantApprovalButton = "GrantApprovalButton";
     public const string ClearApprovalButton = "ClearApprovalButton";
     public const string WindowsUpdateOptionsButton = "WindowsUpdateOptionsButton";

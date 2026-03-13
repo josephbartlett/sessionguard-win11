@@ -173,6 +173,9 @@ public static class OperatorAlertEvaluator
         SessionControlStatus status,
         string policyTimingText)
     {
+        var summary = BuildSummaryLine(status);
+        var nextStep = BuildNextStepLine(status);
+        var context = BuildContextLine(status);
         var mode = status.IsRemote ? "Service" : "Fallback";
         var policy = status.ScanResult.Policy.Validation.HasErrors
             ? "Config issue"
@@ -191,7 +194,7 @@ public static class OperatorAlertEvaluator
             RestartStateCategory.UnknownLimitedVisibility => "Limited view",
             _ => "Safe"
         };
-        var tooltip = $"SessionGuard - {mode} - {policy}";
+        var tooltip = $"SessionGuard - {state}";
         if (tooltip.Length > 63)
         {
             tooltip = tooltip[..63];
@@ -199,10 +202,118 @@ public static class OperatorAlertEvaluator
 
         return new TrayStatusSnapshot(
             tooltip,
+            summary,
+            nextStep,
+            context,
             $"Status: {state} ({FormatRisk(status.ScanResult.RiskLevel)})",
             $"Mode: {(status.IsRemote ? "Service connected" : "Local fallback read-only")}",
             $"Policy: {policy}",
             policyTimingText.Replace("Policy timing: ", "Timing: "));
+    }
+
+    private static string BuildSummaryLine(SessionControlStatus status)
+    {
+        var result = status.ScanResult;
+        if (result.Policy.Validation.HasErrors)
+        {
+            return "Summary: policy rules need attention.";
+        }
+
+        if (result.RestartPending && result.Workspace.HasRisk)
+        {
+            return "Summary: a restart and active work are both present.";
+        }
+
+        if (result.Workspace.HasRisk)
+        {
+            return "Summary: active work still looks open.";
+        }
+
+        if (result.RestartPending)
+        {
+            return "Summary: Windows still looks restart-sensitive.";
+        }
+
+        if (result.State == RestartStateCategory.MitigatedDeferred)
+        {
+            return "Summary: protections are helping right now.";
+        }
+
+        if (result.LimitedVisibility || result.HasAmbiguousSignals)
+        {
+            return "Summary: restart state still needs caution.";
+        }
+
+        return "Summary: nothing urgent is happening.";
+    }
+
+    private static string BuildNextStepLine(SessionControlStatus status)
+    {
+        var result = status.ScanResult;
+        if (result.Policy.Validation.HasErrors)
+        {
+            return "Next: fix the policy file.";
+        }
+
+        if (!status.IsRemote &&
+            (result.RestartPending ||
+             result.Policy.RequiresApproval ||
+             result.Mitigations.Any(mitigation => !mitigation.IsApplied) ||
+             result.RiskLevel != RestartRiskLevel.Low))
+        {
+            return "Next: reconnect the service or review Windows Update manually.";
+        }
+
+        if (status.IsRemote &&
+            !status.CanPerformServiceWrites &&
+            (result.Policy.RequiresApproval ||
+             result.Policy.ApprovalActive ||
+             result.Mitigations.Any()))
+        {
+            return "Next: reopen SessionGuard as administrator to change protections.";
+        }
+
+        if (status.CanPerformServiceWrites && result.Policy.RequiresApproval && !result.Policy.ApprovalActive)
+        {
+            return "Next: grant a supervised approval window when ready.";
+        }
+
+        if (status.CanPerformServiceWrites && result.Mitigations.Any(mitigation => !mitigation.IsApplied))
+        {
+            return "Next: apply the recommended protections.";
+        }
+
+        if (result.RestartPending)
+        {
+            return "Next: save work and plan a supervised restart.";
+        }
+
+        if (result.Workspace.HasRisk)
+        {
+            return "Next: save work before stepping away.";
+        }
+
+        if (result.Policy.ApprovalActive)
+        {
+            return "Next: nothing else is required right now.";
+        }
+
+        return "Next: nothing needs your attention.";
+    }
+
+    private static string BuildContextLine(SessionControlStatus status)
+    {
+        if (status.CanPerformServiceWrites)
+        {
+            return "Context: service connected and write actions are available.";
+        }
+
+        if (status.IsRemote)
+        {
+            return "Context: service connected for monitoring, but write actions still need elevation.";
+        }
+
+        return "Context: the service is offline, so monitoring is read-only.";
     }
 
     private static bool IsApprovalExpiringSoon(OperatorAlertContext context, int leadMinutes)

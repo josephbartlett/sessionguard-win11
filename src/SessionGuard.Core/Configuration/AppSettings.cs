@@ -43,7 +43,7 @@ public sealed class UiPreferences
 
 public sealed class WarningBehaviorOptions
 {
-    public bool RaiseWindowOnHighRisk { get; init; } = true;
+    public bool RaiseWindowOnHighRisk { get; init; }
 
     public bool ShowDesktopNotifications { get; init; } = true;
 

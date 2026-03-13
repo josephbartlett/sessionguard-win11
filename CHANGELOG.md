@@ -4,6 +4,11 @@ All notable changes to this project should be recorded here in reverse chronolog
 
 ## Unreleased
 
+- Reworked the desktop shell into a more deliberate tray-first flow with simpler header actions, clearer tray summaries, and a contextual primary tray action.
+- Added single-instance app coordination so repeated launches reuse the existing tray app and can reopen the current dashboard instead of starting duplicates.
+- Tightened installed startup behavior and manual validation guidance around sign-in launch, hide-to-tray behavior, and tray-first daily use.
+- Expanded tests and UI smoke coverage for the updated startup options, operator alert copy, and tray-first overview behavior.
+
 ## 1.0.4 - 2026-03-13
 
 - Tightened the service boundary so guard-mode changes now require the same elevated service-backed path as mitigation and approval writes.

@@ -82,8 +82,9 @@ Install it from the same Windows account that should see the tray icon at sign-i
 ## How SessionGuard runs
 
 - `SessionGuard.Service.exe` is the background engine and auto-starts with Windows when installed.
-- `SessionGuard.App.exe` owns the tray icon and dashboard window.
+- `SessionGuard.App.exe` owns the tray icon and opens the dashboard on demand.
 - The tray icon belongs to the app, not the service.
+- Launching `SessionGuard.App.exe` again reuses the already-running tray app instead of starting a second copy.
 
 ## Uninstall
 

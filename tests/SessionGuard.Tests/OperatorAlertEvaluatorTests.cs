@@ -27,7 +27,43 @@ public sealed class OperatorAlertEvaluatorTests
         var evaluation = OperatorAlertEvaluator.Evaluate(previous, current, approvalExpiryWarningLeadMinutes: 5);
 
         Assert.Contains(evaluation.Notifications, alert => alert.Title == "Service unavailable");
+        Assert.Equal("Summary: Windows still looks restart-sensitive.", evaluation.Tray.SummaryLine);
+        Assert.Equal("Next: reconnect the service or review Windows Update manually.", evaluation.Tray.NextStepLine);
         Assert.Equal("Mode: Local fallback read-only", evaluation.Tray.ModeLine);
+    }
+
+    [Fact]
+    public void Evaluate_ReturnsElevatedNextStep_WhenServiceWritesNeedAdmin()
+    {
+        var current = CreateStatus(
+            DateTimeOffset.Parse("2026-03-11T15:05:00-04:00"),
+            isRemote: true,
+            decision: PolicyDecisionType.ApprovalRequired,
+            approvalActive: false,
+            approvalExpiresAt: null,
+            canPerformServiceWrites: false);
+
+        var evaluation = OperatorAlertEvaluator.Evaluate(previous: null, status: current, approvalExpiryWarningLeadMinutes: 5);
+
+        Assert.Equal("Next: reopen SessionGuard as administrator to change protections.", evaluation.Tray.NextStepLine);
+        Assert.Equal("Context: service connected for monitoring, but write actions still need elevation.", evaluation.Tray.ContextLine);
+    }
+
+    [Fact]
+    public void Evaluate_ReturnsApprovalNextStep_WhenWritesAreAvailable()
+    {
+        var current = CreateStatus(
+            DateTimeOffset.Parse("2026-03-11T15:05:00-04:00"),
+            isRemote: true,
+            decision: PolicyDecisionType.ApprovalRequired,
+            approvalActive: false,
+            approvalExpiresAt: null,
+            canPerformServiceWrites: true);
+
+        var evaluation = OperatorAlertEvaluator.Evaluate(previous: null, status: current, approvalExpiryWarningLeadMinutes: 5);
+
+        Assert.Equal("Next: grant a supervised approval window when ready.", evaluation.Tray.NextStepLine);
+        Assert.Equal("Context: service connected and write actions are available.", evaluation.Tray.ContextLine);
     }
 
     [Fact]
@@ -169,7 +205,8 @@ public sealed class OperatorAlertEvaluatorTests
         PolicyDecisionType decision,
         bool approvalActive,
         DateTimeOffset? approvalExpiresAt,
-        PolicyValidationReport? validation = null)
+        PolicyValidationReport? validation = null,
+        bool canPerformServiceWrites = false)
     {
         var policy = new PolicyEvaluation(
             decision,
@@ -208,6 +245,7 @@ public sealed class OperatorAlertEvaluatorTests
                 new[] { "No action required." }),
             GuardModeEnabled: true,
             isRemote ? "Service" : "Local fallback",
-            IsRemote: isRemote);
+            IsRemote: isRemote,
+            CanPerformServiceWrites: canPerformServiceWrites);
     }
 }

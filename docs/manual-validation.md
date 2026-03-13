@@ -14,7 +14,9 @@ Use this when you want a structured release-readiness pass without digging throu
 1. Launch the app in a normal PowerShell session.
 2. Confirm it opens in `Simple view`.
 3. Confirm the default screen clearly shows current status, what to do now, and why SessionGuard is warning.
-4. Switch to `Technical view` and confirm the detailed tables still render correctly.
+4. Close the window and confirm SessionGuard stays in the tray instead of exiting.
+5. Launch the app again and confirm the existing tray app is reused instead of creating a second copy.
+6. Switch to `Technical view` and confirm the detailed tables still render correctly.
 
 ## Workspace and process detection
 
@@ -36,8 +38,10 @@ Use this when you want a structured release-readiness pass without digging throu
 1. Run `powershell -ExecutionPolicy Bypass -File scripts/install/Install-SessionGuard.ps1 -SelfContained` from an elevated shell, or run `powershell -ExecutionPolicy Bypass -File .\Install-SessionGuard.ps1` from an extracted bundle.
 2. Confirm the service is installed and configured for delayed auto-start.
 3. Confirm the current user has a SessionGuard startup registration under the Windows Run key.
-4. Sign out and sign back in, then confirm the app starts minimized and appears in the tray.
-5. Confirm the tray app connects to the service instead of falling back locally.
+4. Confirm the installed app launches to the tray without opening duplicate windows.
+5. Sign out and sign back in, then confirm the app starts minimized and appears in the tray.
+6. Confirm the tray app connects to the service instead of falling back locally.
+7. Launch `SessionGuard.App.exe` manually and confirm it brings the running tray app forward instead of starting a second copy.
 
 ## Elevated behavior
 

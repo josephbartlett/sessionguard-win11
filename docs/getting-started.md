@@ -42,6 +42,7 @@ This is the quickest path to evaluate the UI and restart-awareness features.
 What to expect:
 
 - the app opens in `Simple view` by default
+- closing the window keeps SessionGuard running in the tray
 - it can still scan locally if the service is not running
 - if the service is unavailable, the app reports `Control plane: Local fallback`
 - mitigation and approval writes are intentionally disabled in local fallback
@@ -63,6 +64,7 @@ dotnet run --project src/SessionGuard.App/SessionGuard.App.csproj
 What to expect:
 
 - the app should report `Control plane: Service`
+- the tray menu becomes the quickest day-to-day path
 - monitoring becomes service-backed
 - guard-mode, mitigation, and approval changes still require running `SessionGuard.App.exe` as administrator
 - the service writes `state/service-health.json`
@@ -81,6 +83,7 @@ What this does:
 - installs the Windows Service
 - registers the app to start at user sign-in
 - launches the app minimized to the tray unless you opt out
+- ensures later manual launches reuse the running tray app instead of opening a duplicate copy
 
 Advanced service-only path:
 
