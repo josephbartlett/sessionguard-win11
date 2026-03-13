@@ -298,6 +298,36 @@ public sealed class ServiceScriptTests
         Assert.True(bundleManifest.RootElement.TryGetProperty("IncludedComponents", out _));
     }
 
+    [Fact]
+    public async Task InstallCommon_StartInstalledApp_MissingExecutable_ReturnsWarningWithoutThrowing()
+    {
+        var repoRoot = GetRepositoryRoot();
+        var scriptRoot = Path.Combine(repoRoot, "scripts", "install");
+        var probeScript = Path.Combine(Path.GetTempPath(), "SessionGuard.Tests", Guid.NewGuid().ToString("N") + ".ps1");
+
+        Directory.CreateDirectory(Path.GetDirectoryName(probeScript)!);
+        File.WriteAllText(
+            probeScript,
+            $$"""
+            Set-StrictMode -Version Latest
+            $ErrorActionPreference = "Stop"
+            . "{{Path.Combine(scriptRoot, "common.ps1")}}"
+            $result = Start-SessionGuardInstalledApp -AppExecutable "{{Path.Combine(Path.GetTempPath(), "SessionGuard.Tests", Guid.NewGuid().ToString("N"), "missing", "SessionGuard.App.exe")}}"
+            $result | ConvertTo-Json -Compress
+            """);
+
+        var result = await RunPowerShellScriptAsync(probeScript);
+
+        Assert.True(result.ExitCode == 0, $"PowerShell exited with {result.ExitCode}. stderr: {result.StandardError}");
+
+        using var document = JsonDocument.Parse(result.StandardOutput);
+        var root = document.RootElement;
+        Assert.False(root.GetProperty("Attempted").GetBoolean());
+        Assert.False(root.GetProperty("Succeeded").GetBoolean());
+        Assert.Equal("none", root.GetProperty("Method").GetString());
+        Assert.Contains("installed successfully", root.GetProperty("Warning").GetString(), StringComparison.OrdinalIgnoreCase);
+    }
+
     private static string GetBuiltServiceOutputRoot(string repoRoot)
     {
         var currentConfiguration = new DirectoryInfo(AppContext.BaseDirectory).Parent?.Parent?.Name;

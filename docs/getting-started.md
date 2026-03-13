@@ -21,9 +21,11 @@ That is the preferred operator path for a real machine. It:
 - installs the shared runtime under `Program Files\SessionGuard`
 - installs the Windows Service
 - registers the app to start at user sign-in
-- launches the app minimized to the tray unless you opt out with `-DoNotLaunchApp`
+- attempts to launch the app minimized to the tray unless you opt out with `-DoNotLaunchApp`
 
 Run the installer from the same signed-in Windows account that should get the tray auto-start. The startup registration is written to that user's `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` key.
+
+If Windows blocks the immediate launch, the install still succeeded. Open `C:\Program Files\SessionGuard\SessionGuard.App.exe` manually from your normal desktop session or wait for the next sign-in.
 
 Useful install switches:
 
@@ -89,7 +91,7 @@ What this does:
 - installs the shared runtime under `Program Files\SessionGuard`
 - installs the Windows Service
 - registers the app to start at user sign-in
-- launches the app minimized to the tray unless you opt out with `-DoNotLaunchApp`
+- attempts to launch the app minimized to the tray unless you opt out with `-DoNotLaunchApp`
 - ensures later manual launches of the same installed app and privilege level reuse the running tray app instead of opening a duplicate copy
 
 Advanced service-only path:

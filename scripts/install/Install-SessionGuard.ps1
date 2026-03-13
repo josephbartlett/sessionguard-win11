@@ -69,6 +69,7 @@ $issues = New-Object System.Collections.Generic.List[string]
 $warnings = New-Object System.Collections.Generic.List[string]
 $runtimeValidation = $null
 $bundleManifest = $null
+$appLaunchResult = $null
 
 if (-not (Test-Path $serviceExe)) {
     $issues.Add("Service executable not found at '$serviceExe'.")
@@ -231,10 +232,21 @@ if ($PSCmdlet.ShouldProcess($InstallRoot, "Install combined SessionGuard runtime
         )
 
         if ($existingInstalledApps.Count -eq 0) {
-            Start-Process -FilePath $installedAppExe -ArgumentList "--start-minimized" -WindowStyle Minimized
-            Write-Host "Launched SessionGuard app minimized to tray."
+            $appLaunchResult = Start-SessionGuardInstalledApp -AppExecutable $installedAppExe -Arguments @("--start-minimized")
+            if ($appLaunchResult.Succeeded) {
+                Write-Host "Launched SessionGuard app minimized to tray ($($appLaunchResult.Method))."
+            }
+            else {
+                Write-Warning $appLaunchResult.Warning
+            }
         }
         else {
+            $appLaunchResult = [pscustomobject]@{
+                Attempted = $false
+                Succeeded = $true
+                Method = "skipped-already-running"
+                Warning = ""
+            }
             Write-Host "The installed SessionGuard app is already running; skipped auto-launch."
         }
     }
@@ -246,4 +258,8 @@ if ($PSCmdlet.ShouldProcess($InstallRoot, "Install combined SessionGuard runtime
     ServiceAutoStart = "delayed-auto"
     AppStartupRegistration = Get-SessionGuardAppStartupRegistration
     AppExecutable = Get-SessionGuardAppExecutablePath -Root $InstallRoot
-} | Select-Object InstallRoot, ServiceName, ServiceAutoStart, AppStartupRegistration, AppExecutable
+    AppLaunchAttempted = if ($null -ne $appLaunchResult) { [bool]$appLaunchResult.Attempted } else { $false }
+    AppLaunchSucceeded = if ($null -ne $appLaunchResult) { [bool]$appLaunchResult.Succeeded } else { $false }
+    AppLaunchMethod = if ($null -ne $appLaunchResult) { [string]$appLaunchResult.Method } else { "" }
+    AppLaunchWarning = if ($null -ne $appLaunchResult) { [string]$appLaunchResult.Warning } else { "" }
+} | Select-Object InstallRoot, ServiceName, ServiceAutoStart, AppStartupRegistration, AppExecutable, AppLaunchAttempted, AppLaunchSucceeded, AppLaunchMethod, AppLaunchWarning

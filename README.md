@@ -29,9 +29,11 @@ That install path:
 - installs the Windows Service
 - installs the shared runtime under `C:\Program Files\SessionGuard`
 - registers the tray app to start at sign-in for the current user
-- launches the app minimized to the tray unless you opt out with `-DoNotLaunchApp`
+- attempts to launch the app minimized to the tray unless you opt out with `-DoNotLaunchApp`
 
 Install it from the same signed-in Windows account that should see the tray icon at sign-in. The startup registration is written to that user's `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` key.
+
+If Windows blocks the immediate app launch, the install still succeeds. You can launch `C:\Program Files\SessionGuard\SessionGuard.App.exe` manually from your normal desktop session or wait for the next sign-in.
 
 For full install, uninstall, and source-run instructions, use [Getting Started](docs/getting-started.md).
 

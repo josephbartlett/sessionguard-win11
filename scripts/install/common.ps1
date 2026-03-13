@@ -79,6 +79,85 @@ function Register-SessionGuardAppStartup {
     return $command
 }
 
+function Join-SessionGuardCommandArguments {
+    param(
+        [string[]]$Arguments
+    )
+
+    if ($null -eq $Arguments -or $Arguments.Count -eq 0) {
+        return ""
+    }
+
+    return ($Arguments | ForEach-Object {
+        if ([string]::IsNullOrWhiteSpace($_)) {
+            '""'
+        }
+        elseif ($_ -match '[\s"]') {
+            '"' + ($_ -replace '"', '\"') + '"'
+        }
+        else {
+            $_
+        }
+    }) -join ' '
+}
+
+function Start-SessionGuardInstalledApp {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$AppExecutable,
+
+        [string[]]$Arguments = @("--start-minimized")
+    )
+
+    if (-not (Test-Path $AppExecutable)) {
+        return [pscustomobject]@{
+            Attempted = $false
+            Succeeded = $false
+            Method = "none"
+            Warning = "SessionGuard installed successfully, but the app executable was not found at '$AppExecutable'. Launch it manually after install."
+        }
+    }
+
+    $workingDirectory = Split-Path -Parent $AppExecutable
+    $argumentString = Join-SessionGuardCommandArguments -Arguments $Arguments
+
+    try {
+        $shell = New-Object -ComObject Shell.Application -ErrorAction Stop
+        try {
+            # Launch through the interactive shell first so the tray app starts in the signed-in user's desktop session.
+            $shell.ShellExecute($AppExecutable, $argumentString, $workingDirectory, "open", 2)
+            return [pscustomobject]@{
+                Attempted = $true
+                Succeeded = $true
+                Method = "shell"
+                Warning = ""
+            }
+        }
+        finally {
+            [System.Runtime.InteropServices.Marshal]::ReleaseComObject($shell) | Out-Null
+        }
+    }
+    catch {
+        try {
+            Start-Process -FilePath $AppExecutable -ArgumentList $Arguments -WindowStyle Minimized -WorkingDirectory $workingDirectory -ErrorAction Stop | Out-Null
+            return [pscustomobject]@{
+                Attempted = $true
+                Succeeded = $true
+                Method = "process"
+                Warning = ""
+            }
+        }
+        catch {
+            return [pscustomobject]@{
+                Attempted = $true
+                Succeeded = $false
+                Method = "failed"
+                Warning = "SessionGuard installed successfully, but the tray app could not be launched automatically. Launch '$AppExecutable' manually from your normal desktop session or wait for the next sign-in. Windows reported: $($_.Exception.Message)"
+            }
+        }
+    }
+}
+
 function Unregister-SessionGuardAppStartup {
     $registryPath = Get-SessionGuardStartupRegistryPath
     if (-not (Test-Path $registryPath)) {
