@@ -254,6 +254,49 @@ public sealed class ServiceScriptTests
         Assert.Equal(elevated, root.GetProperty("CanInstallNow").GetBoolean());
     }
 
+    [Fact]
+    public async Task PublishCombinedBundle_WritesInstallFocusedReadmeAndRuntimeNeutralManifests()
+    {
+        var repoRoot = GetRepositoryRoot();
+        var outputRoot = Path.Combine(Path.GetTempPath(), "SessionGuard.Tests", Guid.NewGuid().ToString("N"));
+        var scriptPath = Path.Combine(repoRoot, "scripts", "install", "Publish-SessionGuardBundle.ps1");
+        var result = await RunPowerShellScriptAsync(
+            scriptPath,
+            "-Configuration",
+            "Release",
+            "-Runtime",
+            "win-x64",
+            "-OutputDir",
+            outputRoot);
+
+        Assert.True(result.ExitCode == 0, $"PowerShell exited with {result.ExitCode}. stderr: {result.StandardError}");
+
+        var bundleReadmePath = Path.Combine(outputRoot, "README.md");
+        Assert.True(File.Exists(bundleReadmePath));
+        var bundleReadme = File.ReadAllText(bundleReadmePath);
+        Assert.Contains("Install-SessionGuard.ps1", bundleReadme, StringComparison.Ordinal);
+        Assert.DoesNotContain("docs/", bundleReadme, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("dotnet build SessionGuard.sln", bundleReadme, StringComparison.OrdinalIgnoreCase);
+
+        using var appManifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(outputRoot, "app-manifest.json")));
+        Assert.False(appManifest.RootElement.TryGetProperty("AppExecutable", out _));
+        Assert.False(appManifest.RootElement.TryGetProperty("ConfigDirectory", out _));
+        Assert.True(appManifest.RootElement.TryGetProperty("StartupArguments", out _));
+
+        using var serviceManifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(outputRoot, "install-manifest.json")));
+        Assert.False(serviceManifest.RootElement.TryGetProperty("PublishRoot", out _));
+        Assert.False(serviceManifest.RootElement.TryGetProperty("ServiceExecutable", out _));
+        Assert.False(serviceManifest.RootElement.TryGetProperty("Validation", out _));
+        Assert.True(serviceManifest.RootElement.TryGetProperty("IncludedConfigFiles", out _));
+
+        using var bundleManifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(outputRoot, "bundle-manifest.json")));
+        Assert.False(bundleManifest.RootElement.TryGetProperty("BundleRoot", out _));
+        Assert.False(bundleManifest.RootElement.TryGetProperty("AppExecutable", out _));
+        Assert.False(bundleManifest.RootElement.TryGetProperty("ServiceExecutable", out _));
+        Assert.False(bundleManifest.RootElement.TryGetProperty("InstallScript", out _));
+        Assert.True(bundleManifest.RootElement.TryGetProperty("IncludedComponents", out _));
+    }
+
     private static string GetBuiltServiceOutputRoot(string repoRoot)
     {
         var currentConfiguration = new DirectoryInfo(AppContext.BaseDirectory).Parent?.Parent?.Name;

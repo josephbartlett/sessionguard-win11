@@ -23,7 +23,7 @@ It is designed for people who keep live work open for long stretches of time: te
 
 - Windows 11
 - .NET 9 SDK for source builds and local `dotnet run`
-- administrative rights only when you need to install or update the service, or when you want the app to request service-owned mitigation or approval changes
+- administrative rights only when you need to install or update the service, or when you want the app to request service-owned guard-mode, mitigation, or approval changes
 
 ## Quick Start
 
@@ -67,7 +67,7 @@ In another:
 dotnet run --project src/SessionGuard.App/SessionGuard.App.csproj
 ```
 
-When this path is active, the app should report `Control plane: Service`. Monitoring stays available in a normal user session, but mitigation and approval changes still require running `SessionGuard.App.exe` as administrator.
+When this path is active, the app should report `Control plane: Service`. Monitoring stays available in a normal user session, but guard-mode, mitigation, and approval changes still require running `SessionGuard.App.exe` as administrator.
 
 ### Install the background service
 
@@ -176,7 +176,7 @@ Published service layouts preserve live runtime config under `config/` and shipp
 
 - non-elevated mode supports monitoring, scanning, config changes, logs, and dashboard status
 - mitigation apply or reset actions require elevation because they write under `HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate`
-- restart approval changes are also service-owned and require an elevated app session when connected to the service
+- guard-mode changes, restart approval changes, and mitigation writes are service-owned and require an elevated app session when connected to the service
 - if the app falls back locally, mitigation and approval actions become read-only on purpose
 
 ## Logs and State

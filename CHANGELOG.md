@@ -4,6 +4,11 @@ All notable changes to this project should be recorded here in reverse chronolog
 
 ## Unreleased
 
+- Tightened the service boundary so guard-mode changes now require the same elevated service-backed path as mitigation and approval writes.
+- Removed machine-specific executable and directory paths from published app, service, and bundle manifests.
+- Fixed combined install auto-launch so unrelated `SessionGuard.App` processes no longer suppress the installed tray app launch.
+- Replaced the bundled root README with an install-focused package guide instead of the full source-repo README.
+
 ## 1.0.3 - 2026-03-13
 
 - Hardened the service pipe so service-backed mitigation and approval changes now require an authorized administrative caller instead of trusting raw pipe connectivity alone.

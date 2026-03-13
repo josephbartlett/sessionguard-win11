@@ -22,6 +22,7 @@ $servicePublishScript = Join-Path $PSScriptRoot "..\\service\\Publish-SessionGua
 $bundleManifestPath = Join-Path $OutputDir "bundle-manifest.json"
 $appExe = Join-Path $OutputDir "SessionGuard.App.exe"
 $serviceExe = Join-Path $OutputDir "SessionGuard.Service.exe"
+$bundleReadmePath = Join-Path $OutputDir "README.md"
 
 $publishParameters = @{
     Configuration = $Configuration
@@ -53,7 +54,51 @@ New-Item -ItemType Directory -Path $scriptsRoot -Force | Out-Null
 Copy-Item (Join-Path $repoRoot "scripts\\install") -Destination $scriptsRoot -Recurse -Force
 Copy-Item (Join-Path $repoRoot "scripts\\service") -Destination $scriptsRoot -Recurse -Force
 Copy-Item (Join-Path $repoRoot "LICENSE") -Destination (Join-Path $OutputDir "LICENSE") -Force
-Copy-Item (Join-Path $repoRoot "README.md") -Destination (Join-Path $OutputDir "README.md") -Force
+
+$bundleReadme = @'
+# SessionGuard
+
+This package contains the full SessionGuard runtime for one-machine installation on Windows 11.
+
+## What is in this folder
+
+- `SessionGuard.App.exe`: tray icon and dashboard
+- `SessionGuard.Service.exe`: background engine
+- `Install-SessionGuard.ps1`: installs both pieces in the intended way
+- `Uninstall-SessionGuard.ps1`: removes the combined install
+
+## Recommended install
+
+Run this from an elevated PowerShell session:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\Install-SessionGuard.ps1
+```
+
+That installs SessionGuard to `C:\Program Files\SessionGuard`, installs the Windows Service, registers the app to start at sign-in for the current user, and launches the app minimized to the tray unless you opt out.
+
+Install it from the same Windows account that should see the tray icon at sign-in.
+
+## How SessionGuard runs
+
+- `SessionGuard.Service.exe` is the background engine and auto-starts with Windows when installed.
+- `SessionGuard.App.exe` owns the tray icon and dashboard window.
+- The tray icon belongs to the app, not the service.
+
+## Uninstall
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\Uninstall-SessionGuard.ps1 -RemoveFiles
+```
+
+## Notes
+
+- SessionGuard does not disable Windows Update.
+- SessionGuard reduces restart disruption but does not guarantee prevention of every Windows restart path.
+- To change service-backed guard mode, mitigation, or approval state, run `SessionGuard.App.exe` as administrator.
+'@
+
+Set-Content -Path $bundleReadmePath -Value $bundleReadme -Encoding ASCII
 
 $bundleInstallScript = @'
 [CmdletBinding(SupportsShouldProcess = $true)]
@@ -104,12 +149,15 @@ $bundleManifest = [ordered]@{
     PublishConfiguration = $Configuration
     Runtime = $Runtime
     SelfContained = $SelfContained.IsPresent
-    BundleRoot = $OutputDir
-    AppExecutable = $appExe
-    ServiceExecutable = $serviceExe
-    StartupCommand = Get-SessionGuardAppStartupCommand -AppExecutable $appExe
-    InstallScript = (Join-Path $OutputDir "Install-SessionGuard.ps1")
-    UninstallScript = (Join-Path $OutputDir "Uninstall-SessionGuard.ps1")
+    StartupArguments = @("--start-minimized")
+    IncludedComponents = @(
+        "SessionGuard.App.exe",
+        "SessionGuard.Service.exe",
+        "Install-SessionGuard.ps1",
+        "Uninstall-SessionGuard.ps1",
+        "scripts/install",
+        "scripts/service"
+    )
 }
 
 $bundleManifest | ConvertTo-Json -Depth 4 | Set-Content -Path $bundleManifestPath -Encoding UTF8

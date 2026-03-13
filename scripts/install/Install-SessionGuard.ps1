@@ -217,13 +217,25 @@ if ($PSCmdlet.ShouldProcess($InstallRoot, "Install combined SessionGuard runtime
     Write-Host "Registered SessionGuard app startup: $registeredCommand"
 
     if (-not $DoNotLaunchApp) {
-        $existingApp = Get-Process -Name "SessionGuard.App" -ErrorAction SilentlyContinue
-        if ($null -eq $existingApp) {
+        $existingInstalledApps = @(
+            Get-Process -Name "SessionGuard.App" -ErrorAction SilentlyContinue |
+            Where-Object {
+                try {
+                    -not [string]::IsNullOrWhiteSpace($_.Path) -and
+                    (Test-SessionGuardPathMatch -Left $_.Path -Right $installedAppExe)
+                }
+                catch {
+                    $false
+                }
+            }
+        )
+
+        if ($existingInstalledApps.Count -eq 0) {
             Start-Process -FilePath $installedAppExe -ArgumentList "--start-minimized" -WindowStyle Minimized
             Write-Host "Launched SessionGuard app minimized to tray."
         }
         else {
-            Write-Host "SessionGuard app is already running; skipped auto-launch."
+            Write-Host "The installed SessionGuard app is already running; skipped auto-launch."
         }
     }
 }

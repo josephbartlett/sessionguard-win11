@@ -81,5 +81,5 @@ Migration path:
 2. move service-only privileged writes behind installable service lifecycle management
 3. split the current WPF dashboard from a lighter always-on tray entry point if that improves operator experience
 4. add service installation, health checks, startup policy, and upgrade-safe persisted state
-   - this is now partially addressed through `install-manifest.json`, runtime self-validation, and publish-time preservation of `config/`, `logs/`, and `state/`
+   - this is now partially addressed through `install-manifest.json`, runtime self-validation, and publish-time preservation of `config/`
 5. evolve the current advisory workspace snapshot into richer recovery-aware metadata without overstating what can actually be restored

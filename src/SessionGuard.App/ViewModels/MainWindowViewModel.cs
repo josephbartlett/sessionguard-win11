@@ -44,6 +44,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private bool _guardModeInitialized;
     private bool _recommendedActionVisible;
     private bool _serviceWriteActionsAvailable;
+    private bool _guardModeControlAvailable = true;
     private bool _showApplyMitigationsAction;
     private bool _showClearApprovalAction;
     private bool _showGrantApprovalAction;
@@ -267,6 +268,12 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
                 _clearRestartApprovalCommand.RaiseCanExecuteChanged();
             }
         }
+    }
+
+    public bool GuardModeControlAvailable
+    {
+        get => _guardModeControlAvailable;
+        private set => SetProperty(ref _guardModeControlAvailable, value);
     }
 
     public bool ShouldStartMinimized
@@ -645,66 +652,79 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         catch (Exception exception)
         {
             _logger.Error("view.refresh.failed", exception);
-            CurrentStatusText = "Unknown / Limited Visibility";
-            FriendlyStatusHeadline = "SessionGuard could not refresh right now.";
-            FriendlyStatusBody = "Monitoring data is temporarily unavailable, so the dashboard is showing a safe failure state instead of stale information.";
-            ActiveWorkSummaryText = "Active work: unavailable while the latest scan is failing.";
-            ServiceModeSummaryText = "Service mode: unavailable until the service or local scan path recovers.";
-            FriendlyReasonHeadline = "The latest scan failed.";
-            FriendlyReasonBody = "SessionGuard could not read restart, workspace, or policy state. Review the logs and configuration before trusting the current machine state.";
-            FriendlyProtectionSummary = "Restart protection actions are unavailable until SessionGuard reconnects.";
-            _recommendedActionKind = RecommendedActionKind.ScanNow;
-            RecommendedActionHeadline = "Retry after checking the service and config.";
-            RecommendedActionDescription = "SessionGuard could not complete the latest scan.";
-            RecommendedActionButtonText = "Scan now";
-            RecommendedActionVisible = true;
-            RecommendedActionSupportText = "If the failure repeats, open the logs and configuration paths below before retrying.";
-            RestartRiskText = "Unknown";
-            ProtectionModeText = "Unavailable";
-            PendingRestartText = "Scan failed";
-            AdminAccessText = "Unavailable";
-            LastScanText = $"Last scan failed at {DateTime.Now:t}";
-            StatusSummary = "SessionGuard could not complete the scan. Review the configuration files and logs for details.";
-            SignalOverviewText = "Signal overview unavailable.";
-            ProviderCoverageText = "Providers: scan failed";
-            ConnectionModeText = "Control plane: unavailable";
-            PolicyDecisionText = "Policy engine: unavailable";
-            PolicySummaryText = "Policy summary unavailable.";
-            PolicyApprovalText = "Policy approval unavailable.";
-            PolicyDiagnosticsText = "Policy config unavailable.";
-            PolicyTimingText = "Policy timing unavailable.";
-            ServiceWriteActionsAvailable = false;
-            ShowGrantApprovalAction = false;
-            ShowClearApprovalAction = false;
-            ShowApplyMitigationsAction = false;
-            ShowResetMitigationsAction = false;
-            ServiceActionAvailabilityText = "Managed actions: unavailable because the background service is unreachable.";
-            ProtectedProcessSummary = "Protected apps: unavailable.";
-            WorkspaceSummaryText = "Workspace safety detection unavailable.";
-            WorkspaceConfidenceText = "Workspace confidence: unavailable";
-            WorkspaceSnapshotText = "Workspace snapshot: unavailable";
-            TrayTooltipText = "SessionGuard - Unavailable";
-            TrayStatusText = "Status: unavailable";
-            TrayModeText = "Mode: unavailable";
-            TrayPolicyText = "Policy: unavailable";
-            TrayTimingText = "Timing: unavailable";
-            LastActionMessage = $"Scan failed: {exception.Message}";
-            StatusBrush = CreateBrush("#64748B");
-            RiskBrush = CreateBrush("#64748B");
-            ReplaceItems(ProtectedProcesses, Array.Empty<ProtectedProcessMatch>());
-            ReplaceItems(MatchedPolicyRules, Array.Empty<PolicyRuleMatch>());
-            ReplaceItems(PolicyValidationIssues, Array.Empty<PolicyValidationIssue>());
-            ReplaceItems(PolicyEvaluationTraceItems, Array.Empty<string>());
-            ReplaceItems(WorkspaceRiskItems, Array.Empty<WorkspaceRiskItem>());
-            ReplaceItems(RestartIndicators, Array.Empty<RestartIndicator>());
-            ReplaceItems(ManagedMitigations, Array.Empty<ManagedMitigationState>());
-            ReplaceItems(
-                Recommendations,
-                new[]
-                {
-                    "Verify that the service is running or that config/appsettings.json and config/protected-processes.json are still valid.",
-                    "Review the latest log file for the underlying exception before retrying."
-                });
+            if (explicitGuardMode.HasValue && exception is UnauthorizedAccessException)
+            {
+                _suppressGuardModeRefresh = true;
+                GuardModeEnabled = !explicitGuardMode.Value;
+                _suppressGuardModeRefresh = false;
+                LastActionMessage = exception.Message;
+                FriendlyProtectionSummary = "Guard mode changes require an elevated app session while the background service is connected.";
+                RecommendedActionSupportText = "Reopen SessionGuard.App as administrator if you want to change guard mode while using the service-backed path.";
+            }
+            else
+            {
+                CurrentStatusText = "Unknown / Limited Visibility";
+                FriendlyStatusHeadline = "SessionGuard could not refresh right now.";
+                FriendlyStatusBody = "Monitoring data is temporarily unavailable, so the dashboard is showing a safe failure state instead of stale information.";
+                ActiveWorkSummaryText = "Active work: unavailable while the latest scan is failing.";
+                ServiceModeSummaryText = "Service mode: unavailable until the service or local scan path recovers.";
+                FriendlyReasonHeadline = "The latest scan failed.";
+                FriendlyReasonBody = "SessionGuard could not read restart, workspace, or policy state. Review the logs and configuration before trusting the current machine state.";
+                FriendlyProtectionSummary = "Restart protection actions are unavailable until SessionGuard reconnects.";
+                _recommendedActionKind = RecommendedActionKind.ScanNow;
+                RecommendedActionHeadline = "Retry after checking the service and config.";
+                RecommendedActionDescription = "SessionGuard could not complete the latest scan.";
+                RecommendedActionButtonText = "Scan now";
+                RecommendedActionVisible = true;
+                RecommendedActionSupportText = "If the failure repeats, open the logs and configuration paths below before retrying.";
+                RestartRiskText = "Unknown";
+                ProtectionModeText = "Unavailable";
+                PendingRestartText = "Scan failed";
+                AdminAccessText = "Unavailable";
+                LastScanText = $"Last scan failed at {DateTime.Now:t}";
+                StatusSummary = "SessionGuard could not complete the scan. Review the configuration files and logs for details.";
+                SignalOverviewText = "Signal overview unavailable.";
+                ProviderCoverageText = "Providers: scan failed";
+                ConnectionModeText = "Control plane: unavailable";
+                PolicyDecisionText = "Policy engine: unavailable";
+                PolicySummaryText = "Policy summary unavailable.";
+                PolicyApprovalText = "Policy approval unavailable.";
+                PolicyDiagnosticsText = "Policy config unavailable.";
+                PolicyTimingText = "Policy timing unavailable.";
+                ServiceWriteActionsAvailable = false;
+                GuardModeControlAvailable = true;
+                ShowGrantApprovalAction = false;
+                ShowClearApprovalAction = false;
+                ShowApplyMitigationsAction = false;
+                ShowResetMitigationsAction = false;
+                ServiceActionAvailabilityText = "Managed actions: unavailable because the background service is unreachable.";
+                ProtectedProcessSummary = "Protected apps: unavailable.";
+                WorkspaceSummaryText = "Workspace safety detection unavailable.";
+                WorkspaceConfidenceText = "Workspace confidence: unavailable";
+                WorkspaceSnapshotText = "Workspace snapshot: unavailable";
+                TrayTooltipText = "SessionGuard - Unavailable";
+                TrayStatusText = "Status: unavailable";
+                TrayModeText = "Mode: unavailable";
+                TrayPolicyText = "Policy: unavailable";
+                TrayTimingText = "Timing: unavailable";
+                LastActionMessage = $"Scan failed: {exception.Message}";
+                StatusBrush = CreateBrush("#64748B");
+                RiskBrush = CreateBrush("#64748B");
+                ReplaceItems(ProtectedProcesses, Array.Empty<ProtectedProcessMatch>());
+                ReplaceItems(MatchedPolicyRules, Array.Empty<PolicyRuleMatch>());
+                ReplaceItems(PolicyValidationIssues, Array.Empty<PolicyValidationIssue>());
+                ReplaceItems(PolicyEvaluationTraceItems, Array.Empty<string>());
+                ReplaceItems(WorkspaceRiskItems, Array.Empty<WorkspaceRiskItem>());
+                ReplaceItems(RestartIndicators, Array.Empty<RestartIndicator>());
+                ReplaceItems(ManagedMitigations, Array.Empty<ManagedMitigationState>());
+                ReplaceItems(
+                    Recommendations,
+                    new[]
+                    {
+                        "Verify that the service is running or that config/appsettings.json and config/protected-processes.json are still valid.",
+                        "Review the latest log file for the underlying exception before retrying."
+                    });
+            }
         }
         finally
         {
@@ -878,10 +898,11 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             ? "Control plane: Service (background service is authoritative)"
             : "Control plane: Local fallback (the dashboard is scanning in-process because the service is unavailable)";
         ServiceWriteActionsAvailable = status.CanPerformServiceWrites;
+        GuardModeControlAvailable = !status.IsRemote || status.CanPerformServiceWrites;
         ServiceActionAvailabilityText = status.CanPerformServiceWrites
             ? "Managed actions: service-backed mitigation and approval changes are available."
             : status.IsRemote
-                ? "Managed actions: the service is connected, but this app session is not elevated. Run SessionGuard.App as administrator to change protections or approval state."
+                ? "Managed actions: the service is connected, but this app session is not elevated. Run SessionGuard.App as administrator to change guard mode, protections, or approval state."
                 : "Managed actions: mitigation and approval changes are disabled in local fallback until the background service reconnects.";
         PolicyDecisionText = result.Policy.Validation.HasErrors
             ? "Policy decision: Unavailable due to configuration errors"

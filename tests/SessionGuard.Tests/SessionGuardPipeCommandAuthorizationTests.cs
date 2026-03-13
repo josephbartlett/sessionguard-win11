@@ -6,18 +6,22 @@ namespace SessionGuard.Tests;
 public sealed class SessionGuardPipeCommandAuthorizationTests
 {
     [Theory]
-    [InlineData(SessionControlCommandType.Ping, false)]
-    [InlineData(SessionControlCommandType.GetStatus, false)]
-    [InlineData(SessionControlCommandType.ScanNow, false)]
-    [InlineData(SessionControlCommandType.SetGuardMode, false)]
-    [InlineData(SessionControlCommandType.ApplyMitigations, true)]
-    [InlineData(SessionControlCommandType.ResetMitigations, true)]
-    [InlineData(SessionControlCommandType.GrantRestartApproval, true)]
-    [InlineData(SessionControlCommandType.ClearRestartApproval, true)]
-    public void RequiresAdministrativeAccess_MatchesCommandRisk(
-        SessionControlCommandType commandType,
-        bool expected)
+    [InlineData(SessionControlCommandType.SetGuardMode)]
+    [InlineData(SessionControlCommandType.ApplyMitigations)]
+    [InlineData(SessionControlCommandType.ResetMitigations)]
+    [InlineData(SessionControlCommandType.GrantRestartApproval)]
+    [InlineData(SessionControlCommandType.ClearRestartApproval)]
+    public void RequiresAdministrativeAccess_ReturnsTrueForPrivilegedCommands(SessionControlCommandType commandType)
     {
-        Assert.Equal(expected, SessionGuardPipeCommandAuthorization.RequiresAdministrativeAccess(commandType));
+        Assert.True(SessionGuardPipeCommandAuthorization.RequiresAdministrativeAccess(commandType));
+    }
+
+    [Theory]
+    [InlineData(SessionControlCommandType.Ping)]
+    [InlineData(SessionControlCommandType.GetStatus)]
+    [InlineData(SessionControlCommandType.ScanNow)]
+    public void RequiresAdministrativeAccess_ReturnsFalseForReadOnlyCommands(SessionControlCommandType commandType)
+    {
+        Assert.False(SessionGuardPipeCommandAuthorization.RequiresAdministrativeAccess(commandType));
     }
 }

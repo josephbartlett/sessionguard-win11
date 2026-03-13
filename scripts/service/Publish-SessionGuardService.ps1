@@ -141,14 +141,15 @@ try {
         PublishConfiguration = $Configuration
         Runtime = $Runtime
         SelfContained = $SelfContained.IsPresent
-        PublishRoot = $OutputDir
-        ServiceExecutable = $serviceExe
-        ConfigDirectory = $validation.Report.ConfigDirectory
-        ConfigDefaultsDirectory = $validation.Report.ConfigDefaultsDirectory
-        LogDirectory = $validation.Report.LogDirectory
-        StateDirectory = $validation.Report.StateDirectory
-        ConfigUpgrade = $upgrade.Report
-        Validation = $validation.Report
+        IncludedConfigFiles = @(
+            "config/appsettings.json",
+            "config/protected-processes.json",
+            "config/policies.json",
+            "config.defaults/appsettings.json",
+            "config.defaults/protected-processes.json",
+            "config.defaults/policies.json"
+        )
+        RequiresConfigUpgrade = $upgrade.Report.UpgradedAnyFiles
     }
 
     $manifest | ConvertTo-Json -Depth 8 | Set-Content -Path $manifestPath -Encoding UTF8

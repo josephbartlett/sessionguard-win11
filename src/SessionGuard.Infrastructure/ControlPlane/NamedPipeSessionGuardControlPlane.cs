@@ -68,6 +68,11 @@ public sealed class NamedPipeSessionGuardControlPlane : ISessionGuardControlPlan
         CancellationToken cancellationToken)
     {
         var response = await SendAsync(request, cancellationToken);
+        if (!response.Success && response.Status is not null)
+        {
+            throw new UnauthorizedAccessException(response.Message);
+        }
+
         if (!response.Success || response.Status is null)
         {
             throw new InvalidOperationException(response.Message);

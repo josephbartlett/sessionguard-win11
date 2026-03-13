@@ -58,6 +58,8 @@ public sealed class SessionGuardPipeServer : BackgroundService
         CancellationToken cancellationToken)
     {
         var callerCanPerformServiceWrites = IsCallerAuthorizedForPrivilegedCommands(server);
+        var unauthorizedGuardModeMessage =
+            "Guard mode changes require running SessionGuard.App as administrator while connected to the service.";
 
         return request.CommandType switch
         {
@@ -76,10 +78,17 @@ public sealed class SessionGuardPipeServer : BackgroundService
                 {
                     CanPerformServiceWrites = callerCanPerformServiceWrites
                 }),
-            SessionControlCommandType.SetGuardMode when request.GuardModeEnabled.HasValue => new SessionControlResponse(
+            SessionControlCommandType.SetGuardMode when request.GuardModeEnabled.HasValue && callerCanPerformServiceWrites => new SessionControlResponse(
                 true,
                 $"Guard mode set to {request.GuardModeEnabled.Value}.",
                 Status: (await _runtime.SetGuardModeAsync(request.GuardModeEnabled.Value, cancellationToken)) with
+                {
+                    CanPerformServiceWrites = callerCanPerformServiceWrites
+                }),
+            SessionControlCommandType.SetGuardMode when request.GuardModeEnabled.HasValue => new SessionControlResponse(
+                false,
+                unauthorizedGuardModeMessage,
+                Status: (await _runtime.GetStatusAsync(cancellationToken)) with
                 {
                     CanPerformServiceWrites = callerCanPerformServiceWrites
                 }),

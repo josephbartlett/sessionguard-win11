@@ -6,7 +6,8 @@ public static class SessionGuardPipeCommandAuthorization
 {
     public static bool RequiresAdministrativeAccess(SessionControlCommandType commandType)
     {
-        return commandType is SessionControlCommandType.ApplyMitigations or
+        return commandType is SessionControlCommandType.SetGuardMode or
+               SessionControlCommandType.ApplyMitigations or
                SessionControlCommandType.ResetMitigations or
                SessionControlCommandType.GrantRestartApproval or
                SessionControlCommandType.ClearRestartApproval;

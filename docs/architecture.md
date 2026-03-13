@@ -164,7 +164,7 @@ Before writing managed values, the infrastructure layer captures previous values
 
 The log and state folders are intentionally excluded from source control.
 
-Published service layouts now also include `install-manifest.json` with version, protocol, path, and validation metadata so install scripts can verify they are starting the expected runtime.
+Published service layouts now also include `install-manifest.json` with version and protocol metadata so install scripts can verify they are starting the expected runtime without depending on machine-specific build paths.
 
 The config-upgrade path is intentionally bounded:
 

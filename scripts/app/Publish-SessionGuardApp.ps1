@@ -133,11 +133,15 @@ try {
         PublishConfiguration = $Configuration
         Runtime = $Runtime
         SelfContained = $SelfContained.IsPresent
-        AppExecutable = $appExe
-        ConfigDirectory = $runtimeConfigDestination
-        ConfigDefaultsDirectory = $defaultsDestination
-        LogDirectory = $logDirectory
-        StateDirectory = $stateDirectory
+        StartupArguments = @("--start-minimized")
+        IncludedConfigFiles = @(
+            "config/appsettings.json",
+            "config/protected-processes.json",
+            "config/policies.json",
+            "config.defaults/appsettings.json",
+            "config.defaults/protected-processes.json",
+            "config.defaults/policies.json"
+        )
     }
 
     $manifest | ConvertTo-Json -Depth 4 | Set-Content -Path $manifestPath -Encoding UTF8

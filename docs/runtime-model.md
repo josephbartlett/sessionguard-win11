@@ -37,7 +37,7 @@ It does **not**:
 
 - install the service automatically just by being launched
 - replace the service for service-owned write actions
-- request service-owned mitigation or approval changes unless the app itself is running as administrator
+- request service-owned guard-mode, mitigation, or approval changes unless the app itself is running as administrator
 
 ## Why both exist
 
