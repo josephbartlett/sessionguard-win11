@@ -2,7 +2,7 @@
 
 All notable changes to this project should be recorded here in reverse chronological order.
 
-## Unreleased
+## 1.1.1 - 2026-03-13
 
 - Fixed single-instance app scoping so installed, source-run, and elevated SessionGuard app sessions no longer collide with each other unexpectedly.
 - Clarified the elevated-action operator path and combined-install opt-out switches across the repo and generated bundle README.
