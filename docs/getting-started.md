@@ -8,13 +8,7 @@ This guide is the fastest way to get SessionGuard running locally and understand
 - .NET 9 SDK for source builds
 - administrative rights only for service installation, service update, and service-backed guard-mode, mitigation, or approval changes
 
-## 1. Build the solution
-
-```powershell
-dotnet build SessionGuard.sln
-```
-
-## 2. Install from a downloaded setup zip
+## 1. Install from a downloaded setup zip
 
 If you downloaded `sessionguard-win11-setup-<version>-win-x64.zip` instead of cloning the repo, extract it and run:
 
@@ -36,6 +30,12 @@ Useful install switches:
 - `-DoNotLaunchApp`: install without opening the tray app right away
 - `-DoNotStartService`: install without starting the Windows Service yet
 - `-ValidateOnly -AsJson`: check readiness without changing the machine
+
+## 2. Build the solution
+
+```powershell
+dotnet build SessionGuard.sln
+```
 
 ## 3. Try the desktop app without installing anything
 
@@ -107,52 +107,6 @@ powershell -ExecutionPolicy Bypass -File scripts/service/Update-SessionGuardServ
 powershell -ExecutionPolicy Bypass -File scripts/service/Uninstall-SessionGuardService.ps1
 ```
 
-## 6. Publish a desktop executable
-
-If you want the app as a local distributable folder:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/app/Publish-SessionGuardApp.ps1
-```
-
-Output:
-
-- `artifacts\publish\SessionGuard.App\SessionGuard.App.exe`
-
-If you want app, service, and source zip assets together:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/release/Publish-SessionGuardReleaseAssets.ps1 -SelfContained
-```
-
-Output:
-
-- `artifacts\releases\<version>\sessionguard-win11-setup-<version>-win-x64.zip`
-- `artifacts\releases\<version>\sessionguard-win11-app-<version>-win-x64.zip`
-- `artifacts\releases\<version>\sessionguard-win11-service-<version>-win-x64.zip`
-- `artifacts\releases\<version>\sessionguard-win11-source-<version>.zip`
-
-The preferred end-user asset is the setup zip because it includes both runtimes plus the top-level install and uninstall scripts.
-
-## 7. Trigger the GitHub release flow
-
-The repo now supports tag-driven binary publishing.
-
-Requirements:
-
-- the tag must match [`Directory.Build.props`](../Directory.Build.props)
-- the matching release notes file must exist under [`docs/releases`](releases)
-
-Example:
-
-```powershell
-git tag -a v1.1.1 -m "SessionGuard 1.1.1"
-git push origin main
-git push origin v1.1.1
-```
-
-The release workflow will validate the build, publish binaries, and attach the versioned zip assets to the GitHub Release.
-
 ## Common Issues
 
 ### The app says `Control plane: Local fallback`
@@ -183,5 +137,6 @@ If [`config/policies.json`](../config/policies.json) is malformed or conflicting
 
 - [Runtime model](runtime-model.md)
 - [Manual validation checklist](manual-validation.md)
+- [Development and release guide](development.md)
 - [Architecture](architecture.md)
 - [Limitations](limitations.md)
