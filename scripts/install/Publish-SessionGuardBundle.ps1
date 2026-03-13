@@ -75,7 +75,7 @@ Run this from an elevated PowerShell session:
 powershell -ExecutionPolicy Bypass -File .\Install-SessionGuard.ps1
 ```
 
-That installs SessionGuard to `C:\Program Files\SessionGuard`, installs the Windows Service, registers the app to start at sign-in for the current user, and launches the app minimized to the tray unless you opt out.
+That installs SessionGuard to `C:\Program Files\SessionGuard`, installs the Windows Service, registers the app to start at sign-in for the current user, and launches the app minimized to the tray unless you opt out with `-DoNotLaunchApp`.
 
 Install it from the same Windows account that should see the tray icon at sign-in.
 
@@ -84,7 +84,8 @@ Install it from the same Windows account that should see the tray icon at sign-i
 - `SessionGuard.Service.exe` is the background engine and auto-starts with Windows when installed.
 - `SessionGuard.App.exe` owns the tray icon and opens the dashboard on demand.
 - The tray icon belongs to the app, not the service.
-- Launching `SessionGuard.App.exe` again reuses the already-running tray app instead of starting a second copy.
+- Launching the same installed `SessionGuard.App.exe` again at the same privilege level reuses the already-running tray app instead of starting a second copy.
+- Launching `SessionGuard.App.exe` as administrator starts a separate elevated SessionGuard session when you need service-owned write access.
 
 ## Uninstall
 
@@ -97,6 +98,7 @@ powershell -ExecutionPolicy Bypass -File .\Uninstall-SessionGuard.ps1 -RemoveFil
 - SessionGuard does not disable Windows Update.
 - SessionGuard reduces restart disruption but does not guarantee prevention of every Windows restart path.
 - To change service-backed guard mode, mitigation, or approval state, run `SessionGuard.App.exe` as administrator.
+- Installer switches: `-DoNotLaunchApp`, `-DoNotStartService`, and `-ValidateOnly -AsJson`.
 '@
 
 Set-Content -Path $bundleReadmePath -Value $bundleReadme -Encoding ASCII

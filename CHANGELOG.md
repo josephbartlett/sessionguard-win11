@@ -2,6 +2,13 @@
 
 All notable changes to this project should be recorded here in reverse chronological order.
 
+## Unreleased
+
+- Fixed single-instance app scoping so installed, source-run, and elevated SessionGuard app sessions no longer collide with each other unexpectedly.
+- Clarified the elevated-action operator path and combined-install opt-out switches across the repo and generated bundle README.
+- Renamed the preferred public release asset to the setup zip and aligned release upload ordering and docs around that end-user path.
+- Updated service-script tests so bundled manifest fixtures use the current product version instead of stale `1.0.4` values.
+
 ## 1.1.0 - 2026-03-13
 
 - Reworked the desktop shell into a more deliberate tray-first flow with simpler header actions, clearer tray summaries, and a contextual primary tray action.

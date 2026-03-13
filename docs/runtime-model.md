@@ -80,6 +80,7 @@ What you get:
 - the dashboard and tray icon from the app
 - background scanning from the service
 - service-backed write actions only when the app is running as administrator
+- an elevated app launch runs as a separate elevated SessionGuard session so it can request those write actions without replacing the standard tray app
 
 The UI should report `Control plane: Service`.
 
@@ -92,7 +93,7 @@ What happens:
 - the service is installed as a Windows Service with delayed auto-start
 - the app is registered to start at user sign-in with `--start-minimized`
 - the app launches quietly to the tray for the installing user
-- launching the app again reuses the running tray app instead of starting a second copy
+- launching the same installed app again at the same privilege level reuses the running tray app instead of starting a second copy
 
 This is the intended always-on operator setup.
 
@@ -123,12 +124,13 @@ The service never owns the tray icon. That is the correct Windows model.
 
 - sign-in startup launches the app to the tray
 - closing the dashboard keeps SessionGuard running in the tray
-- launching `SessionGuard.App.exe` again brings the existing app forward instead of starting a second copy
+- launching the same installed `SessionGuard.App.exe` again at the same privilege level brings the existing app forward instead of starting a second copy
+- launching `SessionGuard.App.exe` as administrator starts a separate elevated SessionGuard session when you need service-owned write access
 - the tray menu is meant to be the quick daily workflow
 
 ## Distribution shape
 
-The recommended end-user distribution is a **single combined bundle** that contains:
+The recommended end-user distribution is a **single setup zip** that contains:
 
 - `SessionGuard.App.exe`
 - `SessionGuard.Service.exe`

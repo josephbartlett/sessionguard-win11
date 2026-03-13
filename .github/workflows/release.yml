@@ -85,9 +85,22 @@ jobs:
             throw "Expected release notes at '$releaseNotesPath'."
           }
 
-          $assetPaths = Get-ChildItem -Path (Join-Path $PWD "artifacts\\releases\\$version") -Filter *.zip |
-            Sort-Object Name |
-            ForEach-Object { $_.FullName }
+          $assetManifestPath = Join-Path $PWD "artifacts\\releases\\$version\\release-assets.json"
+          if (Test-Path $assetManifestPath) {
+            $assetManifest = Get-Content $assetManifestPath -Raw | ConvertFrom-Json
+            $assetPaths = @(
+              $assetManifest.Assets |
+              ForEach-Object { [string]$_.Path } |
+              Where-Object { -not [string]::IsNullOrWhiteSpace($_) -and (Test-Path $_) }
+            )
+          }
+          else {
+            $assetPaths = @(
+              Get-ChildItem -Path (Join-Path $PWD "artifacts\\releases\\$version") -Filter *.zip |
+              Sort-Object Name |
+              ForEach-Object { $_.FullName }
+            )
+          }
 
           if ($assetPaths.Count -eq 0) {
             throw "No release zip assets were generated for version '$version'."

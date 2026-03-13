@@ -14,9 +14,9 @@ This guide is the fastest way to get SessionGuard running locally and understand
 dotnet build SessionGuard.sln
 ```
 
-## 2. Install from a downloaded release bundle
+## 2. Install from a downloaded setup zip
 
-If you downloaded the combined release zip instead of cloning the repo, extract it and run:
+If you downloaded `sessionguard-win11-setup-<version>-win-x64.zip` instead of cloning the repo, extract it and run:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\Install-SessionGuard.ps1
@@ -27,9 +27,15 @@ That is the preferred operator path for a real machine. It:
 - installs the shared runtime under `Program Files\SessionGuard`
 - installs the Windows Service
 - registers the app to start at user sign-in
-- launches the app minimized to the tray unless you opt out
+- launches the app minimized to the tray unless you opt out with `-DoNotLaunchApp`
 
 Run the installer from the same signed-in Windows account that should get the tray auto-start. The startup registration is written to that user's `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` key.
+
+Useful install switches:
+
+- `-DoNotLaunchApp`: install without opening the tray app right away
+- `-DoNotStartService`: install without starting the Windows Service yet
+- `-ValidateOnly -AsJson`: check readiness without changing the machine
 
 ## 3. Try the desktop app without installing anything
 
@@ -67,6 +73,7 @@ What to expect:
 - the tray menu becomes the quickest day-to-day path
 - monitoring becomes service-backed
 - guard-mode, mitigation, and approval changes still require running `SessionGuard.App.exe` as administrator
+- that elevated launch now starts a separate elevated SessionGuard app instead of reusing the normal tray app
 - the service writes `state/service-health.json`
 
 ## 5. Install the service and tray app from source
@@ -82,8 +89,8 @@ What this does:
 - installs the shared runtime under `Program Files\SessionGuard`
 - installs the Windows Service
 - registers the app to start at user sign-in
-- launches the app minimized to the tray unless you opt out
-- ensures later manual launches reuse the running tray app instead of opening a duplicate copy
+- launches the app minimized to the tray unless you opt out with `-DoNotLaunchApp`
+- ensures later manual launches of the same installed app and privilege level reuse the running tray app instead of opening a duplicate copy
 
 Advanced service-only path:
 
@@ -120,12 +127,12 @@ powershell -ExecutionPolicy Bypass -File scripts/release/Publish-SessionGuardRel
 
 Output:
 
-- `artifacts\releases\<version>\sessionguard-win11-bundle-<version>-win-x64.zip`
+- `artifacts\releases\<version>\sessionguard-win11-setup-<version>-win-x64.zip`
 - `artifacts\releases\<version>\sessionguard-win11-app-<version>-win-x64.zip`
 - `artifacts\releases\<version>\sessionguard-win11-service-<version>-win-x64.zip`
 - `artifacts\releases\<version>\sessionguard-win11-source-<version>.zip`
 
-The preferred end-user asset is the combined bundle zip because it includes both runtimes plus the top-level install and uninstall scripts.
+The preferred end-user asset is the setup zip because it includes both runtimes plus the top-level install and uninstall scripts.
 
 ## 7. Trigger the GitHub release flow
 

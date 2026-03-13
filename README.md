@@ -33,15 +33,15 @@ It is designed for people who keep live work open for long stretches of time: te
 dotnet build SessionGuard.sln
 ```
 
-### Install from a release bundle
+### Install from the release setup zip
 
-If you downloaded the combined SessionGuard release zip, extract it and run this from an elevated PowerShell session:
+If you downloaded `sessionguard-win11-setup-<version>-win-x64.zip`, extract it and run this from an elevated PowerShell session:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\Install-SessionGuard.ps1
 ```
 
-That is the preferred end-user path. It installs the background service, registers the tray app to start at sign-in for the current user, and launches the app minimized to the tray unless you opt out.
+That is the preferred end-user path. It installs the background service, registers the tray app to start at sign-in for the current user, and launches the app minimized to the tray unless you opt out with `-DoNotLaunchApp`.
 
 Install it from the same signed-in Windows account that should get the tray auto-start. The installer writes the startup registration under that user's `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` key.
 
@@ -57,7 +57,8 @@ What to expect:
 
 - the app opens in `Simple view`
 - closing the window keeps it running in the tray
-- if you launch the app again while it is already running, SessionGuard reuses the existing tray app instead of opening a second copy
+- if you launch the same app runtime again at the same privilege level, SessionGuard reuses the existing tray app instead of opening a second copy
+- if an installed tray app is already running, a source-built `dotnet run` app now starts separately instead of being swallowed by the installed instance
 
 ### Run the app with the local service host
 
@@ -73,7 +74,7 @@ In another:
 dotnet run --project src/SessionGuard.App/SessionGuard.App.csproj
 ```
 
-When this path is active, the app should report `Control plane: Service`. Monitoring stays available in a normal user session, but guard-mode, mitigation, and approval changes still require running `SessionGuard.App.exe` as administrator.
+When this path is active, the app should report `Control plane: Service`. Monitoring stays available in a normal user session, but guard-mode, mitigation, and approval changes still require running `SessionGuard.App.exe` as administrator. That elevated launch now starts a separate elevated SessionGuard app instead of reusing the normal tray session.
 
 ### Install the background service
 
@@ -83,7 +84,13 @@ Preferred source-repo install path:
 powershell -ExecutionPolicy Bypass -File scripts/install/Install-SessionGuard.ps1 -SelfContained
 ```
 
-This installs the shared SessionGuard runtime to `Program Files\SessionGuard`, installs the Windows Service, registers the app to start at sign-in for the current user, and launches the app minimized to the tray unless you opt out.
+This installs the shared SessionGuard runtime to `Program Files\SessionGuard`, installs the Windows Service, registers the app to start at sign-in for the current user, and launches the app minimized to the tray unless you opt out with `-DoNotLaunchApp`.
+
+Useful install switches:
+
+- `-DoNotLaunchApp`: install everything without opening the tray app immediately
+- `-DoNotStartService`: install without starting the Windows Service yet
+- `-ValidateOnly -AsJson`: check install readiness without changing the machine
 
 Advanced service-only path:
 
@@ -98,7 +105,7 @@ powershell -ExecutionPolicy Bypass -File scripts/service/Install-SessionGuardSer
 powershell -ExecutionPolicy Bypass -File scripts/install/Publish-SessionGuardBundle.ps1 -SelfContained
 ```
 
-This produces a shared app-plus-service runtime under `artifacts\publish\SessionGuard`, including root-level `Install-SessionGuard.ps1` and `Uninstall-SessionGuard.ps1` entry points for the extracted bundle.
+This produces a shared app-plus-service runtime under `artifacts\publish\SessionGuard`, including root-level `Install-SessionGuard.ps1` and `Uninstall-SessionGuard.ps1` entry points for the extracted setup package.
 
 ### Publish a distributable desktop build
 
@@ -116,7 +123,7 @@ The published desktop executable will be written to `artifacts\publish\SessionGu
 powershell -ExecutionPolicy Bypass -File scripts/release/Publish-SessionGuardReleaseAssets.ps1 -SelfContained
 ```
 
-This produces versioned bundle, app, service, and source zip assets under `artifacts\releases\<version>\`.
+This produces versioned setup, app, service, and source zip assets under `artifacts\releases\<version>\`.
 
 ## How SessionGuard Runs
 
@@ -133,8 +140,8 @@ SessionGuard has two processes with different responsibilities:
   - talks to the service when it is available
   - falls back to local read-only monitoring when the service is unavailable
   - can be registered to auto-start at user sign-in
-  - reuses the already-running tray app when launched again
-  - must be run as administrator if you want it to request service-owned mitigation or approval changes
+  - reuses the already-running tray app when launched again from the same installed path and privilege level
+  - starts a separate elevated app session when you run it as administrator to request service-owned mitigation or approval changes
 
 The tray icon belongs to the app, not the service.
 
@@ -143,6 +150,7 @@ Typical modes:
 - **App only**: useful for inspection and local fallback monitoring
 - **App + local service host**: useful for development or manual validation
 - **Installed mode**: service auto-starts with Windows, app auto-starts at sign-in for the installing user and starts minimized to the tray
+- **Elevated app session**: useful when the service is connected but you need to request service-owned write actions
 
 In normal installed use, the tray menu is the daily path. Open the dashboard when you need a fuller explanation or want the technical tables.
 
@@ -211,7 +219,7 @@ Install both the service and the tray app startup registration from source:
 powershell -ExecutionPolicy Bypass -File scripts/install/Install-SessionGuard.ps1 -SelfContained
 ```
 
-Install from an extracted release bundle:
+Install from an extracted setup zip:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\Install-SessionGuard.ps1
@@ -223,7 +231,7 @@ Remove the combined install:
 powershell -ExecutionPolicy Bypass -File scripts/install/Uninstall-SessionGuard.ps1 -RemoveFiles
 ```
 
-Or, from an extracted release bundle:
+Or, from an extracted setup zip:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\Uninstall-SessionGuard.ps1 -RemoveFiles
@@ -235,8 +243,8 @@ Pushing an annotated `vX.Y.Z` tag now triggers the `Release Assets` workflow. Th
 
 - runs the repo-owned Windows validation flow
 - publishes self-contained `win-x64` desktop and service binaries
-- publishes a combined bundle zip that contains both runtimes plus install scripts
-- strips live logs and state from the public app, service, and bundle artifacts
+- publishes a setup zip that contains both runtimes plus install scripts
+- strips live logs and state from the public app, service, and setup artifacts
 - uploads the generated zip assets
 - creates or updates the matching GitHub Release
 

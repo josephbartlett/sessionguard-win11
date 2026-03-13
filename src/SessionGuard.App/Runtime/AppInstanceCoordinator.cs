@@ -1,4 +1,7 @@
+using System.IO;
 using System.Security.Principal;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace SessionGuard.App.Runtime;
 
@@ -12,7 +15,7 @@ internal sealed class AppInstanceCoordinator : IDisposable
 
     public AppInstanceCoordinator(string? instanceKey = null)
     {
-        var key = string.IsNullOrWhiteSpace(instanceKey) ? BuildIdentityScope() : instanceKey.Trim();
+        var key = string.IsNullOrWhiteSpace(instanceKey) ? BuildCurrentInstanceScope() : instanceKey.Trim();
         _mutex = new Mutex(initiallyOwned: true, name: $@"Local\SessionGuard.App.{key}.Primary", createdNew: out var createdNew);
         _activateEvent = new EventWaitHandle(
             initialState: false,
@@ -107,7 +110,7 @@ internal sealed class AppInstanceCoordinator : IDisposable
         }
     }
 
-    private static string BuildIdentityScope()
+    internal static string BuildCurrentInstanceScope()
     {
         var sid = WindowsIdentity.GetCurrent().User?.Value;
         if (string.IsNullOrWhiteSpace(sid))
@@ -115,9 +118,53 @@ internal sealed class AppInstanceCoordinator : IDisposable
             sid = Environment.UserName;
         }
 
-        return sid
-            .Replace('\\', '_')
-            .Replace('/', '_')
-            .Replace(':', '_');
+        var executablePath = Environment.ProcessPath;
+        if (string.IsNullOrWhiteSpace(executablePath))
+        {
+            executablePath = AppContext.BaseDirectory;
+        }
+
+        return BuildInstanceScopeKey(
+            sid,
+            executablePath,
+            IsCurrentProcessElevated());
+    }
+
+    internal static string BuildInstanceScopeKey(string? sid, string? executablePath, bool isElevated)
+    {
+        var identity = string.IsNullOrWhiteSpace(sid) ? Environment.UserName : sid.Trim();
+        var pathIdentity = NormalizeExecutablePath(executablePath);
+        var scopeDescriptor = $"{identity}|{(isElevated ? "elevated" : "standard")}|{pathIdentity}";
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(scopeDescriptor));
+        return Convert.ToHexString(hash);
+    }
+
+    internal static bool IsCurrentProcessElevated()
+    {
+        using var identity = WindowsIdentity.GetCurrent();
+        var principal = new WindowsPrincipal(identity);
+        return principal.IsInRole(WindowsBuiltInRole.Administrator);
+    }
+
+    private static string NormalizeExecutablePath(string? executablePath)
+    {
+        var pathValue = string.IsNullOrWhiteSpace(executablePath) ? AppContext.BaseDirectory : executablePath.Trim();
+
+        try
+        {
+            pathValue = Path.GetFullPath(pathValue);
+        }
+        catch (ArgumentException)
+        {
+        }
+        catch (NotSupportedException)
+        {
+        }
+        catch (PathTooLongException)
+        {
+        }
+
+        pathValue = pathValue.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        return pathValue.ToUpperInvariant();
     }
 }

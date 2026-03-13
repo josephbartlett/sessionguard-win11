@@ -62,10 +62,10 @@ Use this when you want a structured release-readiness pass without digging throu
 ## Packaging
 
 1. Run `powershell -ExecutionPolicy Bypass -File scripts/release/Publish-SessionGuardReleaseAssets.ps1 -SelfContained`.
-2. Confirm the bundle, app, service, and source zip files exist under `artifacts/releases/<version>/`.
-3. Confirm the combined bundle contains `SessionGuard.App.exe`, `SessionGuard.Service.exe`, `Install-SessionGuard.ps1`, `Uninstall-SessionGuard.ps1`, and the supporting install scripts.
+2. Confirm the setup, app, service, and source zip files exist under `artifacts/releases/<version>/`.
+3. Confirm the setup zip contains `SessionGuard.App.exe`, `SessionGuard.Service.exe`, `Install-SessionGuard.ps1`, `Uninstall-SessionGuard.ps1`, and the supporting install scripts.
 4. Confirm the published desktop app folder contains `SessionGuard.App.exe`.
-5. Confirm the public app, service, and bundle zip assets contain empty `logs/` and `state/` directories only, not machine-local log files or persisted runtime JSON.
+5. Confirm the public app, service, and setup zip assets contain empty `logs/` and `state/` directories only, not machine-local log files or persisted runtime JSON.
 
 ## Logs and state
 

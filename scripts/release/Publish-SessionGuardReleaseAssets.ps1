@@ -48,7 +48,7 @@ $servicePublishRoot = Join-Path $OutputRoot "publish\\SessionGuard.Service"
 $bundlePublishRoot = Join-Path $OutputRoot "publish\\SessionGuard"
 $appZip = Join-Path $OutputRoot "sessionguard-win11-app-$versionValue-$Runtime.zip"
 $serviceZip = Join-Path $OutputRoot "sessionguard-win11-service-$versionValue-$Runtime.zip"
-$bundleZip = Join-Path $OutputRoot "sessionguard-win11-bundle-$versionValue-$Runtime.zip"
+$bundleZip = Join-Path $OutputRoot "sessionguard-win11-setup-$versionValue-$Runtime.zip"
 $sourceZip = Join-Path $OutputRoot "sessionguard-win11-source-$versionValue.zip"
 $manifestPath = Join-Path $OutputRoot "release-assets.json"
 
@@ -86,6 +86,11 @@ $manifest = [ordered]@{
     OutputRoot = $OutputRoot
     Assets = @(
         [ordered]@{
+            Name = [System.IO.Path]::GetFileName($bundleZip)
+            Type = "setup"
+            Path = $bundleZip
+        },
+        [ordered]@{
             Name = [System.IO.Path]::GetFileName($appZip)
             Type = "desktop-app"
             Path = $appZip
@@ -94,11 +99,6 @@ $manifest = [ordered]@{
             Name = [System.IO.Path]::GetFileName($serviceZip)
             Type = "service"
             Path = $serviceZip
-        },
-        [ordered]@{
-            Name = [System.IO.Path]::GetFileName($bundleZip)
-            Type = "bundle"
-            Path = $bundleZip
         },
         [ordered]@{
             Name = [System.IO.Path]::GetFileName($sourceZip)

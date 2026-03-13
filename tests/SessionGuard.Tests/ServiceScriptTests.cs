@@ -209,6 +209,7 @@ public sealed class ServiceScriptTests
     public async Task InstallCombined_ValidateOnly_ReportsReadinessForValidBundle()
     {
         var repoRoot = GetRepositoryRoot();
+        var productVersion = GetProductVersion(repoRoot);
         var publishRoot = Path.Combine(Path.GetTempPath(), "SessionGuard.Tests", Guid.NewGuid().ToString("N"));
         CopyDirectory(GetBuiltServiceOutputRoot(repoRoot), publishRoot);
         CopyDirectory(GetBuiltAppOutputRoot(repoRoot), publishRoot);
@@ -223,8 +224,8 @@ public sealed class ServiceScriptTests
         File.WriteAllText(Path.Combine(configDefaultsDirectory, "appsettings.json"), "{\"schemaVersion\":1}");
         File.WriteAllText(Path.Combine(configDefaultsDirectory, "protected-processes.json"), "{\"schemaVersion\":1,\"processNames\":[]}");
         File.WriteAllText(Path.Combine(configDefaultsDirectory, "policies.json"), "{\"schemaVersion\":1,\"enabled\":true,\"rules\":[]}");
-        File.WriteAllText(Path.Combine(publishRoot, "install-manifest.json"), "{\"ProductVersion\":\"1.0.4\",\"ProtocolVersion\":\"1.2\"}");
-        File.WriteAllText(Path.Combine(publishRoot, "bundle-manifest.json"), "{\"ProductVersion\":\"1.0.4\"}");
+        File.WriteAllText(Path.Combine(publishRoot, "install-manifest.json"), $$"""{"ProductVersion":"{{productVersion}}","ProtocolVersion":"1.2"}""");
+        File.WriteAllText(Path.Combine(publishRoot, "bundle-manifest.json"), $$"""{"ProductVersion":"{{productVersion}}"}""");
 
         var scriptPath = Path.Combine(repoRoot, "scripts", "install", "Install-SessionGuard.ps1");
         var installRoot = Path.Combine(Path.GetTempPath(), "SessionGuard.Install", Guid.NewGuid().ToString("N"));
@@ -333,6 +334,19 @@ public sealed class ServiceScriptTests
 
         throw new DirectoryNotFoundException(
             $"Could not find a built SessionGuard.Service output under '{Path.Combine(repoRoot, "src", "SessionGuard.Service", "bin")}'.");
+    }
+
+    private static string GetProductVersion(string repoRoot)
+    {
+        var propsPath = Path.Combine(repoRoot, "Directory.Build.props");
+        var propsContent = File.ReadAllText(propsPath);
+        var match = System.Text.RegularExpressions.Regex.Match(
+            propsContent,
+            "<Version>(?<version>[^<]+)</Version>",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        Assert.True(match.Success, $"Could not resolve the current product version from '{propsPath}'.");
+        return match.Groups["version"].Value;
     }
 
     private static string GetBuiltAppOutputRoot(string repoRoot)
