@@ -18,6 +18,46 @@ Assert-SessionGuardIsElevated -Operation "Combined SessionGuard removal"
 
 Unregister-SessionGuardAppStartup
 
+$installedAppExe = Get-SessionGuardAppExecutablePath -Root $InstallRoot
+$runningAppProcesses = @(
+    Get-Process -Name "SessionGuard.App" -ErrorAction SilentlyContinue |
+    Where-Object {
+        try {
+            -not [string]::IsNullOrWhiteSpace($_.Path) -and
+            (Test-SessionGuardPathMatch -Left $_.Path -Right $installedAppExe)
+        }
+        catch {
+            $false
+        }
+    }
+)
+
+if ($runningAppProcesses.Count -gt 0 -and
+    $PSCmdlet.ShouldProcess($installedAppExe, "Stop running SessionGuard app")) {
+    foreach ($process in $runningAppProcesses) {
+        try {
+            $null = $process.CloseMainWindow()
+        }
+        catch {
+        }
+    }
+
+    Start-Sleep -Seconds 2
+
+    foreach ($process in $runningAppProcesses) {
+        try {
+            $process.Refresh()
+            if (-not $process.HasExited) {
+                Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            }
+        }
+        catch {
+        }
+    }
+
+    Write-Host ("Stopped {0} running SessionGuard app process(es)." -f $runningAppProcesses.Count)
+}
+
 $serviceUninstallScript = Join-Path $InstallRoot "scripts\\service\\Uninstall-SessionGuardService.ps1"
 if (Test-Path $serviceUninstallScript) {
     & $serviceUninstallScript | Out-Host

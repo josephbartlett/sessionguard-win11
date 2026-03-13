@@ -4,10 +4,14 @@ All notable changes to this project should be recorded here in reverse chronolog
 
 ## Unreleased
 
+## 1.0.3 - 2026-03-13
+
 - Hardened the service pipe so service-backed mitigation and approval changes now require an authorized administrative caller instead of trusting raw pipe connectivity alone.
 - Added safe recovery for corrupt `state/policy-approval.json` by quarantining invalid files and keeping scans or service startup alive.
 - Tightened public release asset publishing so app, service, and combined bundle packages no longer preserve live logs or state from a reused publish directory.
 - Fixed the sign-in startup path so `--start-minimized` launches quietly to the tray instead of flashing the dashboard window first.
+- Fixed the shipped service-status script so it follows the active install root when SessionGuard is installed and no longer falls back to stale repo-local publish metadata when it is not.
+- Fixed combined uninstall so it stops the running tray app before removing the installed files.
 - Updated runtime and getting-started docs to explain the service-versus-app model, current-user startup registration caveat, and the difference between service connectivity and write access.
 
 ## 1.0.2 - 2026-03-12

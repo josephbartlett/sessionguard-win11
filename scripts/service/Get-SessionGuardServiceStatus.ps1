@@ -11,12 +11,35 @@ $ErrorActionPreference = "Stop"
 
 $service = Get-Service -Name $script:SessionGuardServiceName -ErrorAction SilentlyContinue
 $installedService = Get-SessionGuardInstalledServiceConfiguration
-$probeExe = Get-SessionGuardProbeExePath -PreferredPath $ProbeExecutable
-$healthPath = Get-SessionGuardServiceHealthPath -ProbeExecutable $probeExe
-$manifestPath = if ($null -ne $probeExe) {
-    Get-SessionGuardInstallManifestPath -PublishRoot (Split-Path -Parent $probeExe)
+$probeExe = $null
+if (-not [string]::IsNullOrWhiteSpace($ProbeExecutable)) {
+    $probeExe = Get-SessionGuardProbeExePath -PreferredPath $ProbeExecutable
+}
+elseif ($null -ne $installedService -and
+    -not [string]::IsNullOrWhiteSpace($installedService.ImagePath) -and
+    (Test-Path $installedService.ImagePath)) {
+    $probeExe = $installedService.ImagePath
+}
+else {
+    $probeExe = $null
+}
+
+$probePublishRoot = if ($null -ne $probeExe) {
+    Split-Path -Parent $probeExe
 } else {
-    Get-SessionGuardInstallManifestPath
+    ""
+}
+
+$healthPath = if (-not [string]::IsNullOrWhiteSpace($probePublishRoot)) {
+    Join-Path $probePublishRoot "state\\service-health.json"
+} else {
+    ""
+}
+
+$manifestPath = if (-not [string]::IsNullOrWhiteSpace($probePublishRoot)) {
+    Get-SessionGuardInstallManifestPath -PublishRoot $probePublishRoot
+} else {
+    ""
 }
 $probeSucceeded = $false
 $probeOutput = $null
@@ -36,7 +59,7 @@ if ($null -ne $probeExe) {
     }
 }
 
-if (Test-Path $healthPath) {
+if (-not [string]::IsNullOrWhiteSpace($healthPath) -and (Test-Path $healthPath)) {
     try {
         $healthSnapshot = Get-Content $healthPath -Raw | ConvertFrom-Json
     }
@@ -44,7 +67,7 @@ if (Test-Path $healthPath) {
     }
 }
 
-if (Test-Path $manifestPath) {
+if (-not [string]::IsNullOrWhiteSpace($manifestPath) -and (Test-Path $manifestPath)) {
     try {
         $installManifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
     }

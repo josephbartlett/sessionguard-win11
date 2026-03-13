@@ -229,7 +229,7 @@ Pushing an annotated `vX.Y.Z` tag now triggers the `Release Assets` workflow. Th
 - uploads the generated zip assets
 - creates or updates the matching GitHub Release
 
-The tag must match the version in [`Directory.Build.props`](Directory.Build.props), and the matching release notes file must exist under [`docs/releases`](docs/releases), for example [`docs/releases/v1.0.2.md`](docs/releases/v1.0.2.md).
+The tag must match the version in [`Directory.Build.props`](Directory.Build.props), and the matching release notes file must exist under [`docs/releases`](docs/releases), for example [`docs/releases/v1.0.3.md`](docs/releases/v1.0.3.md).
 
 ## Documentation Map
 
@@ -241,7 +241,7 @@ The tag must match the version in [`Directory.Build.props`](Directory.Build.prop
 - [Limitations](docs/limitations.md)
 - [Roadmap](docs/roadmap.md)
 - [Future service and shell direction](docs/future-service-architecture.md)
-- [Current release notes](docs/releases/v1.0.2.md)
+- [Current release notes](docs/releases/v1.0.3.md)
 
 ## Practical Positioning
 
