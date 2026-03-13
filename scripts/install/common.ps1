@@ -2,6 +2,12 @@ Set-StrictMode -Version Latest
 
 $script:SessionGuardAppStartupValueName = "SessionGuard"
 
+$serviceCommonPath = Join-Path $PSScriptRoot "..\\service\\common.ps1"
+if (-not (Get-Command Test-SessionGuardPathMatch -ErrorAction SilentlyContinue) -and
+    (Test-Path $serviceCommonPath)) {
+    . $serviceCommonPath
+}
+
 function Get-SessionGuardDefaultInstallRoot {
     return Join-Path ${env:ProgramFiles} "SessionGuard"
 }
@@ -152,9 +158,92 @@ function Start-SessionGuardInstalledApp {
                 Attempted = $true
                 Succeeded = $false
                 Method = "failed"
-                Warning = "SessionGuard installed successfully, but the tray app could not be launched automatically. Launch '$AppExecutable' manually from your normal desktop session or wait for the next sign-in. Windows reported: $($_.Exception.Message)"
+                Warning = "SessionGuard installed successfully, but the tray app could not be launched automatically. Windows may have shown a SmartScreen or protection prompt. Launch '$AppExecutable' manually from your normal desktop session, use -DoNotLaunchApp on future installs, or wait for the next sign-in. Windows reported: $($_.Exception.Message)"
             }
         }
+    }
+}
+
+function Get-SessionGuardRunningAppProcesses {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$AppExecutable
+    )
+
+    return @(
+        Get-Process -Name "SessionGuard.App" -ErrorAction SilentlyContinue |
+        Where-Object {
+            try {
+                -not [string]::IsNullOrWhiteSpace($_.Path) -and
+                (Test-SessionGuardPathMatch -Left $_.Path -Right $AppExecutable)
+            }
+            catch {
+                $false
+            }
+        }
+    )
+}
+
+function Stop-SessionGuardRunningApp {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$AppExecutable,
+
+        [int]$GracePeriodSeconds = 2,
+
+        [int]$ShutdownTimeoutSeconds = 5
+    )
+
+    $runningAppProcesses = @(Get-SessionGuardRunningAppProcesses -AppExecutable $AppExecutable)
+    if ($runningAppProcesses.Count -eq 0) {
+        return [pscustomobject]@{
+            Attempted = $false
+            Stopped = $true
+            ProcessCount = 0
+        }
+    }
+
+    foreach ($process in $runningAppProcesses) {
+        try {
+            $null = $process.CloseMainWindow()
+        }
+        catch {
+        }
+    }
+
+    if ($GracePeriodSeconds -gt 0) {
+        Start-Sleep -Seconds $GracePeriodSeconds
+    }
+
+    $shutdownDeadline = (Get-Date).AddSeconds([Math]::Max(1, $ShutdownTimeoutSeconds))
+    do {
+        foreach ($process in $runningAppProcesses) {
+            try {
+                $process.Refresh()
+                if (-not $process.HasExited) {
+                    Stop-Process -Id $process.Id -Force -ErrorAction Stop
+                }
+            }
+            catch {
+            }
+        }
+
+        $remainingProcesses = @(Get-SessionGuardRunningAppProcesses -AppExecutable $AppExecutable)
+        if ($remainingProcesses.Count -eq 0) {
+            return [pscustomobject]@{
+                Attempted = $true
+                Stopped = $true
+                ProcessCount = $runningAppProcesses.Count
+            }
+        }
+
+        Start-Sleep -Milliseconds 250
+        $runningAppProcesses = $remainingProcesses
+    } while ((Get-Date) -lt $shutdownDeadline)
+
+    if ($runningAppProcesses.Count -gt 0) {
+        $remainingIds = $runningAppProcesses | ForEach-Object { $_.Id } | Sort-Object
+        throw "SessionGuard app executable '$AppExecutable' is still running after shutdown attempts. Remaining process IDs: $($remainingIds -join ', ')."
     }
 }
 

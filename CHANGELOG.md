@@ -2,6 +2,15 @@
 
 All notable changes to this project should be recorded here in reverse chronological order.
 
+## 1.1.4 - 2026-03-13
+
+- Fixed the combined installer so reinstall and upgrade flows stop the running installed tray app before replacing files under `Program Files\SessionGuard`.
+- Reused the same installed-app shutdown logic for combined uninstall to keep install and removal behavior aligned.
+- Improved post-install app-launch warnings so blocked first launches explicitly call out possible SmartScreen or Windows protection prompts while keeping the install successful.
+- Fixed the service health snapshot so upgrade installs refresh the reported product version and runtime metadata instead of preserving stale values from the previous install.
+- Updated the install docs and generated setup README to explain reinstall behavior, `-DoNotLaunchApp`, and the expected unsigned first-launch prompt.
+- Added regression coverage for stopping a running installed `SessionGuard.App.exe` during installer operations.
+
 ## 1.1.3 - 2026-03-13
 
 - Fixed the combined installer so a blocked post-install tray launch no longer makes the whole install look failed.

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Reflection;
 using SessionGuard.Core.Models;
 using SessionGuard.Core.Services;
 using SessionGuard.Infrastructure.Environment;
@@ -78,6 +79,55 @@ public sealed class ServiceHealthReporterTests
         Assert.True(snapshot.ApprovalWindowActive);
         Assert.Equal(45, snapshot.ApprovalWindowMinutes);
         Assert.NotNull(snapshot.ApprovalStateRecoveredAt);
+    }
+
+    [Fact]
+    public async Task InitializeAsync_RefreshesPersistedVersionAndRuntimeMetadata()
+    {
+        var runtimeRoot = CreateRuntimeRoot();
+        var logger = new RecordingLogger();
+        var reporter = new SessionGuardServiceHealthReporter(
+            RuntimePaths.Discover(runtimeRoot),
+            logger);
+
+        var staleSnapshot = new ServiceHealthSnapshot(
+            "SessionGuardService",
+            "SessionGuard Service",
+            "1.1.3-old",
+            "WindowsService",
+            "Running",
+            "1.2",
+            @"C:\Old\SessionGuard.Service.exe",
+            @"C:\Old\",
+            @"C:\Old\",
+            @"C:\Old\config",
+            @"C:\Old\logs",
+            @"C:\Old\state",
+            @"C:\Old\state\service-health.json",
+            PipeServerListening: true,
+            LastUpdatedAt: DateTimeOffset.Parse("2026-03-13T15:00:00-04:00"),
+            LastStartedAt: DateTimeOffset.Parse("2026-03-13T15:00:00-04:00"));
+
+        Directory.CreateDirectory(Path.GetDirectoryName(reporter.HealthPath)!);
+        await File.WriteAllTextAsync(
+            reporter.HealthPath,
+            JsonSerializer.Serialize(staleSnapshot, SessionGuardJson.Indented));
+
+        await reporter.InitializeAsync("WindowsService");
+
+        var snapshot = await ReadSnapshotAsync(reporter.HealthPath);
+
+        var expectedVersion = typeof(SessionGuardServiceHealthReporter)
+            .Assembly
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+            .InformationalVersion;
+
+        Assert.False(string.IsNullOrWhiteSpace(expectedVersion));
+        Assert.Equal(expectedVersion, snapshot.ProductVersion);
+        Assert.Equal(AppContext.BaseDirectory, snapshot.BaseDirectory);
+        Assert.Equal(reporter.HealthPath, snapshot.HealthFilePath);
+        Assert.Equal(Path.Combine(runtimeRoot, "config"), snapshot.ConfigDirectory);
+        Assert.Equal(Path.Combine(runtimeRoot, "state"), snapshot.StateDirectory);
     }
 
     private static SessionControlStatus CreateStatus()

@@ -152,7 +152,8 @@ public sealed class SessionGuardServiceHealthReporter
         try
         {
             var current = await LoadSnapshotLockedAsync(cancellationToken);
-            var next = update(current);
+            var normalizedCurrent = current is null ? null : NormalizeSnapshot(current);
+            var next = NormalizeSnapshot(update(normalizedCurrent));
 
             await using var stream = File.Create(_healthPath);
             await JsonSerializer.SerializeAsync(stream, next, SessionGuardJson.Indented, cancellationToken);
@@ -203,6 +204,24 @@ public sealed class SessionGuardServiceHealthReporter
             PipeServerListening: false,
             LastUpdatedAt: now,
             LastStartedAt: now);
+    }
+
+    private ServiceHealthSnapshot NormalizeSnapshot(ServiceHealthSnapshot snapshot)
+    {
+        return snapshot with
+        {
+            ServiceName = SessionGuardServiceMetadata.ServiceName,
+            DisplayName = SessionGuardServiceMetadata.DisplayName,
+            ProductVersion = ServiceVersionInfo.ResolveProductVersion(),
+            ProtocolVersion = SessionControlProtocol.Version,
+            ExecutablePath = Environment.ProcessPath ?? Path.Combine(AppContext.BaseDirectory, "SessionGuard.Service.exe"),
+            BaseDirectory = AppContext.BaseDirectory,
+            RepositoryRoot = _paths.RepositoryRoot,
+            ConfigDirectory = _paths.ConfigDirectory,
+            LogDirectory = _paths.LogDirectory,
+            StateDirectory = _paths.StateDirectory,
+            HealthFilePath = _healthPath
+        };
     }
 
     private static string DetermineHealthState(DateTimeOffset? lastSuccessfulScanAt, bool hasError)

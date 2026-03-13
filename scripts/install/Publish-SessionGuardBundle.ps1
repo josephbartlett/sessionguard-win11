@@ -75,11 +75,11 @@ Run this from an elevated PowerShell session:
 powershell -ExecutionPolicy Bypass -File .\Install-SessionGuard.ps1
 ```
 
-That installs SessionGuard to `C:\Program Files\SessionGuard`, installs the Windows Service, registers the app to start at sign-in for the current user, and attempts to launch the app minimized to the tray unless you opt out with `-DoNotLaunchApp`.
+That installs SessionGuard to `C:\Program Files\SessionGuard`, installs the Windows Service, registers the app to start at sign-in for the current user, stops a running installed tray app before replacing files during reinstall or upgrade, and attempts to launch the app minimized to the tray unless you opt out with `-DoNotLaunchApp`.
 
 Install it from the same Windows account that should see the tray icon at sign-in.
 
-If Windows blocks the immediate launch, the install still succeeded. Open `C:\Program Files\SessionGuard\SessionGuard.App.exe` manually from your normal desktop session or wait for the next sign-in.
+If Windows blocks the immediate launch, the install still succeeded. SessionGuard setup zips are direct-download unsigned binaries today, so Windows may show a SmartScreen or protection prompt on first launch. Open `C:\Program Files\SessionGuard\SessionGuard.App.exe` manually from your normal desktop session, use `-DoNotLaunchApp`, or wait for the next sign-in.
 
 ## How SessionGuard runs
 

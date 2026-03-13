@@ -195,6 +195,12 @@ if ($serviceExists) {
 }
 
 if ($PSCmdlet.ShouldProcess($InstallRoot, "Install combined SessionGuard runtime")) {
+    $existingInstalledApp = Get-SessionGuardAppExecutablePath -Root $InstallRoot
+    $stopAppResult = Stop-SessionGuardRunningApp -AppExecutable $existingInstalledApp
+    if ($stopAppResult.Attempted) {
+        Write-Host ("Stopped {0} running SessionGuard app process(es) before updating the install." -f $stopAppResult.ProcessCount)
+    }
+
     Copy-SessionGuardRuntimeLayout -SourceRoot $PublishRoot -DestinationRoot $InstallRoot
 
     $serviceInstallScript = Join-Path $InstallRoot "scripts\\service\\Install-SessionGuardService.ps1"
@@ -218,18 +224,7 @@ if ($PSCmdlet.ShouldProcess($InstallRoot, "Install combined SessionGuard runtime
     Write-Host "Registered SessionGuard app startup: $registeredCommand"
 
     if (-not $DoNotLaunchApp) {
-        $existingInstalledApps = @(
-            Get-Process -Name "SessionGuard.App" -ErrorAction SilentlyContinue |
-            Where-Object {
-                try {
-                    -not [string]::IsNullOrWhiteSpace($_.Path) -and
-                    (Test-SessionGuardPathMatch -Left $_.Path -Right $installedAppExe)
-                }
-                catch {
-                    $false
-                }
-            }
-        )
+        $existingInstalledApps = @(Get-SessionGuardRunningAppProcesses -AppExecutable $installedAppExe)
 
         if ($existingInstalledApps.Count -eq 0) {
             $appLaunchResult = Start-SessionGuardInstalledApp -AppExecutable $installedAppExe -Arguments @("--start-minimized")

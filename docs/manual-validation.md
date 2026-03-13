@@ -39,9 +39,11 @@ Use this when you want a structured release-readiness pass without digging throu
 2. Confirm the service is installed and configured for delayed auto-start.
 3. Confirm the current user has a SessionGuard startup registration under the Windows Run key.
 4. Confirm the installed app launches to the tray without opening duplicate windows.
-5. Sign out and sign back in, then confirm the app starts minimized and appears in the tray.
-6. Confirm the tray app connects to the service instead of falling back locally.
-7. Launch `SessionGuard.App.exe` manually and confirm it brings the running tray app forward instead of starting a second copy.
+5. If Windows shows SmartScreen or another protection prompt on first launch, confirm the install still completes and the warning text tells you the app can be launched manually later.
+6. Run the installer a second time and confirm it stops the running installed tray app before replacing files instead of failing on locked binaries.
+7. Sign out and sign back in, then confirm the app starts minimized and appears in the tray.
+8. Confirm the tray app connects to the service instead of falling back locally.
+9. Launch `SessionGuard.App.exe` manually and confirm it brings the running tray app forward instead of starting a second copy.
 
 ## Elevated behavior
 

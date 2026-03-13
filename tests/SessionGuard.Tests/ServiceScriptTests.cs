@@ -328,6 +328,53 @@ public sealed class ServiceScriptTests
         Assert.Contains("installed successfully", root.GetProperty("Warning").GetString(), StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task InstallCommon_StopRunningInstalledApp_StopsMatchingProcess()
+    {
+        var repoRoot = GetRepositoryRoot();
+        var scriptRoot = Path.Combine(repoRoot, "scripts", "install");
+        var tempRoot = Path.Combine(Path.GetTempPath(), "SessionGuard.Tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempRoot);
+
+        var systemCmd = Path.Combine(Environment.SystemDirectory, "cmd.exe");
+        var appExecutable = Path.Combine(tempRoot, "SessionGuard.App.exe");
+        File.Copy(systemCmd, appExecutable, overwrite: true);
+
+        using var process = Process.Start(new ProcessStartInfo
+        {
+            FileName = appExecutable,
+            Arguments = "/c ping -n 30 127.0.0.1 > nul",
+            UseShellExecute = false,
+            CreateNoWindow = true
+        });
+
+        Assert.NotNull(process);
+        await Task.Delay(500);
+
+        var probeScript = Path.Combine(tempRoot, "stop-running-app.ps1");
+        File.WriteAllText(
+            probeScript,
+            $$"""
+            Set-StrictMode -Version Latest
+            $ErrorActionPreference = "Stop"
+            . "{{Path.Combine(scriptRoot, "common.ps1")}}"
+            $result = Stop-SessionGuardRunningApp -AppExecutable "{{appExecutable}}"
+            $result | ConvertTo-Json -Compress
+            """);
+
+        var result = await RunPowerShellScriptAsync(probeScript);
+
+        Assert.True(result.ExitCode == 0, $"PowerShell exited with {result.ExitCode}. stderr: {result.StandardError}");
+
+        using var document = JsonDocument.Parse(result.StandardOutput);
+        var root = document.RootElement;
+        Assert.True(root.GetProperty("Attempted").GetBoolean());
+        Assert.True(root.GetProperty("Stopped").GetBoolean());
+        Assert.True(root.GetProperty("ProcessCount").GetInt32() >= 1);
+
+        Assert.True(process!.WaitForExit(5000), "The temporary SessionGuard.App process should have exited after the install helper stopped it.");
+    }
+
     private static string GetBuiltServiceOutputRoot(string repoRoot)
     {
         var currentConfiguration = new DirectoryInfo(AppContext.BaseDirectory).Parent?.Parent?.Name;
