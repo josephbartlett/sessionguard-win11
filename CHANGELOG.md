@@ -2,12 +2,13 @@
 
 All notable changes to this project should be recorded here in reverse chronological order.
 
-## Unreleased
+## 1.1.0 - 2026-03-13
 
 - Reworked the desktop shell into a more deliberate tray-first flow with simpler header actions, clearer tray summaries, and a contextual primary tray action.
 - Added single-instance app coordination so repeated launches reuse the existing tray app and can reopen the current dashboard instead of starting duplicates.
 - Tightened installed startup behavior and manual validation guidance around sign-in launch, hide-to-tray behavior, and tray-first daily use.
-- Expanded tests and UI smoke coverage for the updated startup options, operator alert copy, and tray-first overview behavior.
+- Refined the main-window header layout so the title, summary text, and utility controls share a cleaner left-aligned rhythm.
+- Expanded tests, release validation, and UI smoke coverage for the updated startup options, operator alert copy, and tray-first overview behavior.
 
 ## 1.0.4 - 2026-03-13
 

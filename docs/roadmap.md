@@ -32,6 +32,19 @@ Delivered:
 - runtime-neutral package manifests and cleaner bundle docs
 - validation and packaging fixes needed for public releases
 
+### v1.1.0 — Tray-First Experience
+
+Purpose:
+Make SessionGuard feel like a calm background utility that is understandable from the tray first and the dashboard second.
+
+Delivered:
+
+- tray-first startup and quieter installed behavior
+- single-instance app activation so relaunching reuses the existing tray app
+- clearer tray summary, next-step, and context text
+- a calmer dashboard overview with a tighter utility rail
+- startup, smoke, and release validation coverage for the tray-first flow
+
 ### v0.1.0 — Desktop Monitor Foundation
 
 Purpose:
@@ -112,27 +125,19 @@ Delivered:
 
 The items below are not promises. They are the most likely next areas of value based on the current product shape.
 
-### v1.1.0 — Tray-First Experience
+### 1.x — Further Tray and Notification Refinement
 
 Purpose:
-Make SessionGuard feel like a calm background utility that is understandable from the tray first and the dashboard second.
+Keep improving the day-to-day tray experience now that the core tray-first shell is in place.
 
-Current progress on this branch:
+Likely work:
 
-- quieter default dashboard layout with fewer always-visible controls
-- tray summary, next-step, and context lines driven from the operator alert model
-- single-instance app activation so relaunching reuses the existing tray app
-- installed startup validation confirming the app starts hidden to the tray and relaunch opens the dashboard instead of creating duplicates
-
-Planned work:
-
-- tighter tray workflow and clearer tray status
+- tighter tray workflow and clearer tray status copy
 - fewer duplicated controls between notifications, tray, and dashboard
 - better action prompts when approval, mitigation, or service attention is needed
-- startup and sign-in behavior that feels deliberate instead of incidental
-- automation and review coverage for tray-first flows
+- more selective notification behavior and clearer escalation thresholds
 
-Plan:
+Reference:
 
 - [`docs/plans/v1.1.0-tray-first-experience-plan.md`](plans/v1.1.0-tray-first-experience-plan.md)
 
@@ -140,7 +145,7 @@ Risks:
 
 - too much tray abstraction can hide important diagnostic context
 - notification noise can hurt trust if thresholds are not tightened at the same time
-- startup polish can easily create regressions if install, sign-in, and manual launch paths diverge
+- tray convenience should not blur the boundary between monitoring and service-owned writes
 
 ### 1.x — Packaging and Distribution
 
