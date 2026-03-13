@@ -19,6 +19,19 @@ SessionGuard is now on a `1.x` release line. The roadmap below focuses on two th
 
 ## Completed Milestones
 
+### v1.0.1 through v1.0.4 — Post-Launch Hardening
+
+Purpose:
+Tighten the first public release line so the product is easier to install, easier to understand, and safer to operate.
+
+Delivered:
+
+- documentation cleanup and release-note alignment
+- combined app-plus-service bundle install flow
+- service-side authorization hardening for write actions
+- runtime-neutral package manifests and cleaner bundle docs
+- validation and packaging fixes needed for public releases
+
 ### v0.1.0 — Desktop Monitor Foundation
 
 Purpose:
@@ -99,16 +112,28 @@ Delivered:
 
 The items below are not promises. They are the most likely next areas of value based on the current product shape.
 
-### 1.0.1 — Documentation and Release Polish
+### v1.1.0 — Tray-First Experience
 
 Purpose:
-Make the repo and release assets easier to understand, operate, and distribute.
+Make SessionGuard feel like a calm background utility that is understandable from the tray first and the dashboard second.
 
-Likely work:
+Planned work:
 
-- tighten docs and operator guidance
-- keep release notes, roadmap, and README aligned with shipped reality
-- continue reducing first-run friction for non-authors
+- tighter tray workflow and clearer tray status
+- fewer duplicated controls between notifications, tray, and dashboard
+- better action prompts when approval, mitigation, or service attention is needed
+- startup and sign-in behavior that feels deliberate instead of incidental
+- automation and review coverage for tray-first flows
+
+Plan:
+
+- [`docs/plans/v1.1.0-tray-first-experience-plan.md`](plans/v1.1.0-tray-first-experience-plan.md)
+
+Risks:
+
+- too much tray abstraction can hide important diagnostic context
+- notification noise can hurt trust if thresholds are not tightened at the same time
+- startup polish can easily create regressions if install, sign-in, and manual launch paths diverge
 
 ### 1.x — Packaging and Distribution
 
@@ -117,7 +142,6 @@ Make SessionGuard easier to install and update for direct-download users.
 
 Likely work:
 
-- cleaner end-user packaging beyond raw zip assets
 - stronger install and upgrade messaging
 - optional signing and trust improvements
 
@@ -125,22 +149,6 @@ Risks:
 
 - packaging effort can sprawl quickly
 - installer convenience should not weaken auditability or service safety
-
-### 1.x — Tray-First Experience
-
-Purpose:
-Improve day-to-day usability for people who want SessionGuard mostly out of the way until something matters.
-
-Likely work:
-
-- lighter tray-first shell or tighter tray workflow
-- better notification quality
-- clearer action prompts when approval or mitigation is needed
-
-Risks:
-
-- too much tray abstraction can hide important diagnostic context
-- notification noise can hurt trust
 
 ### 1.x — Policy and Workspace Refinement
 
