@@ -223,8 +223,8 @@ public sealed class ServiceScriptTests
         File.WriteAllText(Path.Combine(configDefaultsDirectory, "appsettings.json"), "{\"schemaVersion\":1}");
         File.WriteAllText(Path.Combine(configDefaultsDirectory, "protected-processes.json"), "{\"schemaVersion\":1,\"processNames\":[]}");
         File.WriteAllText(Path.Combine(configDefaultsDirectory, "policies.json"), "{\"schemaVersion\":1,\"enabled\":true,\"rules\":[]}");
-        File.WriteAllText(Path.Combine(publishRoot, "install-manifest.json"), "{\"ProductVersion\":\"1.0.3\",\"ProtocolVersion\":\"1.2\"}");
-        File.WriteAllText(Path.Combine(publishRoot, "bundle-manifest.json"), "{\"ProductVersion\":\"1.0.3\"}");
+        File.WriteAllText(Path.Combine(publishRoot, "install-manifest.json"), "{\"ProductVersion\":\"1.0.4\",\"ProtocolVersion\":\"1.2\"}");
+        File.WriteAllText(Path.Combine(publishRoot, "bundle-manifest.json"), "{\"ProductVersion\":\"1.0.4\"}");
 
         var scriptPath = Path.Combine(repoRoot, "scripts", "install", "Install-SessionGuard.ps1");
         var installRoot = Path.Combine(Path.GetTempPath(), "SessionGuard.Install", Guid.NewGuid().ToString("N"));
