@@ -2,6 +2,12 @@
 
 All notable changes to this project should be recorded here in reverse chronological order.
 
+## 1.1.2 - 2026-03-13
+
+- Simplified the top-level README so it works better as a public repo front door instead of mixing end-user, operator, contributor, and release-engineering detail.
+- Added `docs/development.md` to hold source-build, validation, packaging, and tag-driven release instructions.
+- Tightened `docs/getting-started.md` so it stays focused on install and common operator paths.
+
 ## 1.1.1 - 2026-03-13
 
 - Fixed single-instance app scoping so installed, source-run, and elevated SessionGuard app sessions no longer collide with each other unexpectedly.
