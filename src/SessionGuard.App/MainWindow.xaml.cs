@@ -13,6 +13,7 @@ public partial class MainWindow : Window
 {
     private readonly MainWindowViewModel _viewModel;
     private readonly bool _useTrayIcon;
+    private readonly bool _startHiddenInTray;
     private readonly Forms.NotifyIcon? _notifyIcon;
     private readonly Forms.ToolStripMenuItem? _trayStatusMenuItem;
     private readonly Forms.ToolStripMenuItem? _trayModeMenuItem;
@@ -22,14 +23,24 @@ public partial class MainWindow : Window
 
     internal MainWindow(
         MainWindowViewModel viewModel,
-        bool useTrayIcon)
+        bool useTrayIcon,
+        bool startHiddenInTray = false)
     {
         InitializeComponent();
         _viewModel = viewModel;
         _useTrayIcon = useTrayIcon;
+        _startHiddenInTray = startHiddenInTray;
         if (_useTrayIcon)
         {
             (_notifyIcon, _trayStatusMenuItem, _trayModeMenuItem, _trayPolicyMenuItem, _trayTimingMenuItem) = CreateNotifyIcon();
+        }
+
+        if (_startHiddenInTray)
+        {
+            ShowInTaskbar = false;
+            WindowState = WindowState.Minimized;
+            ShowActivated = false;
+            Opacity = 0;
         }
 
         _viewModel.AttentionRequested += HandleAttentionRequested;
@@ -47,9 +58,11 @@ public partial class MainWindow : Window
         await _viewModel.InitializeAsync();
         UpdateTrayPresentation();
 
-        if (_viewModel.ShouldStartMinimized)
+        if (_startHiddenInTray || _viewModel.ShouldStartMinimized)
         {
             HideToTray(showBalloon: false);
+            Opacity = 1;
+            ShowActivated = true;
         }
     }
 
@@ -218,6 +231,8 @@ public partial class MainWindow : Window
         Show();
         ShowInTaskbar = true;
         WindowState = WindowState.Normal;
+        Opacity = 1;
+        ShowActivated = true;
         Activate();
     }
 

@@ -76,14 +76,14 @@ public static class UiSmokeScenarioCatalog
         return new UiSmokeScenario(
             "safe-service",
             "Low-risk service-backed dashboard state with no active workspace risk.",
-            new SessionControlStatus(scanResult, GuardModeEnabled: true, "Service", IsRemote: true),
+            new SessionControlStatus(scanResult, GuardModeEnabled: true, "Service", IsRemote: true, CanPerformServiceWrites: false),
             new Dictionary<string, string>(StringComparer.Ordinal)
             {
                 [UiSmokeAutomationIds.CurrentStatusText] = "Safe",
                 [UiSmokeAutomationIds.RestartRiskText] = "Low",
                 [UiSmokeAutomationIds.PendingRestartText] = "Not detected",
                 [UiSmokeAutomationIds.ConnectionModeText] = "Control plane: Service (background service is authoritative)",
-                [UiSmokeAutomationIds.ServiceActionAvailabilityText] = "Managed actions: service-backed mitigation and approval changes are available.",
+                [UiSmokeAutomationIds.ServiceActionAvailabilityText] = "Managed actions: the service is connected, but this app session is not elevated. Run SessionGuard.App as administrator to change protections or approval state.",
                 [UiSmokeAutomationIds.PolicyDecisionText] = "Policy decision: No active constraints",
                 [UiSmokeAutomationIds.PolicyTimingText] = "Policy timing: no approval window is active.",
                 [UiSmokeAutomationIds.WorkspaceSummaryText] = workspace.Summary
@@ -135,14 +135,14 @@ public static class UiSmokeScenarioCatalog
         return new UiSmokeScenario(
             "restart-pending",
             "Pending-reboot state without active protected workspace processes.",
-            new SessionControlStatus(scanResult, GuardModeEnabled: false, "Service", IsRemote: true),
+            new SessionControlStatus(scanResult, GuardModeEnabled: false, "Service", IsRemote: true, CanPerformServiceWrites: false),
             new Dictionary<string, string>(StringComparer.Ordinal)
             {
                 [UiSmokeAutomationIds.CurrentStatusText] = "Restart Pending",
                 [UiSmokeAutomationIds.RestartRiskText] = "Elevated",
                 [UiSmokeAutomationIds.PendingRestartText] = "Pending",
                 [UiSmokeAutomationIds.ConnectionModeText] = "Control plane: Service (background service is authoritative)",
-                [UiSmokeAutomationIds.ServiceActionAvailabilityText] = "Managed actions: service-backed mitigation and approval changes are available.",
+                [UiSmokeAutomationIds.ServiceActionAvailabilityText] = "Managed actions: the service is connected, but this app session is not elevated. Run SessionGuard.App as administrator to change protections or approval state.",
                 [UiSmokeAutomationIds.PolicyDecisionText] = "Policy decision: Approval required",
                 [UiSmokeAutomationIds.PolicyApprovalText] = "Policy approval: required before restart (45 minute default window)",
                 [UiSmokeAutomationIds.PolicyTimingText] = "Policy timing: no approval window is active. Restart still requires supervised approval.",
@@ -253,13 +253,13 @@ public static class UiSmokeScenarioCatalog
         return new UiSmokeScenario(
             "protected-workspace",
             "High-risk service-backed scenario with multiple workspace groups and visible recommendations.",
-            new SessionControlStatus(scanResult, GuardModeEnabled: true, "Service", IsRemote: true),
+            new SessionControlStatus(scanResult, GuardModeEnabled: true, "Service", IsRemote: true, CanPerformServiceWrites: false),
             new Dictionary<string, string>(StringComparer.Ordinal)
             {
                 [UiSmokeAutomationIds.CurrentStatusText] = "Protected Session Active",
                 [UiSmokeAutomationIds.RestartRiskText] = "High",
                 [UiSmokeAutomationIds.ConnectionModeText] = "Control plane: Service (background service is authoritative)",
-                [UiSmokeAutomationIds.ServiceActionAvailabilityText] = "Managed actions: service-backed mitigation and approval changes are available.",
+                [UiSmokeAutomationIds.ServiceActionAvailabilityText] = "Managed actions: the service is connected, but this app session is not elevated. Run SessionGuard.App as administrator to change protections or approval state.",
                 [UiSmokeAutomationIds.PolicyDecisionText] = "Policy decision: Restart blocked by policy",
                 [UiSmokeAutomationIds.PolicyTimingText] = "Policy timing: no approval window is active.",
                 [UiSmokeAutomationIds.WorkspaceSummaryText] = workspace.Summary,
@@ -407,12 +407,12 @@ public static class UiSmokeScenarioCatalog
         return new UiSmokeScenario(
             "mitigated-deferred",
             "Applied-mitigation state with low risk and elevated access.",
-            new SessionControlStatus(scanResult, GuardModeEnabled: true, "Service", IsRemote: true),
+            new SessionControlStatus(scanResult, GuardModeEnabled: true, "Service", IsRemote: true, CanPerformServiceWrites: true),
             new Dictionary<string, string>(StringComparer.Ordinal)
             {
                 [UiSmokeAutomationIds.CurrentStatusText] = "Mitigated / Deferred",
                 [UiSmokeAutomationIds.ProtectionModeText] = "Approval active",
-                [UiSmokeAutomationIds.AdminAccessText] = "Elevated",
+                [UiSmokeAutomationIds.AdminAccessText] = "Available",
                 [UiSmokeAutomationIds.PolicyDecisionText] = "Policy decision: Approval window active",
                 [UiSmokeAutomationIds.ConnectionModeText] = "Control plane: Service (background service is authoritative)",
                 [UiSmokeAutomationIds.ServiceActionAvailabilityText] = "Managed actions: service-backed mitigation and approval changes are available.",

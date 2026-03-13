@@ -52,6 +52,7 @@ internal sealed class ScenarioSessionGuardControlPlane : ISessionGuardControlPla
         return Task.FromResult(new PolicyApprovalCommandResult(
             Success: false,
             RequiresService: false,
+            RequiresElevation: false,
             "UI smoke scenarios are read-only. Policy approval is disabled in scenario mode.",
             _scenario.Status.ScanResult.Policy));
     }
@@ -61,6 +62,7 @@ internal sealed class ScenarioSessionGuardControlPlane : ISessionGuardControlPla
         return Task.FromResult(new PolicyApprovalCommandResult(
             Success: false,
             RequiresService: false,
+            RequiresElevation: false,
             "UI smoke scenarios are read-only. Policy approval is disabled in scenario mode.",
             _scenario.Status.ScanResult.Policy));
     }

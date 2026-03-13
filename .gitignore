@@ -21,6 +21,7 @@ artifacts/releases/
 artifacts/ui/
 artifacts/publish/
 artifacts/staging/
+artifacts/guide/
 
 # OS noise
 Thumbs.db

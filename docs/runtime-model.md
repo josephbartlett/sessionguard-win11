@@ -31,11 +31,13 @@ It:
 - creates the tray icon
 - displays notifications
 - talks to the service over the local control plane when the service is available
+- can run in a normal user session for monitoring only
 
 It does **not**:
 
 - install the service automatically just by being launched
 - replace the service for service-owned write actions
+- request service-owned mitigation or approval changes unless the app itself is running as administrator
 
 ## Why both exist
 
@@ -75,7 +77,8 @@ You run `SessionGuard.Service.exe console` and also run `SessionGuard.App.exe`.
 What you get:
 
 - the dashboard and tray icon from the app
-- background scanning and service-owned actions from the service
+- background scanning from the service
+- service-backed write actions only when the app is running as administrator
 
 The UI should report `Control plane: Service`.
 
@@ -105,6 +108,8 @@ That means:
 
 - the service is machine-level
 - the tray app startup is user-level
+
+If you install SessionGuard using alternate credentials or a different signed-in account, the tray startup registration lands in that installing user's profile. The intended flow is to install it from the same account that should see the tray icon at sign-in.
 
 ## Tray icon ownership
 

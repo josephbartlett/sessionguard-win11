@@ -29,6 +29,7 @@ Use this when you want a structured release-readiness pass without digging throu
 2. Launch the desktop app and confirm it reports `Control plane: Service`.
 3. Run `powershell -ExecutionPolicy Bypass -File scripts/service/Get-SessionGuardServiceStatus.ps1`.
 4. Confirm the status output reports control-plane reachability and health snapshot details.
+5. In a non-elevated app session, confirm the UI reports `Action access: Requires elevated app` and leaves mitigation or approval actions unavailable.
 
 ## Combined install path
 
@@ -43,7 +44,8 @@ Use this when you want a structured release-readiness pass without digging throu
 1. Launch the app from an elevated shell.
 2. Apply the recommended mitigation.
 3. Confirm the mitigation state changes to applied.
-4. Reset managed settings and confirm the state returns to the prior value or `<not set>`.
+4. Grant and clear a restart approval window if the current policy state requires one.
+5. Reset managed settings and confirm the state returns to the prior value or `<not set>`.
 
 ## Published-layout and upgrade path
 
@@ -59,6 +61,7 @@ Use this when you want a structured release-readiness pass without digging throu
 2. Confirm the bundle, app, service, and source zip files exist under `artifacts/releases/<version>/`.
 3. Confirm the combined bundle contains `SessionGuard.App.exe`, `SessionGuard.Service.exe`, `Install-SessionGuard.ps1`, `Uninstall-SessionGuard.ps1`, and the supporting install scripts.
 4. Confirm the published desktop app folder contains `SessionGuard.App.exe`.
+5. Confirm the public app, service, and bundle zip assets contain empty `logs/` and `state/` directories only, not machine-local log files or persisted runtime JSON.
 
 ## Logs and state
 

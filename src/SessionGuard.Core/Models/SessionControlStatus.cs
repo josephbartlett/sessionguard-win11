@@ -4,4 +4,5 @@ public sealed record SessionControlStatus(
     SessionScanResult ScanResult,
     bool GuardModeEnabled,
     string ConnectionMode,
-    bool IsRemote);
+    bool IsRemote,
+    bool CanPerformServiceWrites = false);

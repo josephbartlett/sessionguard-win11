@@ -23,7 +23,7 @@ It is designed for people who keep live work open for long stretches of time: te
 
 - Windows 11
 - .NET 9 SDK for source builds and local `dotnet run`
-- administrative rights only when you need to install the service or apply native mitigation settings
+- administrative rights only when you need to install or update the service, or when you want the app to request service-owned mitigation or approval changes
 
 ## Quick Start
 
@@ -42,6 +42,8 @@ powershell -ExecutionPolicy Bypass -File .\Install-SessionGuard.ps1
 ```
 
 That is the preferred end-user path. It installs the background service, registers the tray app to start at sign-in for the current user, and launches the app minimized to the tray unless you opt out.
+
+Install it from the same signed-in Windows account that should get the tray auto-start. The installer writes the startup registration under that user's `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` key.
 
 ### Try the desktop app only
 
@@ -65,7 +67,7 @@ In another:
 dotnet run --project src/SessionGuard.App/SessionGuard.App.csproj
 ```
 
-When this path is active, the app should report `Control plane: Service`.
+When this path is active, the app should report `Control plane: Service`. Monitoring stays available in a normal user session, but mitigation and approval changes still require running `SessionGuard.App.exe` as administrator.
 
 ### Install the background service
 
@@ -116,7 +118,7 @@ SessionGuard has two processes with different responsibilities:
 
 - **`SessionGuard.Service.exe`**: background engine
   - runs scans continuously
-  - owns service-backed write actions
+  - owns service-backed mitigation and approval actions
   - auto-starts with Windows when installed as a service
   - does **not** show a tray icon
 - **`SessionGuard.App.exe`**: tray and dashboard shell
@@ -124,6 +126,7 @@ SessionGuard has two processes with different responsibilities:
   - talks to the service when it is available
   - falls back to local read-only monitoring when the service is unavailable
   - can be registered to auto-start at user sign-in
+  - must be run as administrator if you want it to request service-owned mitigation or approval changes
 
 The tray icon belongs to the app, not the service.
 
@@ -173,7 +176,8 @@ Published service layouts preserve live runtime config under `config/` and shipp
 
 - non-elevated mode supports monitoring, scanning, config changes, logs, and dashboard status
 - mitigation apply or reset actions require elevation because they write under `HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate`
-- mitigation and approval writes are service-owned; if the app falls back locally, those actions become read-only on purpose
+- restart approval changes are also service-owned and require an elevated app session when connected to the service
+- if the app falls back locally, mitigation and approval actions become read-only on purpose
 
 ## Logs and State
 
@@ -221,6 +225,7 @@ Pushing an annotated `vX.Y.Z` tag now triggers the `Release Assets` workflow. Th
 - runs the repo-owned Windows validation flow
 - publishes self-contained `win-x64` desktop and service binaries
 - publishes a combined bundle zip that contains both runtimes plus install scripts
+- strips live logs and state from the public app, service, and bundle artifacts
 - uploads the generated zip assets
 - creates or updates the matching GitHub Release
 

@@ -81,12 +81,17 @@ public sealed class NamedPipeSessionGuardControlPlane : ISessionGuardControlPlan
         CancellationToken cancellationToken)
     {
         var response = await SendAsync(request, cancellationToken);
-        if (!response.Success || response.MitigationResult is null)
+        if (response.MitigationResult is not null)
+        {
+            return response.MitigationResult;
+        }
+
+        if (!response.Success)
         {
             throw new InvalidOperationException(response.Message);
         }
 
-        return response.MitigationResult;
+        throw new InvalidOperationException("SessionGuard service did not return mitigation state.");
     }
 
     private async Task<PolicyApprovalCommandResult> ExecuteForPolicyAsync(
@@ -94,12 +99,17 @@ public sealed class NamedPipeSessionGuardControlPlane : ISessionGuardControlPlan
         CancellationToken cancellationToken)
     {
         var response = await SendAsync(request, cancellationToken);
-        if (!response.Success || response.PolicyResult is null)
+        if (response.PolicyResult is not null)
+        {
+            return response.PolicyResult;
+        }
+
+        if (!response.Success)
         {
             throw new InvalidOperationException(response.Message);
         }
 
-        return response.PolicyResult;
+        throw new InvalidOperationException("SessionGuard service did not return policy approval state.");
     }
 
     private async Task<SessionControlResponse> SendAsync(

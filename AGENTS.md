@@ -101,6 +101,7 @@ Short summary of the release.
 - Put presentation and WPF-only code in `src/SessionGuard.App`.
 - Keep defaults and operator-editable behavior in `config/*.json` rather than hard-coding them.
 - Keep derived folders such as `bin/`, `obj/`, `logs/`, `state/`, and packaging artifacts out of source control unless a human explicitly asks otherwise.
+- Public release assets and release bundles must not include machine-local logs, snapshots, approval state, or other runtime-generated files from prior runs.
 
 ## Testing and verification
 
@@ -124,6 +125,7 @@ Short summary of the release.
 - When a feature spans the service and the app, documentation must explicitly say which process owns startup, the tray icon, and privileged actions.
 - When there is a preferred install or operator path, document that path first and label alternative or lower-level flows as advanced.
 - Keep documentation honest about confidence, permissions, and Windows platform boundaries.
+- When a feature depends on both service connectivity and app elevation, document both conditions explicitly instead of collapsing them into a generic "service-backed" description.
 
 ## Logging and diagnostics
 

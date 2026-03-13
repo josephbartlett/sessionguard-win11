@@ -9,11 +9,13 @@ namespace SessionGuard.Infrastructure.Services;
 public sealed class FilePolicyApprovalStore : IPolicyApprovalStore
 {
     private readonly string _approvalPath;
+    private readonly string _corruptApprovalDirectory;
     private readonly IAppLogger _logger;
 
     public FilePolicyApprovalStore(RuntimePaths paths, IAppLogger logger)
     {
         _approvalPath = Path.Combine(paths.StateDirectory, "policy-approval.json");
+        _corruptApprovalDirectory = Path.Combine(paths.StateDirectory, "corrupt");
         _logger = logger;
     }
 
@@ -81,12 +83,76 @@ public sealed class FilePolicyApprovalStore : IPolicyApprovalStore
             return PolicyApprovalState.None;
         }
 
-        await using var stream = File.OpenRead(_approvalPath);
-        return await JsonSerializer.DeserializeAsync<PolicyApprovalState>(
-                   stream,
-                   SessionGuardJson.Default,
-                   cancellationToken) ??
-               PolicyApprovalState.None;
+        try
+        {
+            await using var stream = File.OpenRead(_approvalPath);
+            return await JsonSerializer.DeserializeAsync<PolicyApprovalState>(
+                       stream,
+                       SessionGuardJson.Default,
+                       cancellationToken) ??
+                   PolicyApprovalState.None;
+        }
+        catch (JsonException exception)
+        {
+            var quarantinedPath = QuarantineCorruptApprovalFile();
+            _logger.Warn(
+                "policy.approval.invalid",
+                new
+                {
+                    sourcePath = _approvalPath,
+                    quarantinedPath,
+                    exception.Message
+                });
+            return PolicyApprovalState.None;
+        }
+        catch (IOException exception)
+        {
+            _logger.Warn(
+                "policy.approval.unreadable",
+                new
+                {
+                    sourcePath = _approvalPath,
+                    exception.Message
+                });
+            return PolicyApprovalState.None;
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            _logger.Warn(
+                "policy.approval.unreadable",
+                new
+                {
+                    sourcePath = _approvalPath,
+                    exception.Message
+                });
+            return PolicyApprovalState.None;
+        }
+    }
+
+    private string? QuarantineCorruptApprovalFile()
+    {
+        if (!File.Exists(_approvalPath))
+        {
+            return null;
+        }
+
+        try
+        {
+            Directory.CreateDirectory(_corruptApprovalDirectory);
+            var quarantinePath = Path.Combine(
+                _corruptApprovalDirectory,
+                $"policy-approval-{DateTimeOffset.UtcNow:yyyyMMddHHmmssfff}.invalid.json");
+            File.Move(_approvalPath, quarantinePath);
+            return quarantinePath;
+        }
+        catch (IOException)
+        {
+            return null;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return null;
+        }
     }
 
     private async Task SaveAsync(PolicyApprovalState state, CancellationToken cancellationToken)

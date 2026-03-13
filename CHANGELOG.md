@@ -4,6 +4,12 @@ All notable changes to this project should be recorded here in reverse chronolog
 
 ## Unreleased
 
+- Hardened the service pipe so service-backed mitigation and approval changes now require an authorized administrative caller instead of trusting raw pipe connectivity alone.
+- Added safe recovery for corrupt `state/policy-approval.json` by quarantining invalid files and keeping scans or service startup alive.
+- Tightened public release asset publishing so app, service, and combined bundle packages no longer preserve live logs or state from a reused publish directory.
+- Fixed the sign-in startup path so `--start-minimized` launches quietly to the tray instead of flashing the dashboard window first.
+- Updated runtime and getting-started docs to explain the service-versus-app model, current-user startup registration caveat, and the difference between service connectivity and write access.
+
 ## 1.0.2 - 2026-03-12
 
 - Added a combined install path that installs the service, registers the tray app to start at user sign-in, and launches the app minimized to the tray.

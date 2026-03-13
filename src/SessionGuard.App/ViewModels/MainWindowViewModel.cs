@@ -865,11 +865,11 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             PendingRestartText = "Ambiguous / review signals";
         }
 
-        AdminAccessText = result.IsElevated
-            ? "Elevated"
+        AdminAccessText = status.CanPerformServiceWrites
+            ? "Available"
             : status.IsRemote
-                ? "Service-backed"
-                : "Read-only";
+                ? "Requires elevated app"
+                : "Service unavailable";
         LastScanText = $"Last scan: {result.Timestamp.LocalDateTime:G}";
         StatusSummary = result.Summary;
         SignalOverviewText = result.SignalOverview.Summary;
@@ -877,10 +877,12 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         ConnectionModeText = status.IsRemote
             ? "Control plane: Service (background service is authoritative)"
             : "Control plane: Local fallback (the dashboard is scanning in-process because the service is unavailable)";
-        ServiceWriteActionsAvailable = status.IsRemote;
-        ServiceActionAvailabilityText = status.IsRemote
+        ServiceWriteActionsAvailable = status.CanPerformServiceWrites;
+        ServiceActionAvailabilityText = status.CanPerformServiceWrites
             ? "Managed actions: service-backed mitigation and approval changes are available."
-            : "Managed actions: mitigation and approval changes are disabled in local fallback until the background service reconnects.";
+            : status.IsRemote
+                ? "Managed actions: the service is connected, but this app session is not elevated. Run SessionGuard.App as administrator to change protections or approval state."
+                : "Managed actions: mitigation and approval changes are disabled in local fallback until the background service reconnects.";
         PolicyDecisionText = result.Policy.Validation.HasErrors
             ? "Policy decision: Unavailable due to configuration errors"
             : $"Policy decision: {FormatPolicyDecision(result.Policy.Decision)}";
@@ -930,19 +932,21 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         FriendlyStatusHeadline = BuildFriendlyStatusHeadline(result);
         FriendlyStatusBody = BuildFriendlyStatusBody(result);
         ActiveWorkSummaryText = BuildActiveWorkSummary(result);
-        ServiceModeSummaryText = status.IsRemote
-            ? "Service mode: the background service is connected and can change protections when needed."
-            : "Service mode: monitoring only. The background service is unavailable, so SessionGuard cannot change protections right now.";
+        ServiceModeSummaryText = status.CanPerformServiceWrites
+            ? "Service mode: the background service is connected and this app session can change protections when needed."
+            : status.IsRemote
+                ? "Service mode: the background service is connected for monitoring, but managed changes still require running the app as administrator."
+                : "Service mode: monitoring only. The background service is unavailable, so SessionGuard cannot change protections right now.";
         FriendlyReasonHeadline = BuildFriendlyReasonHeadline(result);
         FriendlyReasonBody = BuildFriendlyReasonBody(result);
         FriendlyProtectionSummary = BuildFriendlyProtectionSummary(result);
-        ShowGrantApprovalAction = status.IsRemote &&
+        ShowGrantApprovalAction = status.CanPerformServiceWrites &&
                                   result.Policy.RequiresApproval &&
                                   !result.Policy.ApprovalActive &&
                                   !result.Policy.Validation.HasErrors;
-        ShowClearApprovalAction = status.IsRemote && result.Policy.ApprovalActive;
-        ShowApplyMitigationsAction = status.IsRemote && result.Mitigations.Any(mitigation => !mitigation.IsApplied);
-        ShowResetMitigationsAction = status.IsRemote && result.Mitigations.Any(mitigation => mitigation.IsApplied);
+        ShowClearApprovalAction = status.CanPerformServiceWrites && result.Policy.ApprovalActive;
+        ShowApplyMitigationsAction = status.CanPerformServiceWrites && result.Mitigations.Any(mitigation => !mitigation.IsApplied);
+        ShowResetMitigationsAction = status.CanPerformServiceWrites && result.Mitigations.Any(mitigation => mitigation.IsApplied);
         ConfigureRecommendedAction(status, result);
     }
 
@@ -974,7 +978,22 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             return;
         }
 
-        if (status.IsRemote && result.Policy.RequiresApproval && !result.Policy.ApprovalActive)
+        if (status.IsRemote &&
+            !status.CanPerformServiceWrites &&
+            (result.Policy.RequiresApproval ||
+             result.Policy.ApprovalActive ||
+             result.Mitigations.Any()))
+        {
+            SetRecommendedAction(
+                RecommendedActionKind.OpenWindowsUpdateOptions,
+                "Monitoring is connected, but protection changes need an elevated app session.",
+                "The background service is running, but this app session is not elevated, so SessionGuard cannot change mitigation settings or restart approval state from here.",
+                "Run SessionGuard.App as administrator if you want SessionGuard to change protections. You can use Windows Update options for a manual review in the meantime.",
+                "Windows Update options");
+            return;
+        }
+
+        if (status.CanPerformServiceWrites && result.Policy.RequiresApproval && !result.Policy.ApprovalActive)
         {
             SetRecommendedAction(
                 RecommendedActionKind.GrantApproval,
@@ -985,7 +1004,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             return;
         }
 
-        if (status.IsRemote && result.Mitigations.Any(mitigation => !mitigation.IsApplied))
+        if (status.CanPerformServiceWrites && result.Mitigations.Any(mitigation => !mitigation.IsApplied))
         {
             SetRecommendedAction(
                 RecommendedActionKind.ApplyMitigations,

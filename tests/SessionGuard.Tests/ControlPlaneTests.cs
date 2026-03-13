@@ -402,10 +402,10 @@ public sealed class ControlPlaneTests
             => Task.FromResult(new MitigationCommandResult(true, false, false, "ok", Array.Empty<ManagedMitigationState>()));
 
         public Task<PolicyApprovalCommandResult> GrantRestartApprovalAsync(CancellationToken cancellationToken = default)
-            => Task.FromResult(new PolicyApprovalCommandResult(true, false, "ok", _status.ScanResult.Policy));
+            => Task.FromResult(new PolicyApprovalCommandResult(true, false, false, "ok", _status.ScanResult.Policy));
 
         public Task<PolicyApprovalCommandResult> ClearRestartApprovalAsync(CancellationToken cancellationToken = default)
-            => Task.FromResult(new PolicyApprovalCommandResult(true, false, "ok", _status.ScanResult.Policy));
+            => Task.FromResult(new PolicyApprovalCommandResult(true, false, false, "ok", _status.ScanResult.Policy));
     }
 
     private sealed class RecordingControlPlane : StubControlPlane

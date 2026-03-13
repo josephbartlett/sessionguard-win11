@@ -147,6 +147,7 @@ public sealed class SessionGuardServiceRuntime
             return new PolicyApprovalCommandResult(
                 true,
                 false,
+                false,
                 $"Granted a temporary restart approval window for {windowMinutes} minute(s).",
                 status.ScanResult.Policy);
         }
@@ -168,6 +169,7 @@ public sealed class SessionGuardServiceRuntime
             var status = await ScanLockedAsync(configuration, cancellationToken);
             return new PolicyApprovalCommandResult(
                 true,
+                false,
                 false,
                 "Cleared the temporary restart approval window.",
                 status.ScanResult.Policy);

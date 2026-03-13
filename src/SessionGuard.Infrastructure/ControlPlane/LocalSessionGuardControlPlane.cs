@@ -73,6 +73,7 @@ public sealed class LocalSessionGuardControlPlane : ISessionGuardControlPlane
         return new PolicyApprovalCommandResult(
             Success: false,
             RequiresService: true,
+            RequiresElevation: false,
             "Restart approval changes are service-owned. Start the SessionGuard service and reconnect before granting approval.",
             status.ScanResult.Policy);
     }
@@ -83,6 +84,7 @@ public sealed class LocalSessionGuardControlPlane : ISessionGuardControlPlane
         return new PolicyApprovalCommandResult(
             Success: false,
             RequiresService: true,
+            RequiresElevation: false,
             "Restart approval changes are service-owned. Start the SessionGuard service and reconnect before clearing approval.",
             status.ScanResult.Policy);
     }

@@ -67,6 +67,25 @@ public sealed class FilePolicyApprovalStoreTests : IDisposable
         Assert.False(File.Exists(approvalPath));
     }
 
+    [Fact]
+    public async Task GetCurrentAsync_QuarantinesInvalidApprovalFileAndReturnsNone()
+    {
+        var store = CreateStore();
+        var paths = RuntimePaths.Discover(_runtimeRoot);
+        var approvalPath = Path.Combine(paths.StateDirectory, "policy-approval.json");
+
+        await File.WriteAllTextAsync(approvalPath, "{ not-valid-json");
+
+        var current = await store.GetCurrentAsync(DateTimeOffset.Parse("2026-03-11T16:31:00-04:00"));
+
+        Assert.False(current.IsActive);
+        Assert.False(File.Exists(approvalPath));
+
+        var quarantineDirectory = Path.Combine(paths.StateDirectory, "corrupt");
+        Assert.True(Directory.Exists(quarantineDirectory));
+        Assert.Single(Directory.GetFiles(quarantineDirectory, "policy-approval-*.invalid.json"));
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_runtimeRoot))

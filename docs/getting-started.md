@@ -6,7 +6,7 @@ This guide is the fastest way to get SessionGuard running locally and understand
 
 - Windows 11
 - .NET 9 SDK for source builds
-- administrative rights only for service installation, service update, and native mitigation writes
+- administrative rights only for service installation, service update, and service-backed mitigation or approval changes
 
 ## 1. Build the solution
 
@@ -28,6 +28,8 @@ That is the preferred operator path for a real machine. It:
 - installs the Windows Service
 - registers the app to start at user sign-in
 - launches the app minimized to the tray unless you opt out
+
+Run the installer from the same signed-in Windows account that should get the tray auto-start. The startup registration is written to that user's `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` key.
 
 ## 3. Try the desktop app without installing anything
 
@@ -61,7 +63,8 @@ dotnet run --project src/SessionGuard.App/SessionGuard.App.csproj
 What to expect:
 
 - the app should report `Control plane: Service`
-- service-owned actions become available
+- monitoring becomes service-backed
+- mitigation and approval changes still require running `SessionGuard.App.exe` as administrator
 - the service writes `state/service-health.json`
 
 ## 5. Install the service and tray app from source
@@ -159,6 +162,8 @@ That is expected when:
 - the app is not elevated
 - the background service path is unavailable
 - the app is intentionally in read-only local fallback mode
+
+If the service is connected but the UI says `Action access: Requires elevated app`, monitoring is working correctly. Launch `SessionGuard.App.exe` from an elevated shell when you need SessionGuard to change mitigation or approval state.
 
 ### Policy diagnostics are visible
 

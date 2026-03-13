@@ -3,7 +3,8 @@ param(
     [string]$Configuration = "Release",
     [string]$Runtime = "win-x64",
     [string]$OutputDir = "",
-    [switch]$SelfContained
+    [switch]$SelfContained,
+    [switch]$PreserveRuntimeState
 )
 
 Set-StrictMode -Version Latest
@@ -51,7 +52,12 @@ function Restore-PreservedDirectory {
 
 if (Test-Path $OutputDir) {
     $backupRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("SessionGuard.AppPublishBackup\\" + [Guid]::NewGuid().ToString("N"))
-    foreach ($name in @("config", "logs", "state")) {
+    $preservedNames = @("config")
+    if ($PreserveRuntimeState.IsPresent) {
+        $preservedNames += @("logs", "state")
+    }
+
+    foreach ($name in $preservedNames) {
         $source = Join-Path $OutputDir $name
         if (Test-Path $source) {
             New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
@@ -98,8 +104,19 @@ try {
         Copy-Item $configSource -Destination $runtimeConfigDestination -Recurse -Force
     }
 
-    Restore-PreservedDirectory -Name "logs" -DestinationRoot $OutputDir
-    Restore-PreservedDirectory -Name "state" -DestinationRoot $OutputDir
+    if ($PreserveRuntimeState.IsPresent) {
+        Restore-PreservedDirectory -Name "logs" -DestinationRoot $OutputDir
+        Restore-PreservedDirectory -Name "state" -DestinationRoot $OutputDir
+    }
+    else {
+        if (Test-Path $logDirectory) {
+            Remove-Item $logDirectory -Recurse -Force
+        }
+
+        if (Test-Path $stateDirectory) {
+            Remove-Item $stateDirectory -Recurse -Force
+        }
+    }
 
     New-Item -ItemType Directory -Path $logDirectory -Force | Out-Null
     New-Item -ItemType Directory -Path $stateDirectory -Force | Out-Null
@@ -130,8 +147,10 @@ try {
 }
 catch {
     Restore-PreservedDirectory -Name "config" -DestinationRoot $OutputDir
-    Restore-PreservedDirectory -Name "logs" -DestinationRoot $OutputDir
-    Restore-PreservedDirectory -Name "state" -DestinationRoot $OutputDir
+    if ($PreserveRuntimeState.IsPresent) {
+        Restore-PreservedDirectory -Name "logs" -DestinationRoot $OutputDir
+        Restore-PreservedDirectory -Name "state" -DestinationRoot $OutputDir
+    }
     throw
 }
 finally {

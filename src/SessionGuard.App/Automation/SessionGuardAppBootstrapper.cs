@@ -67,6 +67,7 @@ internal static class SessionGuardAppBootstrapper
 
         return new MainWindow(
             viewModel,
-            options.UseTrayIcon);
+            options.UseTrayIcon,
+            options.ForceStartMinimized && options.UseTrayIcon);
     }
 }

@@ -101,7 +101,8 @@ public sealed class PipeMessageProtocolTests
                     new[] { "No action required." }),
                 GuardModeEnabled: true,
                 "Service",
-                IsRemote: true),
+                IsRemote: true,
+                CanPerformServiceWrites: true),
                     new MitigationCommandResult(
                         true,
                         false,
@@ -121,6 +122,7 @@ public sealed class PipeMessageProtocolTests
                 }),
             new PolicyApprovalCommandResult(
                 true,
+                false,
                 false,
                 "Granted approval",
                 new PolicyEvaluation(
@@ -143,6 +145,7 @@ public sealed class PipeMessageProtocolTests
         Assert.Equal("Scan completed.", roundTripped.Message);
         Assert.NotNull(roundTripped.Status);
         Assert.Equal("Service", roundTripped.Status!.ConnectionMode);
+        Assert.True(roundTripped.Status.CanPerformServiceWrites);
         Assert.Equal(RestartStateCategory.MitigatedDeferred, roundTripped.Status.ScanResult.State);
         Assert.NotNull(roundTripped.MitigationResult);
         Assert.Single(roundTripped.MitigationResult!.CurrentStates);
