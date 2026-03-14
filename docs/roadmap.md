@@ -125,7 +125,7 @@ Delivered:
 
 The items below are not promises. They are the most likely next areas of value based on the current product shape.
 
-### 1.x — Further Tray and Notification Refinement
+### v1.2.0 Candidate — Everyday Tray Workflow
 
 Purpose:
 Keep improving the day-to-day tray experience now that the core tray-first shell is in place.
@@ -139,7 +139,7 @@ Likely work:
 
 Reference:
 
-- [`docs/plans/v1.1.0-tray-first-experience-plan.md`](plans/v1.1.0-tray-first-experience-plan.md)
+- [`docs/plans/v1.2.0-everyday-tray-workflow-plan.md`](plans/v1.2.0-everyday-tray-workflow-plan.md)
 
 Risks:
 
