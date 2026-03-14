@@ -206,7 +206,7 @@ public sealed class SessionGuardCoordinator
 
         if (!isElevated)
         {
-            recommendations.Add("Use Open elevated controls, or run SessionGuard.App.exe as administrator, when you need to apply or reset native mitigation settings. Non-elevated mode stays read-only.");
+            recommendations.Add("Use Open elevated controls when you need to apply or reset native mitigation settings. Non-elevated mode stays read-only.");
         }
 
         if (limitedVisibility)

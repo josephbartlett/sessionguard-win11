@@ -934,7 +934,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             Process.Start(new ProcessStartInfo
             {
                 FileName = currentProcessPath,
-                Arguments = "--disable-tray --technical-view",
+                Arguments = "--disable-tray --technical-view --disable-single-instance",
                 UseShellExecute = true,
                 Verb = "runas",
                 WorkingDirectory = Path.GetDirectoryName(currentProcessPath) ?? AppContext.BaseDirectory

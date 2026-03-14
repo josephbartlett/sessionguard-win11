@@ -36,4 +36,15 @@ public sealed class SessionGuardAppOptionsTests
         Assert.False(options.ForceStartMinimized);
         Assert.True(options.ForceTechnicalView);
     }
+
+    [Fact]
+    public void Parse_DisableSingleInstanceFlag_DisablesSingleInstanceReuse()
+    {
+        var options = SessionGuardAppOptions.Parse(new[] { "--disable-tray", "--technical-view", "--disable-single-instance" });
+
+        Assert.False(options.UseTrayIcon);
+        Assert.False(options.EnableSingleInstance);
+        Assert.False(options.ForceStartMinimized);
+        Assert.True(options.ForceTechnicalView);
+    }
 }

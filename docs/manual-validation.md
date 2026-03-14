@@ -48,7 +48,7 @@ Use this when you want a structured release-readiness pass without digging throu
 
 ## Elevated behavior
 
-1. Use `Open elevated controls` from the running tray app or launch the app from an elevated shell.
+1. Use `Open elevated controls` from the running tray app, or launch `SessionGuard.App.exe --disable-tray --technical-view --disable-single-instance` from an elevated shell.
 2. Apply the recommended mitigation.
 3. Confirm the mitigation state changes to applied.
 4. Grant and clear a restart approval window if the current policy state requires one.

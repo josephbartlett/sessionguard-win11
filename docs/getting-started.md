@@ -132,7 +132,7 @@ That is expected when:
 - the background service path is unavailable
 - the app is intentionally in read-only local fallback mode
 
-If the service is connected but the UI shows `Needs elevated window` under `Protection changes`, monitoring is working correctly. Use `Open elevated controls` from the dashboard or tray-driven workflow when you need SessionGuard to change guard mode, mitigation, or approval state. Launching `SessionGuard.App.exe` from an elevated shell still works, but the built-in elevated-controls path is the intended day-to-day flow.
+If the service is connected but the UI shows `Needs elevated window` under `Protection changes`, monitoring is working correctly. Use `Open elevated controls` from the dashboard or tray-driven workflow when you need SessionGuard to change guard mode, mitigation, or approval state. For manual troubleshooting, the equivalent advanced launch is `SessionGuard.App.exe --disable-tray --technical-view --disable-single-instance` from an elevated shell.
 
 ### Policy diagnostics are visible
 

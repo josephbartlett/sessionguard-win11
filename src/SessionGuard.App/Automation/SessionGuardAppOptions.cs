@@ -78,6 +78,12 @@ public sealed record SessionGuardAppOptions(
             if (string.Equals(argument, "--technical-view", StringComparison.OrdinalIgnoreCase))
             {
                 forceTechnicalView = true;
+                continue;
+            }
+
+            if (string.Equals(argument, "--disable-single-instance", StringComparison.OrdinalIgnoreCase))
+            {
+                disableSingleInstance = true;
             }
         }
 
