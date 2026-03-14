@@ -48,7 +48,7 @@ public sealed class RegistryRestartSignalProvider : IRestartSignalProvider
                 "PendingFileRenameOperations",
                 "Pending file rename operations",
                 RestartIndicatorCategory.PendingRestart,
-                "Pending file rename operations were detected.",
+                "Pending file rename operations were detected. This can be noisy and does not confirm a restart requirement by itself.",
                 "No pending file rename operations were detected."),
             CheckDwordValue(
                 RegistryHive.LocalMachine,
@@ -119,7 +119,7 @@ public sealed class RegistryRestartSignalProvider : IRestartSignalProvider
                 category,
                 isActive,
                 isActive ? activeSummary : inactiveSummary,
-                SignalConfidence.Medium);
+                SignalConfidence.Low);
         }
         catch (Exception exception)
         {

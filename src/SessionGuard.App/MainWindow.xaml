@@ -185,7 +185,7 @@
                                         Background="#F8FAFC"
                                         CornerRadius="10">
                                     <StackPanel>
-                                        <TextBlock Foreground="{StaticResource SecondaryTextBrush}" Text="Windows restart" />
+                                        <TextBlock Foreground="{StaticResource SecondaryTextBrush}" Text="Restart status" />
                                         <TextBlock Margin="0,8,0,0"
                                                    FontSize="16"
                                                    FontWeight="SemiBold"

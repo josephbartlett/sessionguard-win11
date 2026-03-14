@@ -2,6 +2,12 @@
 
 All notable changes to this project should be recorded here in reverse chronological order.
 
+## 1.2.1 - 2026-03-14
+
+- Downgraded `PendingFileRenameOperations` so it no longer counts as a definitive pending reboot signal by itself.
+- Updated the dashboard card label from `Windows restart` to `Restart status` so ambiguous restart evidence is presented more honestly.
+- Added regression coverage for ambiguous protected-session states and low-confidence pending-file-rename signals.
+
 ## 1.2.0 - 2026-03-14
 
 - Refined the everyday tray workflow so the tray menu now centers status, next step, one common action, and a smaller support area instead of mirroring the dashboard.

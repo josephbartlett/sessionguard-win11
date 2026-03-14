@@ -92,6 +92,31 @@ public sealed class RestartStatusEvaluatorTests
     }
 
     [Fact]
+    public void Evaluate_DoesNotTreatPendingFileRenameOperationsAloneAsDefinitiveRestart()
+    {
+        var indicators = new[]
+        {
+            new RestartIndicator(
+                "Registry restart signals",
+                "Pending file rename operations",
+                RestartIndicatorCategory.PendingRestart,
+                true,
+                "Pending file rename operations were detected. This can be noisy and does not confirm a restart requirement by itself.",
+                SignalConfidence.Low)
+        };
+
+        var evaluation = RestartStatusEvaluator.Evaluate(
+            indicators,
+            WorkspaceStateSnapshot.None(DateTimeOffset.Parse("2026-03-14T12:10:00-04:00")),
+            Array.Empty<ManagedMitigationState>());
+
+        Assert.Equal(RestartStateCategory.UnknownLimitedVisibility, evaluation.State);
+        Assert.Equal(RestartRiskLevel.Elevated, evaluation.RiskLevel);
+        Assert.False(evaluation.State == RestartStateCategory.RestartPending);
+        Assert.True(evaluation.HasAmbiguousSignals);
+    }
+
+    [Fact]
     public void BuildOverview_CountsProviderCoverageAndAmbiguousSignals()
     {
         var indicators = new[]

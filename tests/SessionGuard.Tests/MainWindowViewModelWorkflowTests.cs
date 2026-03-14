@@ -98,6 +98,67 @@ public sealed class MainWindowViewModelWorkflowTests
         Assert.Equal("Next: keep working. No action is needed.", viewModel.TrayNextStepText);
     }
 
+    [Fact]
+    public async Task RefreshAsync_ShowsAmbiguousRestartText_WhenProtectedStateDoesNotHaveDefinitiveRestart()
+    {
+        var timestamp = DateTimeOffset.Parse("2026-03-14T10:12:00-04:00");
+        var status = new SessionControlStatus(
+            new SessionScanResult(
+                timestamp,
+                RestartStateCategory.ProtectedSessionActive,
+                RestartRiskLevel.High,
+                ProtectionMode.PolicyGuardActive,
+                RestartPending: false,
+                HasAmbiguousSignals: true,
+                ProtectedSessionActive: true,
+                LimitedVisibility: false,
+                IsElevated: false,
+                Summary: "Active work is present while restart clues still need interpretation.",
+                new WorkspaceStateSnapshot(
+                    timestamp,
+                    HasRisk: true,
+                    WorkspaceRiskSeverity.High,
+                    WorkspaceConfidence.High,
+                    "Workspace-risk heuristics flagged active work.",
+                    new[]
+                    {
+                        new WorkspaceRiskItem(
+                            "Terminal and shell sessions",
+                            WorkspaceCategory.TerminalShell,
+                            WorkspaceRiskSeverity.High,
+                            WorkspaceConfidence.High,
+                            1,
+                            "Interactive shell detected.",
+                            new[] { "WindowsTerminal.exe" })
+                    }),
+                PolicyEvaluation.None,
+                new RestartSignalOverview(1, 1, 0, 1, 0, 1, 0, "1 restart-related signal needs interpretation, but no definitive pending reboot was confirmed."),
+                new[]
+                {
+                    new RestartIndicator(
+                        "Registry restart signals",
+                        "Pending file rename operations",
+                        RestartIndicatorCategory.PendingRestart,
+                        true,
+                        "Pending file rename operations were detected. This can be noisy and does not confirm a restart requirement by itself.",
+                        SignalConfidence.Low)
+                },
+                Array.Empty<ProtectedProcessMatch>(),
+                Array.Empty<ManagedMitigationState>(),
+                new[] { "Review the technical details before treating this as a confirmed restart." }),
+            GuardModeEnabled: true,
+            "Service",
+            IsRemote: true,
+            CanPerformServiceWrites: false);
+
+        using var viewModel = CreateViewModel(status);
+
+        await viewModel.RefreshAsync();
+
+        Assert.Equal("Ambiguous / review signals", viewModel.PendingRestartText);
+        Assert.Equal("Protected Session Active", viewModel.CurrentStatusText);
+    }
+
     private static MainWindowViewModel CreateViewModel(SessionControlStatus status)
     {
         return new MainWindowViewModel(

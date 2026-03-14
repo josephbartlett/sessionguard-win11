@@ -95,7 +95,7 @@ See [Limitations](docs/limitations.md) for the full platform and permissions bou
 - [Limitations](docs/limitations.md)
 - [Roadmap](docs/roadmap.md)
 - [Future service and shell direction](docs/future-service-architecture.md)
-- [Current release notes](docs/releases/v1.2.0.md)
+- [Current release notes](docs/releases/v1.2.1.md)
 
 ## Practical positioning
 
