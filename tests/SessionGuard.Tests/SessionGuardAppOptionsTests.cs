@@ -12,6 +12,7 @@ public sealed class SessionGuardAppOptionsTests
         Assert.True(options.UseTrayIcon);
         Assert.True(options.EnableSingleInstance);
         Assert.True(options.ForceStartMinimized);
+        Assert.False(options.ForceTechnicalView);
     }
 
     [Fact]
@@ -22,5 +23,17 @@ public sealed class SessionGuardAppOptionsTests
         Assert.False(options.UseTrayIcon);
         Assert.False(options.EnableSingleInstance);
         Assert.True(options.ForceStartMinimized);
+        Assert.False(options.ForceTechnicalView);
+    }
+
+    [Fact]
+    public void Parse_TechnicalViewFlag_EnablesForcedTechnicalStartup()
+    {
+        var options = SessionGuardAppOptions.Parse(new[] { "--technical-view" });
+
+        Assert.True(options.UseTrayIcon);
+        Assert.True(options.EnableSingleInstance);
+        Assert.False(options.ForceStartMinimized);
+        Assert.True(options.ForceTechnicalView);
     }
 }

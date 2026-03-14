@@ -124,9 +124,9 @@ Requirements:
 Example:
 
 ```powershell
-git tag -a v1.1.4 -m "SessionGuard 1.1.4"
+git tag -a v1.2.0 -m "SessionGuard 1.2.0"
 git push origin main
-git push origin v1.1.4
+git push origin v1.2.0
 ```
 
 The release workflow:

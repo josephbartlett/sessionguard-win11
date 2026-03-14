@@ -31,7 +31,7 @@
 - Temporary approval windows are stored locally in `state/policy-approval.json`. They survive app and service restarts, but they are not audited beyond local logs and local state.
 - Malformed `config/policies.json` now disables policy evaluation instead of failing the whole dashboard refresh. That is safer operationally, but it also means bad policy edits can silently remove rule enforcement until the operator reviews the diagnostic section.
 - Mitigation writes and approval changes are now service-owned. If the service is unavailable, SessionGuard intentionally drops to read-only monitoring rather than attempting those writes from the desktop fallback path.
-- Even when the service is connected, the desktop app must be running as administrator before it can request service-owned mitigation or approval changes. SessionGuard now enforces that boundary per command instead of trusting pipe connectivity alone.
+- Even when the service is connected, the desktop app still needs an elevated SessionGuard window before it can request service-owned mitigation or approval changes. SessionGuard now enforces that boundary per command instead of trusting pipe connectivity alone.
 - Process-block rules still depend on user-mode process visibility. If a critical process is hidden by permissions, short-lived, or outside the configured rule inputs, the rule can miss it.
 - Restart-window rules currently use the local machine clock and local time zone without a separate organizational calendar or maintenance-window service.
 

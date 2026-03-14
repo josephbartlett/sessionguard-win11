@@ -4,6 +4,7 @@ public sealed record SessionGuardAppOptions(
     string? UiScenarioName,
     bool DisableTrayIcon,
     bool ForceStartMinimized,
+    bool ForceTechnicalView,
     bool DisableSingleInstance)
 {
     public bool UseTrayIcon => !DisableTrayIcon && string.IsNullOrWhiteSpace(UiScenarioName);
@@ -19,6 +20,10 @@ public sealed record SessionGuardAppOptions(
             StringComparison.OrdinalIgnoreCase);
         var forceStartMinimized = string.Equals(
             Environment.GetEnvironmentVariable("SESSIONGUARD_START_MINIMIZED"),
+            "1",
+            StringComparison.OrdinalIgnoreCase);
+        var forceTechnicalView = string.Equals(
+            Environment.GetEnvironmentVariable("SESSIONGUARD_TECHNICAL_VIEW"),
             "1",
             StringComparison.OrdinalIgnoreCase);
         var disableSingleInstance = string.Equals(
@@ -67,6 +72,12 @@ public sealed record SessionGuardAppOptions(
                 string.Equals(argument, "--tray", StringComparison.OrdinalIgnoreCase))
             {
                 forceStartMinimized = true;
+                continue;
+            }
+
+            if (string.Equals(argument, "--technical-view", StringComparison.OrdinalIgnoreCase))
+            {
+                forceTechnicalView = true;
             }
         }
 
@@ -74,6 +85,7 @@ public sealed record SessionGuardAppOptions(
             string.IsNullOrWhiteSpace(uiScenarioName) ? null : uiScenarioName.Trim(),
             disableTrayIcon,
             forceStartMinimized,
+            forceTechnicalView,
             disableSingleInstance);
     }
 }

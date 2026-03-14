@@ -45,6 +45,18 @@ Delivered:
 - a calmer dashboard overview with a tighter utility rail
 - startup, smoke, and release validation coverage for the tray-first flow
 
+### v1.1.1 through v1.1.4 — Runtime and Install Polish
+
+Purpose:
+Tighten the tray-first runtime so install, upgrade, elevation, and public docs behave predictably on real machines.
+
+Delivered:
+
+- isolated installed, source-run, and elevated app sessions correctly
+- clarified the preferred setup zip and direct-download install path
+- hardened the combined installer for first launch, reinstall, and live upgrade
+- aligned the public docs and generated setup README with the actual install/runtime model
+
 ### v0.1.0 — Desktop Monitor Foundation
 
 Purpose:
@@ -121,31 +133,26 @@ Delivered:
 - versioned release automation for binary assets
 - release-grade documentation and validation coverage
 
-## Likely Next Improvements
-
-The items below are not promises. They are the most likely next areas of value based on the current product shape.
-
-### v1.2.0 Candidate — Everyday Tray Workflow
+### v1.2.0 — Everyday Tray Workflow
 
 Purpose:
 Keep improving the day-to-day tray experience now that the core tray-first shell is in place.
 
-Likely work:
+Delivered:
 
 - tighter tray workflow and clearer tray status copy
 - fewer duplicated controls between notifications, tray, and dashboard
-- better action prompts when approval, mitigation, or service attention is needed
-- more selective notification behavior and clearer escalation thresholds
+- an explicit `Open elevated controls` path for service-backed write actions
+- a smaller support area under the tray menu instead of a long flat action list
+- aligned operator docs, validation steps, and workflow definitions for the tray-first runtime
 
 Reference:
 
 - [`docs/plans/v1.2.0-everyday-tray-workflow-plan.md`](plans/v1.2.0-everyday-tray-workflow-plan.md)
 
-Risks:
+## Likely Next Improvements
 
-- too much tray abstraction can hide important diagnostic context
-- notification noise can hurt trust if thresholds are not tightened at the same time
-- tray convenience should not blur the boundary between monitoring and service-owned writes
+The items below are not promises. They are the most likely next areas of value based on the current product shape.
 
 ### 1.x — Packaging and Distribution
 

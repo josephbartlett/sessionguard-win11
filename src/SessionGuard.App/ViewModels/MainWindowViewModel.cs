@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows.Threading;
@@ -19,6 +20,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private readonly IAppLogger _logger;
     private readonly RuntimePaths _runtimePaths;
     private readonly bool _forceStartMinimized;
+    private readonly bool _forceTechnicalView;
     private readonly bool _trayShellEnabled;
     private readonly DispatcherTimer _timer;
     private readonly EventHandler _timerHandler;
@@ -34,6 +36,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private readonly RelayCommand _openLogsCommand;
     private readonly RelayCommand _setSimpleViewCommand;
     private readonly RelayCommand _setTechnicalViewCommand;
+    private readonly RelayCommand _openElevatedSessionCommand;
     private readonly RelayCommand _openWindowsUpdateSettingsCommand;
 
     private OperatorAlertContext? _operatorAlertContext;
@@ -49,6 +52,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private bool _showApplyMitigationsAction;
     private bool _showClearApprovalAction;
     private bool _showGrantApprovalAction;
+    private bool _showOpenElevatedSessionAction;
     private bool _showResetMitigationsAction;
     private bool _suppressGuardModeRefresh;
     private bool _isBusy;
@@ -110,6 +114,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         IAppLogger logger,
         RuntimePaths runtimePaths,
         bool forceStartMinimized = false,
+        bool forceTechnicalView = false,
         bool trayShellEnabled = true)
     {
         _controlPlane = controlPlane;
@@ -117,6 +122,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         _logger = logger;
         _runtimePaths = runtimePaths;
         _forceStartMinimized = forceStartMinimized;
+        _forceTechnicalView = forceTechnicalView;
         _trayShellEnabled = trayShellEnabled;
 
         ProtectedProcesses = new ObservableCollection<ProtectedProcessMatch>();
@@ -145,6 +151,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         _openLogsCommand = new RelayCommand(() => OpenPath(_runtimePaths.LogDirectory), () => !IsBusy);
         _setSimpleViewCommand = new RelayCommand(() => SetTechnicalView(false), () => !IsBusy);
         _setTechnicalViewCommand = new RelayCommand(() => SetTechnicalView(true), () => !IsBusy);
+        _openElevatedSessionCommand = new RelayCommand(OpenElevatedSession, () => !IsBusy && ShowOpenElevatedSessionAction);
         _openWindowsUpdateSettingsCommand = new RelayCommand(OpenWindowsUpdateSettings, () => !IsBusy);
     }
 
@@ -190,6 +197,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
 
     public RelayCommand SetTechnicalViewCommand => _setTechnicalViewCommand;
 
+    public RelayCommand OpenElevatedSessionCommand => _openElevatedSessionCommand;
+
     public RelayCommand OpenWindowsUpdateSettingsCommand => _openWindowsUpdateSettingsCommand;
 
     public bool GuardModeEnabled
@@ -232,6 +241,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
                 _openLogsCommand.RaiseCanExecuteChanged();
                 _setSimpleViewCommand.RaiseCanExecuteChanged();
                 _setTechnicalViewCommand.RaiseCanExecuteChanged();
+                _openElevatedSessionCommand.RaiseCanExecuteChanged();
                 _openWindowsUpdateSettingsCommand.RaiseCanExecuteChanged();
             }
         }
@@ -477,6 +487,18 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         private set => SetProperty(ref _showClearApprovalAction, value);
     }
 
+    public bool ShowOpenElevatedSessionAction
+    {
+        get => _showOpenElevatedSessionAction;
+        private set
+        {
+            if (SetProperty(ref _showOpenElevatedSessionAction, value))
+            {
+                _openElevatedSessionCommand.RaiseCanExecuteChanged();
+            }
+        }
+    }
+
     public bool ShowApplyMitigationsAction
     {
         get => _showApplyMitigationsAction;
@@ -548,7 +570,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     public bool TrayShellEnabled => _trayShellEnabled;
 
     public string TrayWorkflowText => _trayShellEnabled
-        ? "Close the window to keep SessionGuard running in the tray. Use the tray menu for quick actions and reopen the dashboard only when you need more context."
+        ? "Close the window to keep SessionGuard running in the tray. The tray menu is the quickest place to read the current state and follow the recommended next step."
         : "This run is not using the tray shell, so the window stays in the foreground until you close it.";
 
     public string TrayTooltipText
@@ -709,8 +731,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
                 GuardModeEnabled = !explicitGuardMode.Value;
                 _suppressGuardModeRefresh = false;
                 LastActionMessage = exception.Message;
-                FriendlyProtectionSummary = "Guard mode changes require an elevated app session while the background service is connected.";
-                RecommendedActionSupportText = "Reopen SessionGuard.App as administrator if you want to change guard mode while using the service-backed path.";
+                FriendlyProtectionSummary = "Guard mode changes require an elevated SessionGuard window while the background service is connected.";
+                RecommendedActionSupportText = "Use Open elevated controls if you want to change guard mode while using the service-backed path.";
             }
             else
             {
@@ -874,6 +896,9 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             case RecommendedActionKind.ApplyMitigations:
                 await ApplyMitigationsAsync();
                 break;
+            case RecommendedActionKind.OpenElevatedSession:
+                OpenElevatedSession();
+                break;
             case RecommendedActionKind.OpenWindowsUpdateOptions:
                 OpenWindowsUpdateSettings();
                 break;
@@ -887,6 +912,44 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             case RecommendedActionKind.ScanNow:
                 await RefreshAsync(initialLoad: false, forceScan: true, explicitGuardMode: null, skipIfBusy: false);
                 break;
+        }
+    }
+
+    private void OpenElevatedSession()
+    {
+        var currentProcessPath = Path.Combine(AppContext.BaseDirectory, "SessionGuard.App.exe");
+        if (!File.Exists(currentProcessPath))
+        {
+            currentProcessPath = Environment.ProcessPath;
+        }
+
+        if (string.IsNullOrWhiteSpace(currentProcessPath) || !File.Exists(currentProcessPath))
+        {
+            LastActionMessage = "Could not locate SessionGuard.App.exe for the elevated launch.";
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = currentProcessPath,
+                Arguments = "--disable-tray --technical-view",
+                UseShellExecute = true,
+                Verb = "runas",
+                WorkingDirectory = Path.GetDirectoryName(currentProcessPath) ?? AppContext.BaseDirectory
+            });
+            LastActionMessage = "Opened an elevated SessionGuard window for protection changes.";
+        }
+        catch (Win32Exception exception) when (exception.NativeErrorCode == 1223)
+        {
+            _logger.Info("view.open_elevated_session.cancelled");
+            LastActionMessage = "Elevated SessionGuard launch was canceled.";
+        }
+        catch (Exception exception)
+        {
+            _logger.Error("view.open_elevated_session.failed", exception);
+            LastActionMessage = $"Could not open an elevated SessionGuard window: {exception.Message}";
         }
     }
 
@@ -931,7 +994,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
 
         if (initialLoad)
         {
-            ShowDetailedSignals = settings.UiPreferences.ShowDetailedSignals;
+            ShowDetailedSignals = _forceTechnicalView || settings.UiPreferences.ShowDetailedSignals;
             ShouldStartMinimized = settings.UiPreferences.StartMinimized || _forceStartMinimized;
         }
     }
@@ -955,7 +1018,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         AdminAccessText = status.CanPerformServiceWrites
             ? "Available"
             : status.IsRemote
-                ? "Requires elevated app"
+                ? "Needs elevated window"
                 : "Service unavailable";
         LastScanText = $"Last scan: {result.Timestamp.LocalDateTime:G}";
         StatusSummary = result.Summary;
@@ -966,10 +1029,11 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             : "Control plane: Local fallback (the dashboard is scanning in-process because the service is unavailable)";
         ServiceWriteActionsAvailable = status.CanPerformServiceWrites;
         GuardModeControlAvailable = !status.IsRemote || status.CanPerformServiceWrites;
+        ShowOpenElevatedSessionAction = status.IsRemote && !status.CanPerformServiceWrites;
         ServiceActionAvailabilityText = status.CanPerformServiceWrites
             ? "Managed actions: service-backed mitigation and approval changes are available."
             : status.IsRemote
-                ? "Managed actions: the service is connected, but this app session is not elevated. Run SessionGuard.App as administrator to change guard mode, protections, or approval state."
+                ? "Managed actions: monitoring is connected, but protection changes need an elevated SessionGuard window."
                 : "Managed actions: mitigation and approval changes are disabled in local fallback until the background service reconnects.";
         PolicyDecisionText = result.Policy.Validation.HasErrors
             ? "Policy decision: Unavailable due to configuration errors"
@@ -1026,7 +1090,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         ServiceModeSummaryText = status.CanPerformServiceWrites
             ? "Service mode: the background service is connected and this app session can change protections when needed."
             : status.IsRemote
-                ? "Service mode: the background service is connected for monitoring, but managed changes still require running the app as administrator."
+                ? "Service mode: the background service is connected for monitoring. Open an elevated SessionGuard window when you need to change protections."
                 : "Service mode: monitoring only. The background service is unavailable, so SessionGuard cannot change protections right now.";
         FriendlyReasonHeadline = BuildFriendlyReasonHeadline(result);
         FriendlyReasonBody = BuildFriendlyReasonBody(result);
@@ -1077,11 +1141,11 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
              result.Mitigations.Any()))
         {
             SetRecommendedAction(
-                RecommendedActionKind.OpenWindowsUpdateOptions,
-                "Monitoring is connected, but protection changes need an elevated app session.",
-                "The background service is running, but this app session is not elevated, so SessionGuard cannot change mitigation settings or restart approval state from here.",
-                "Run SessionGuard.App as administrator if you want SessionGuard to change protections. You can use Windows Update options for a manual review in the meantime.",
-                "Windows Update options");
+                RecommendedActionKind.OpenElevatedSession,
+                "Open an elevated SessionGuard window for protection changes.",
+                "The background service is connected for monitoring, but this app session cannot change guard mode, mitigations, or approval state.",
+                "The everyday tray app can keep monitoring while the elevated window handles the write actions.",
+                "Open elevated controls");
             return;
         }
 
@@ -1133,7 +1197,9 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
                 RecommendedActionKind.None,
                 "Approval is already active.",
                 "A temporary approval window is in place, so SessionGuard is not asking you to do anything else right now.",
-                "If you are finished, you can clear the approval window from Advanced details.");
+                status.CanPerformServiceWrites
+                    ? "If you are finished, you can clear the approval window from Advanced details."
+                    : "Keep working unless you need to clear the approval window from an elevated SessionGuard window.");
             return;
         }
 
@@ -1554,6 +1620,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         None,
         GrantApproval,
         ApplyMitigations,
+        OpenElevatedSession,
         OpenWindowsUpdateOptions,
         OpenPolicies,
         ScanNow

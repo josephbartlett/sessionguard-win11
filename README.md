@@ -49,6 +49,7 @@ SessionGuard has two processes:
 - **`SessionGuard.App.exe`**: tray icon and dashboard
   - starts at user sign-in when installed
   - owns the tray icon and visible UI
+  - uses the tray menu for the day-to-day summary, next step, and common action
   - connects to the service when available
   - falls back to local read-only monitoring when the service is unavailable
 
@@ -56,6 +57,7 @@ Important behavior:
 
 - the tray icon belongs to the app, not the service
 - service-backed guard-mode, mitigation, and approval actions require both service connectivity and an elevated app session
+- when the service is connected but the current app session cannot write, use `Open elevated controls` from the dashboard or tray-backed workflow instead of guessing which binary to relaunch
 - in normal installed use, the tray menu is the daily path and the dashboard is opened on demand
 
 For the fuller app-versus-service explanation, see [Runtime Model](docs/runtime-model.md).
@@ -91,7 +93,7 @@ See [Limitations](docs/limitations.md) for the full platform and permissions bou
 - [Limitations](docs/limitations.md)
 - [Roadmap](docs/roadmap.md)
 - [Future service and shell direction](docs/future-service-architecture.md)
-- [Current release notes](docs/releases/v1.1.4.md)
+- [Current release notes](docs/releases/v1.2.0.md)
 
 ## Practical positioning
 

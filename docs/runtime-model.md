@@ -31,6 +31,7 @@ It:
 - creates the tray icon
 - shows the dashboard window on demand
 - displays notifications
+- uses the tray menu for the current state, next step, and common action
 - talks to the service over the local control plane when the service is available
 - can run in a normal user session for monitoring only
 
@@ -38,7 +39,7 @@ It does **not**:
 
 - install the service automatically just by being launched
 - replace the service for service-owned write actions
-- request service-owned guard-mode, mitigation, or approval changes unless the app itself is running as administrator
+- request service-owned guard-mode, mitigation, or approval changes unless the app is using an elevated SessionGuard window
 
 ## Why both exist
 
@@ -79,7 +80,8 @@ What you get:
 
 - the dashboard and tray icon from the app
 - background scanning from the service
-- service-backed write actions only when the app is running as administrator
+- service-backed write actions only when an elevated SessionGuard window is running
+- the normal tray app can stay in place while `Open elevated controls` opens a separate elevated window for guard-mode, mitigation, or approval changes
 - an elevated app launch runs as a separate elevated SessionGuard session so it can request those write actions without replacing the standard tray app
 
 The UI should report `Control plane: Service`.
@@ -126,6 +128,7 @@ The service never owns the tray icon. That is the correct Windows model.
 - closing the dashboard keeps SessionGuard running in the tray
 - launching the same installed `SessionGuard.App.exe` again at the same privilege level brings the existing app forward instead of starting a second copy
 - launching `SessionGuard.App.exe` as administrator starts a separate elevated SessionGuard session when you need service-owned write access
+- the dashboard and tray-backed workflow expose that path as `Open elevated controls`
 - the tray menu is meant to be the quick daily workflow
 
 ## Distribution shape

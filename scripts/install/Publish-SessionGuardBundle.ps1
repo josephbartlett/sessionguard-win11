@@ -88,6 +88,7 @@ If Windows blocks the immediate launch, the install still succeeded. SessionGuar
 - The tray icon belongs to the app, not the service.
 - Launching the same installed `SessionGuard.App.exe` again at the same privilege level reuses the already-running tray app instead of starting a second copy.
 - Launching `SessionGuard.App.exe` as administrator starts a separate elevated SessionGuard session when you need service-owned write access.
+- When the dashboard says protection changes still need elevation, use `Open elevated controls`.
 
 ## Uninstall
 
@@ -99,7 +100,7 @@ powershell -ExecutionPolicy Bypass -File .\Uninstall-SessionGuard.ps1 -RemoveFil
 
 - SessionGuard does not disable Windows Update.
 - SessionGuard reduces restart disruption but does not guarantee prevention of every Windows restart path.
-- To change service-backed guard mode, mitigation, or approval state, run `SessionGuard.App.exe` as administrator.
+- To change service-backed guard mode, mitigation, or approval state, use `Open elevated controls` from the dashboard or launch `SessionGuard.App.exe` as administrator.
 - Installer switches: `-DoNotLaunchApp`, `-DoNotStartService`, and `-ValidateOnly -AsJson`.
 '@
 

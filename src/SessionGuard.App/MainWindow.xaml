@@ -200,7 +200,7 @@
                                         Background="#F8FAFC"
                                         CornerRadius="10">
                                     <StackPanel>
-                                        <TextBlock Foreground="{StaticResource SecondaryTextBrush}" Text="Action access" />
+                                        <TextBlock Foreground="{StaticResource SecondaryTextBrush}" Text="Protection changes" />
                                         <TextBlock Margin="0,8,0,0"
                                                    FontSize="16"
                                                    FontWeight="SemiBold"
@@ -690,6 +690,10 @@
                                                   IsEnabled="{Binding GuardModeControlAvailable}" />
 
                                         <WrapPanel Margin="0,14,0,0">
+                                            <Button Style="{StaticResource SecondaryActionButtonStyle}"
+                                                    Command="{Binding OpenElevatedSessionCommand}"
+                                                    Content="Open elevated controls"
+                                                    Visibility="{Binding ShowOpenElevatedSessionAction, Converter={StaticResource BooleanToVisibilityConverter}}" />
                                             <Button Style="{StaticResource SecondaryActionButtonStyle}"
                                                     AutomationProperties.AutomationId="{x:Static automation:UiSmokeAutomationIds.WindowsUpdateOptionsButton}"
                                                     Command="{Binding OpenWindowsUpdateSettingsCommand}"

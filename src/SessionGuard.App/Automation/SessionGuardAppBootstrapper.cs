@@ -64,6 +64,7 @@ internal static class SessionGuardAppBootstrapper
             logger,
             runtimePaths,
             options.ForceStartMinimized,
+            options.ForceTechnicalView,
             options.UseTrayIcon);
 
         return new MainWindow(

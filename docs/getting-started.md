@@ -73,10 +73,11 @@ dotnet run --project src/SessionGuard.App/SessionGuard.App.csproj
 What to expect:
 
 - the app should report `Control plane: Service`
-- the tray menu becomes the quickest day-to-day path
+- the tray menu becomes the quickest day-to-day path for state, next step, and the common action
 - monitoring becomes service-backed
-- guard-mode, mitigation, and approval changes still require running `SessionGuard.App.exe` as administrator
-- that elevated launch now starts a separate elevated SessionGuard app instead of reusing the normal tray app
+- guard-mode, mitigation, and approval changes still require an elevated SessionGuard window
+- use `Open elevated controls` when the dashboard tells you the service is connected but write access still needs elevation
+- that elevated launch starts a separate elevated SessionGuard app instead of reusing the normal tray app
 - the service writes `state/service-health.json`
 
 ## 5. Install the service and tray app from source
@@ -131,7 +132,7 @@ That is expected when:
 - the background service path is unavailable
 - the app is intentionally in read-only local fallback mode
 
-If the service is connected but the UI says `Action access: Requires elevated app`, monitoring is working correctly. Launch `SessionGuard.App.exe` from an elevated shell when you need SessionGuard to change guard mode, mitigation, or approval state.
+If the service is connected but the UI shows `Needs elevated window` under `Protection changes`, monitoring is working correctly. Use `Open elevated controls` from the dashboard or tray-driven workflow when you need SessionGuard to change guard mode, mitigation, or approval state. Launching `SessionGuard.App.exe` from an elevated shell still works, but the built-in elevated-controls path is the intended day-to-day flow.
 
 ### Policy diagnostics are visible
 

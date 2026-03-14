@@ -59,7 +59,7 @@ public sealed class SessionGuardPipeServer : BackgroundService
     {
         var callerCanPerformServiceWrites = IsCallerAuthorizedForPrivilegedCommands(server);
         var unauthorizedGuardModeMessage =
-            "Guard mode changes require running SessionGuard.App as administrator while connected to the service.";
+            "Guard mode changes require an elevated SessionGuard window while connected to the service.";
 
         return request.CommandType switch
         {
@@ -96,7 +96,7 @@ public sealed class SessionGuardPipeServer : BackgroundService
                 callerCanPerformServiceWrites,
                 callerCanPerformServiceWrites
                     ? "Mitigation command completed."
-                    : "Managed mitigation changes require running SessionGuard.App as administrator while connected to the service.",
+                    : "Managed mitigation changes require an elevated SessionGuard window while connected to the service.",
                 MitigationResult: callerCanPerformServiceWrites
                     ? await _runtime.ApplyMitigationsAsync(cancellationToken)
                     : await BuildUnauthorizedMitigationResultAsync(cancellationToken)),
@@ -104,7 +104,7 @@ public sealed class SessionGuardPipeServer : BackgroundService
                 callerCanPerformServiceWrites,
                 callerCanPerformServiceWrites
                     ? "Mitigation reset completed."
-                    : "Managed mitigation changes require running SessionGuard.App as administrator while connected to the service.",
+                    : "Managed mitigation changes require an elevated SessionGuard window while connected to the service.",
                 MitigationResult: callerCanPerformServiceWrites
                     ? await _runtime.ResetMitigationsAsync(cancellationToken)
                     : await BuildUnauthorizedMitigationResultAsync(cancellationToken)),
@@ -112,7 +112,7 @@ public sealed class SessionGuardPipeServer : BackgroundService
                 callerCanPerformServiceWrites,
                 callerCanPerformServiceWrites
                     ? "Policy approval granted."
-                    : "Restart approval changes require running SessionGuard.App as administrator while connected to the service.",
+                    : "Restart approval changes require an elevated SessionGuard window while connected to the service.",
                 PolicyResult: callerCanPerformServiceWrites
                     ? await _runtime.GrantRestartApprovalAsync(cancellationToken)
                     : await BuildUnauthorizedPolicyResultAsync(cancellationToken)),
@@ -120,7 +120,7 @@ public sealed class SessionGuardPipeServer : BackgroundService
                 callerCanPerformServiceWrites,
                 callerCanPerformServiceWrites
                     ? "Policy approval cleared."
-                    : "Restart approval changes require running SessionGuard.App as administrator while connected to the service.",
+                    : "Restart approval changes require an elevated SessionGuard window while connected to the service.",
                 PolicyResult: callerCanPerformServiceWrites
                     ? await _runtime.ClearRestartApprovalAsync(cancellationToken)
                     : await BuildUnauthorizedPolicyResultAsync(cancellationToken)),
@@ -137,7 +137,7 @@ public sealed class SessionGuardPipeServer : BackgroundService
             Success: false,
             RequiresElevation: true,
             RequiresService: false,
-            "Managed mitigation changes require running SessionGuard.App as administrator while connected to the service.",
+            "Managed mitigation changes require an elevated SessionGuard window while connected to the service.",
             status.ScanResult.Mitigations);
     }
 
@@ -149,7 +149,7 @@ public sealed class SessionGuardPipeServer : BackgroundService
             Success: false,
             RequiresService: false,
             RequiresElevation: true,
-            "Restart approval changes require running SessionGuard.App as administrator while connected to the service.",
+            "Restart approval changes require an elevated SessionGuard window while connected to the service.",
             status.ScanResult.Policy);
     }
 

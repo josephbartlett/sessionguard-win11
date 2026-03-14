@@ -31,7 +31,8 @@ Use this when you want a structured release-readiness pass without digging throu
 2. Launch the desktop app and confirm it reports `Control plane: Service`.
 3. Run `powershell -ExecutionPolicy Bypass -File scripts/service/Get-SessionGuardServiceStatus.ps1`.
 4. Confirm the status output reports control-plane reachability and health snapshot details.
-5. In a non-elevated app session, confirm the UI reports `Action access: Requires elevated app` and leaves mitigation or approval actions unavailable.
+5. In a non-elevated app session, confirm the UI reports `Needs elevated window` under `Protection changes` and leaves mitigation or approval actions unavailable.
+6. In a state that needs approval or mitigation changes, confirm the dashboard and tray workflow expose `Open elevated controls` instead of vague manual-admin wording.
 
 ## Combined install path
 
@@ -47,7 +48,7 @@ Use this when you want a structured release-readiness pass without digging throu
 
 ## Elevated behavior
 
-1. Launch the app from an elevated shell.
+1. Use `Open elevated controls` from the running tray app or launch the app from an elevated shell.
 2. Apply the recommended mitigation.
 3. Confirm the mitigation state changes to applied.
 4. Grant and clear a restart approval window if the current policy state requires one.

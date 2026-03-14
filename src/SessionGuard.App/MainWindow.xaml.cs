@@ -198,11 +198,16 @@ public partial class MainWindow : Window
         var policyItem = new Forms.ToolStripMenuItem("Policy: waiting for first scan") { Enabled = false };
         var timingItem = new Forms.ToolStripMenuItem("Timing: waiting for first scan") { Enabled = false };
 
-        var detailsMenuItem = new Forms.ToolStripMenuItem("Details");
+        var detailsMenuItem = new Forms.ToolStripMenuItem("Status details");
         detailsMenuItem.DropDownItems.Add(statusItem);
         detailsMenuItem.DropDownItems.Add(modeItem);
         detailsMenuItem.DropDownItems.Add(policyItem);
         detailsMenuItem.DropDownItems.Add(timingItem);
+
+        var supportMenuItem = new Forms.ToolStripMenuItem("Support");
+        supportMenuItem.DropDownItems.Add("Scan now", null, (_, _) => _viewModel.ScanNowCommand.Execute(null));
+        supportMenuItem.DropDownItems.Add("Windows Update options", null, (_, _) => _viewModel.OpenWindowsUpdateSettingsCommand.Execute(null));
+        supportMenuItem.DropDownItems.Add("Open logs", null, (_, _) => _viewModel.OpenLogsCommand.Execute(null));
 
         contextMenu.Items.Add(summaryItem);
         contextMenu.Items.Add(nextStepItem);
@@ -210,11 +215,11 @@ public partial class MainWindow : Window
         contextMenu.Items.Add(new Forms.ToolStripSeparator());
         contextMenu.Items.Add(primaryActionItem);
         contextMenu.Items.Add("Open dashboard", null, (_, _) => ShowDashboardFromTray(openTechnicalView: false));
-        contextMenu.Items.Add("Open technical view", null, (_, _) => ShowDashboardFromTray(openTechnicalView: true));
-        contextMenu.Items.Add("Scan now", null, (_, _) => _viewModel.ScanNowCommand.Execute(null));
-        contextMenu.Items.Add(detailsMenuItem);
+        contextMenu.Items.Add("Open technical details", null, (_, _) => ShowDashboardFromTray(openTechnicalView: true));
         contextMenu.Items.Add(new Forms.ToolStripSeparator());
-        contextMenu.Items.Add("Windows Update options", null, (_, _) => _viewModel.OpenWindowsUpdateSettingsCommand.Execute(null));
+        contextMenu.Items.Add(detailsMenuItem);
+        contextMenu.Items.Add(supportMenuItem);
+        contextMenu.Items.Add(new Forms.ToolStripSeparator());
         contextMenu.Items.Add("Exit", null, (_, _) => ExitApplication());
 
         var notifyIcon = new Forms.NotifyIcon

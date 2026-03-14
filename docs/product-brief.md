@@ -54,5 +54,5 @@ Provide a local Windows utility that makes restart risk visible, detects whether
 - a developer can build and run the app locally
 - the app surfaces useful restart, workspace, and policy state
 - protected-process detection works with a configurable list
-- service-backed write actions succeed when elevated and fail clearly when not elevated
+- service-backed write actions succeed through the elevated-controls path and fail clearly when the app stays non-elevated
 - docs explain purpose, limits, and future direction without overstating capability

@@ -2,6 +2,14 @@
 
 All notable changes to this project should be recorded here in reverse chronological order.
 
+## 1.2.0 - 2026-03-14
+
+- Refined the everyday tray workflow so the tray menu now centers status, next step, one common action, and a smaller support area instead of mirroring the dashboard.
+- Added `Open elevated controls` as the explicit path when the service is connected but the current app session cannot perform service-owned write actions.
+- Tightened tray, dashboard, notification, and recommendation wording so service connectivity and write access are described consistently.
+- Added a first-class `--technical-view` startup path so the elevated SessionGuard window can open directly into the detailed control surface without creating a second tray shell.
+- Expanded tests for operator alerts, app startup options, and tray/action-state mapping, and refreshed the tray workflow plan and operator docs for the new runtime model.
+
 ## 1.1.4 - 2026-03-13
 
 - Fixed the combined installer so reinstall and upgrade flows stop the running installed tray app before replacing files under `Program Files\SessionGuard`.

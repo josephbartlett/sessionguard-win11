@@ -11,6 +11,7 @@ public sealed class OperatorAlertEvaluatorTests
         var previous = new OperatorAlertContext(
             DateTimeOffset.Parse("2026-03-11T15:00:00-04:00"),
             IsRemote: true,
+            CanPerformServiceWrites: true,
             RestartStateCategory.Safe,
             RestartRiskLevel.Low,
             PolicyDecisionType.None,
@@ -45,8 +46,8 @@ public sealed class OperatorAlertEvaluatorTests
 
         var evaluation = OperatorAlertEvaluator.Evaluate(previous: null, status: current, approvalExpiryWarningLeadMinutes: 5);
 
-        Assert.Equal("Next: reopen SessionGuard as administrator to change protections.", evaluation.Tray.NextStepLine);
-        Assert.Equal("Context: service connected for monitoring, but write actions still need elevation.", evaluation.Tray.ContextLine);
+        Assert.Equal("Next: open elevated controls to change protections.", evaluation.Tray.NextStepLine);
+        Assert.Equal("Context: monitoring is connected, but protection changes need an elevated SessionGuard window.", evaluation.Tray.ContextLine);
     }
 
     [Fact]
@@ -72,6 +73,7 @@ public sealed class OperatorAlertEvaluatorTests
         var previous = new OperatorAlertContext(
             DateTimeOffset.Parse("2026-03-11T15:00:00-04:00"),
             IsRemote: true,
+            CanPerformServiceWrites: true,
             RestartStateCategory.MitigatedDeferred,
             RestartRiskLevel.Low,
             PolicyDecisionType.ApprovalActive,
@@ -97,6 +99,7 @@ public sealed class OperatorAlertEvaluatorTests
         var previous = new OperatorAlertContext(
             DateTimeOffset.Parse("2026-03-11T15:15:00-04:00"),
             IsRemote: true,
+            CanPerformServiceWrites: true,
             RestartStateCategory.MitigatedDeferred,
             RestartRiskLevel.Low,
             PolicyDecisionType.ApprovalActive,
@@ -122,6 +125,7 @@ public sealed class OperatorAlertEvaluatorTests
         var previous = new OperatorAlertContext(
             DateTimeOffset.Parse("2026-03-11T15:15:00-04:00"),
             IsRemote: true,
+            CanPerformServiceWrites: true,
             RestartStateCategory.MitigatedDeferred,
             RestartRiskLevel.Low,
             PolicyDecisionType.ApprovalActive,
@@ -148,6 +152,7 @@ public sealed class OperatorAlertEvaluatorTests
         var previous = new OperatorAlertContext(
             DateTimeOffset.Parse("2026-03-11T15:00:00-04:00"),
             IsRemote: true,
+            CanPerformServiceWrites: true,
             RestartStateCategory.Safe,
             RestartRiskLevel.Low,
             PolicyDecisionType.None,
@@ -172,6 +177,7 @@ public sealed class OperatorAlertEvaluatorTests
         var previous = new OperatorAlertContext(
             DateTimeOffset.Parse("2026-03-11T15:00:00-04:00"),
             IsRemote: true,
+            CanPerformServiceWrites: true,
             RestartStateCategory.Safe,
             RestartRiskLevel.Low,
             PolicyDecisionType.None,
@@ -196,7 +202,82 @@ public sealed class OperatorAlertEvaluatorTests
         var evaluation = OperatorAlertEvaluator.Evaluate(previous, current, approvalExpiryWarningLeadMinutes: 5);
 
         Assert.Contains(evaluation.Notifications, alert => alert.Title == "Policy configuration issue");
-        Assert.Contains("unavailable until policy configuration errors are fixed", evaluation.PolicyTimingText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("unavailable until the policy file is fixed", evaluation.PolicyTimingText, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Evaluate_ReturnsMonitoringOnlyReconnectNotification_WhenServiceReconnectsWithoutWriteAccess()
+    {
+        var previous = new OperatorAlertContext(
+            DateTimeOffset.Parse("2026-03-11T15:00:00-04:00"),
+            IsRemote: false,
+            CanPerformServiceWrites: false,
+            RestartStateCategory.RestartPending,
+            RestartRiskLevel.Elevated,
+            PolicyDecisionType.ApprovalRequired,
+            ApprovalActive: false,
+            ApprovalExpiresAt: null,
+            PolicyValidationErrors: false);
+        var current = CreateStatus(
+            DateTimeOffset.Parse("2026-03-11T15:05:00-04:00"),
+            isRemote: true,
+            decision: PolicyDecisionType.ApprovalRequired,
+            approvalActive: false,
+            approvalExpiresAt: null,
+            canPerformServiceWrites: false);
+
+        var evaluation = OperatorAlertEvaluator.Evaluate(previous, current, approvalExpiryWarningLeadMinutes: 5);
+
+        Assert.Contains(
+            evaluation.Notifications,
+            alert => alert.Title == "Service reconnected" &&
+                     alert.Message.Contains("Open an elevated SessionGuard window", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Evaluate_ReturnsElevatedApprovalNotification_WhenApprovalIsRequiredWithoutWriteAccess()
+    {
+        var previous = new OperatorAlertContext(
+            DateTimeOffset.Parse("2026-03-11T15:00:00-04:00"),
+            IsRemote: true,
+            CanPerformServiceWrites: true,
+            RestartStateCategory.Safe,
+            RestartRiskLevel.Low,
+            PolicyDecisionType.None,
+            ApprovalActive: false,
+            ApprovalExpiresAt: null,
+            PolicyValidationErrors: false);
+        var current = CreateStatus(
+            DateTimeOffset.Parse("2026-03-11T15:05:00-04:00"),
+            isRemote: true,
+            decision: PolicyDecisionType.ApprovalRequired,
+            approvalActive: false,
+            approvalExpiresAt: null,
+            canPerformServiceWrites: false);
+
+        var evaluation = OperatorAlertEvaluator.Evaluate(previous, current, approvalExpiryWarningLeadMinutes: 5);
+
+        Assert.Contains(
+            evaluation.Notifications,
+            alert => alert.Title == "Approval required" &&
+                     alert.Message.Contains("Open an elevated SessionGuard window", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Evaluate_ReturnsApprovalActiveSummary_WhenApprovalWindowIsAlreadyOpen()
+    {
+        var current = CreateStatus(
+            DateTimeOffset.Parse("2026-03-11T15:05:00-04:00"),
+            isRemote: true,
+            decision: PolicyDecisionType.ApprovalActive,
+            approvalActive: true,
+            approvalExpiresAt: DateTimeOffset.Parse("2026-03-11T15:45:00-04:00"),
+            canPerformServiceWrites: true);
+
+        var evaluation = OperatorAlertEvaluator.Evaluate(previous: null, status: current, approvalExpiryWarningLeadMinutes: 5);
+
+        Assert.Equal("Summary: a supervised restart window is already active.", evaluation.Tray.SummaryLine);
+        Assert.Equal("Next: save work and plan a supervised restart.", evaluation.Tray.NextStepLine);
     }
 
     private static SessionControlStatus CreateStatus(

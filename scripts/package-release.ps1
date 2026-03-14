@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string]$Version = "1.1.4",
+    [string]$Version = "",
     [string]$OutputPath = ""
 )
 
@@ -8,6 +8,14 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
+if ([string]::IsNullOrWhiteSpace($Version)) {
+    [xml]$propsXml = Get-Content (Join-Path $repoRoot "Directory.Build.props") -Raw
+    $Version = [string]$propsXml.Project.PropertyGroup.Version
+    if ([string]::IsNullOrWhiteSpace($Version)) {
+        throw "Version was not found in Directory.Build.props."
+    }
+}
+
 if ([string]::IsNullOrWhiteSpace($OutputPath)) {
     $OutputPath = Join-Path $repoRoot "artifacts\\sessionguard-win11-$Version.zip"
 }

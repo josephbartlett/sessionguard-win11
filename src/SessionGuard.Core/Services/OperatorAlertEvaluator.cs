@@ -28,6 +28,7 @@ public static class OperatorAlertEvaluator
         return new OperatorAlertContext(
             status.ScanResult.Timestamp,
             status.IsRemote,
+            status.CanPerformServiceWrites,
             status.ScanResult.State,
             status.ScanResult.RiskLevel,
             status.ScanResult.Policy.Decision,
@@ -52,7 +53,9 @@ public static class OperatorAlertEvaluator
         {
             yield return new OperatorNotification(
                 "Service reconnected",
-                "SessionGuard reconnected to the background service. Managed mitigation and approval actions are available again.",
+                current.CanPerformServiceWrites
+                    ? "SessionGuard reconnected to the background service. Managed mitigation and approval actions are available again."
+                    : "SessionGuard reconnected to the background service for monitoring. Open an elevated SessionGuard window if you need to change protections.",
                 OperatorNotificationSeverity.Information);
         }
 
@@ -125,7 +128,11 @@ public static class OperatorAlertEvaluator
             {
                 yield return new OperatorNotification(
                     "Approval required",
-                    "Policy rules now require a temporary approval window before a supervised restart.",
+                    current.IsRemote && !current.CanPerformServiceWrites
+                        ? "Policy rules now require a temporary approval window before a supervised restart. Open an elevated SessionGuard window when you are ready to approve it."
+                        : !current.IsRemote
+                            ? "Policy rules now require a temporary approval window before a supervised restart. Reconnect the service before changing approval state."
+                            : "Policy rules now require a temporary approval window before a supervised restart.",
                     OperatorNotificationSeverity.Information);
             }
         }
@@ -139,7 +146,7 @@ public static class OperatorAlertEvaluator
     {
         if (policy.Validation.HasErrors)
         {
-            return "Policy timing: unavailable until policy configuration errors are fixed.";
+            return "Policy timing: unavailable until the policy file is fixed.";
         }
 
         if (policy.ApprovalActive && policy.ApprovalExpiresAt.HasValue)
@@ -229,6 +236,11 @@ public static class OperatorAlertEvaluator
             return "Summary: active work still looks open.";
         }
 
+        if (result.Policy.ApprovalActive)
+        {
+            return "Summary: a supervised restart window is already active.";
+        }
+
         if (result.RestartPending)
         {
             return "Summary: Windows still looks restart-sensitive.";
@@ -252,7 +264,7 @@ public static class OperatorAlertEvaluator
         var result = status.ScanResult;
         if (result.Policy.Validation.HasErrors)
         {
-            return "Next: fix the policy file.";
+            return "Next: fix the policy file and rescan.";
         }
 
         if (!status.IsRemote &&
@@ -270,7 +282,7 @@ public static class OperatorAlertEvaluator
              result.Policy.ApprovalActive ||
              result.Mitigations.Any()))
         {
-            return "Next: reopen SessionGuard as administrator to change protections.";
+            return "Next: open elevated controls to change protections.";
         }
 
         if (status.CanPerformServiceWrites && result.Policy.RequiresApproval && !result.Policy.ApprovalActive)
@@ -295,10 +307,12 @@ public static class OperatorAlertEvaluator
 
         if (result.Policy.ApprovalActive)
         {
-            return "Next: nothing else is required right now.";
+            return status.CanPerformServiceWrites
+                ? "Next: nothing else is required right now."
+                : "Next: keep working unless you need to clear the approval window.";
         }
 
-        return "Next: nothing needs your attention.";
+        return "Next: keep working. No action is needed.";
     }
 
     private static string BuildContextLine(SessionControlStatus status)
@@ -310,7 +324,7 @@ public static class OperatorAlertEvaluator
 
         if (status.IsRemote)
         {
-            return "Context: service connected for monitoring, but write actions still need elevation.";
+            return "Context: monitoring is connected, but protection changes need an elevated SessionGuard window.";
         }
 
         return "Context: the service is offline, so monitoring is read-only.";
