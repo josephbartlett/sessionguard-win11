@@ -45,6 +45,8 @@ Use this when you want a structured release-readiness pass without digging throu
 7. Sign out and sign back in, then confirm the app starts minimized and appears in the tray.
 8. Confirm the tray app connects to the service instead of falling back locally.
 9. Launch `SessionGuard.App.exe` manually and confirm it brings the running tray app forward instead of starting a second copy.
+10. Confirm `C:\Program Files\SessionGuard\install-manifest.json` includes `AuthorizedUserSid`.
+11. Confirm `C:\Program Files\SessionGuard\logs` and `C:\Program Files\SessionGuard\state` ACLs are limited to the installing user, administrators, and `SYSTEM`.
 
 ## Elevated behavior
 

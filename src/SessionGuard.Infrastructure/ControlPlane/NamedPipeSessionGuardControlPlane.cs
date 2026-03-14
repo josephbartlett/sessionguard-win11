@@ -133,6 +133,7 @@ public sealed class NamedPipeSessionGuardControlPlane : ISessionGuardControlPlan
             timeoutCts.CancelAfter(_connectTimeout);
 
             await client.ConnectAsync(timeoutCts.Token);
+            NamedPipePeerVerifier.EnsureTrustedServerExecutable(client.SafePipeHandle);
             await PipeMessageProtocol.WriteRequestAsync(client, request, cancellationToken);
             return await PipeMessageProtocol.ReadResponseAsync(client, cancellationToken);
         }

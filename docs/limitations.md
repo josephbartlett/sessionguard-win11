@@ -34,6 +34,7 @@
 - Even when the service is connected, the desktop app still needs an elevated SessionGuard window before it can request service-owned mitigation or approval changes. SessionGuard now enforces that boundary per command instead of trusting pipe connectivity alone.
 - Process-block rules still depend on user-mode process visibility. If a critical process is hidden by permissions, short-lived, or outside the configured rule inputs, the rule can miss it.
 - Restart-window rules currently use the local machine clock and local time zone without a separate organizational calendar or maintenance-window service.
+- The installed service control plane plus the installed `logs/` and `state/` directories are now scoped to the installing user, administrators, and `SYSTEM`. That improves local privacy on shared machines, but it also means reinstalling from a different account shifts who can use the installed control plane directly.
 
 ## UX limitations
 
@@ -43,7 +44,7 @@
 - Service installation, update, and start or stop scripts are included, but the workflow is still aimed at local operator deployment rather than enterprise fleet rollout.
 - Published runtime config is now preserved across republish operations and has a bounded schema migration path, but future breaking config redesigns will still need explicit migration steps before they can be claimed upgrade-safe.
 - The combined install path currently registers tray startup for the current user only. If multiple users sign into the same machine, each user would need their own app auto-start registration.
-- If SessionGuard is installed using alternate credentials, the tray startup registration will be written for the installing account rather than whichever user later signs in normally.
+- If SessionGuard is installed using alternate credentials, both the tray startup registration and the installed service control-plane access will be scoped to the installing account rather than whichever user later signs in normally.
 - The tray shell and the dashboard are still the same WPF process. SessionGuard does not yet ship a separate ultra-light tray-only executable.
 
 ## Recovery limitations

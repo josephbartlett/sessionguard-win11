@@ -8,16 +8,22 @@ namespace SessionGuard.Service;
 
 public sealed class SessionGuardPipeServer : BackgroundService
 {
+    private static readonly TimeSpan RequestReadTimeout = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan ResponseWriteTimeout = TimeSpan.FromSeconds(10);
+
     private readonly SessionGuardServiceRuntime _runtime;
+    private readonly SessionGuardRuntimeAccessPolicy _accessPolicy;
     private readonly SessionGuardServiceHealthReporter _healthReporter;
     private readonly SessionGuard.Core.Services.IAppLogger _logger;
 
     public SessionGuardPipeServer(
         SessionGuardServiceRuntime runtime,
+        SessionGuardRuntimeAccessPolicy accessPolicy,
         SessionGuardServiceHealthReporter healthReporter,
         SessionGuard.Core.Services.IAppLogger logger)
     {
         _runtime = runtime;
+        _accessPolicy = accessPolicy;
         _healthReporter = healthReporter;
         _logger = logger;
     }
@@ -34,13 +40,25 @@ public sealed class SessionGuardPipeServer : BackgroundService
             try
             {
                 await server.WaitForConnectionAsync(stoppingToken);
-                var request = await PipeMessageProtocol.ReadRequestAsync(server, stoppingToken);
+                using var requestTimeoutCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+                requestTimeoutCts.CancelAfter(RequestReadTimeout);
+                var request = await PipeMessageProtocol.ReadRequestAsync(server, requestTimeoutCts.Token);
                 var response = await HandleRequestAsync(server, request, stoppingToken);
-                await PipeMessageProtocol.WriteResponseAsync(server, response, stoppingToken);
+                using var responseTimeoutCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+                responseTimeoutCts.CancelAfter(ResponseWriteTimeout);
+                await PipeMessageProtocol.WriteResponseAsync(server, response, responseTimeoutCts.Token);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
                 break;
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.Warn("service.pipe.request.timeout", new { timeoutSeconds = RequestReadTimeout.TotalSeconds });
+            }
+            catch (InvalidDataException exception)
+            {
+                _logger.Warn("service.pipe.request.invalid", new { exception.Message });
             }
             catch (Exception exception)
             {
@@ -167,26 +185,14 @@ public sealed class SessionGuardPipeServer : BackgroundService
         return authorized;
     }
 
-    private static NamedPipeServerStream CreateServerStream()
+    private NamedPipeServerStream CreateServerStream()
     {
-        var security = new PipeSecurity();
-        security.AddAccessRule(new PipeAccessRule(
-            new SecurityIdentifier(WellKnownSidType.AuthenticatedUserSid, null),
-            PipeAccessRights.ReadWrite | PipeAccessRights.CreateNewInstance,
-            AccessControlType.Allow));
-        security.AddAccessRule(new PipeAccessRule(
-            new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null),
-            PipeAccessRights.FullControl,
-            AccessControlType.Allow));
-        security.AddAccessRule(new PipeAccessRule(
-            new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null),
-            PipeAccessRights.FullControl,
-            AccessControlType.Allow));
+        var security = _accessPolicy.CreatePipeSecurity();
 
         return NamedPipeServerStreamAcl.Create(
             SessionGuardPipeConstants.PipeName,
             PipeDirection.InOut,
-            NamedPipeServerStream.MaxAllowedServerInstances,
+            4,
             PipeTransmissionMode.Byte,
             PipeOptions.Asynchronous,
             0,

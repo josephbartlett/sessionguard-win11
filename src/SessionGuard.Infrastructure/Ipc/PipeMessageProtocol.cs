@@ -84,6 +84,12 @@ public static class PipeMessageProtocol
             throw new InvalidDataException("Received an invalid pipe payload length.");
         }
 
+        if (payloadLength > SessionControlProtocol.MaxEnvelopeBytes)
+        {
+            throw new InvalidDataException(
+                $"Received a pipe payload length of {payloadLength} bytes, which exceeds the maximum allowed size of {SessionControlProtocol.MaxEnvelopeBytes} bytes.");
+        }
+
         var payload = new byte[payloadLength];
         await ReadExactlyAsync(stream, payload, cancellationToken);
 

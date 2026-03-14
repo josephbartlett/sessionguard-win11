@@ -83,6 +83,74 @@ function Get-SessionGuardInstallManifest {
     }
 }
 
+function Get-SessionGuardCurrentUserSid {
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    return $identity.User.Value
+}
+
+function Set-SessionGuardInstallManifestAuthorizedUserSid {
+    param(
+        [string]$PublishRoot = (Get-SessionGuardPublishRoot),
+        [string]$AuthorizedUserSid
+    )
+
+    if ([string]::IsNullOrWhiteSpace($AuthorizedUserSid)) {
+        return
+    }
+
+    $manifestPath = Get-SessionGuardInstallManifestPath -PublishRoot $PublishRoot
+    if (-not (Test-Path $manifestPath)) {
+        return
+    }
+
+    $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
+    $manifest | Add-Member -NotePropertyName AuthorizedUserSid -NotePropertyValue $AuthorizedUserSid -Force
+    $manifest | ConvertTo-Json -Depth 8 | Set-Content -Path $manifestPath -Encoding UTF8
+}
+
+function Invoke-SessionGuardIcacls {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]]$Arguments
+    )
+
+    $output = & icacls.exe @Arguments 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        throw "icacls.exe $($Arguments -join ' ') failed.`n$output"
+    }
+
+    return $output
+}
+
+function Set-SessionGuardProtectedRuntimeAcl {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Root,
+
+        [Parameter(Mandatory = $true)]
+        [string]$AuthorizedUserSid
+    )
+
+    if ([string]::IsNullOrWhiteSpace($AuthorizedUserSid)) {
+        return
+    }
+
+    foreach ($directoryName in @("logs", "state")) {
+        $directoryPath = Join-Path $Root $directoryName
+        New-Item -ItemType Directory -Path $directoryPath -Force | Out-Null
+        Invoke-SessionGuardIcacls @(
+            $directoryPath,
+            "/inheritance:r",
+            "/grant:r",
+            "*S-1-5-18:(OI)(CI)F",
+            "*S-1-5-32-544:(OI)(CI)F",
+            ("*{0}:(OI)(CI)M" -f $AuthorizedUserSid),
+            "/T",
+            "/C"
+        ) | Out-Null
+    }
+}
+
 function Convert-SessionGuardServicePathNameToExecutablePath {
     param(
         [string]$PathName

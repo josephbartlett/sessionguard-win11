@@ -21,6 +21,7 @@ That is the preferred operator path for a real machine. It:
 - installs the shared runtime under `Program Files\SessionGuard`
 - installs the Windows Service
 - registers the app to start at user sign-in
+- scopes the installed service control plane plus `logs/` and `state/` access to that user, administrators, and `SYSTEM`
 - stops a running installed tray app before replacing files during reinstall or upgrade
 - attempts to launch the app minimized to the tray unless you opt out with `-DoNotLaunchApp`
 
@@ -79,6 +80,7 @@ What to expect:
 - use `Open elevated controls` when the dashboard tells you the service is connected but write access still needs elevation
 - that elevated launch starts a separate elevated SessionGuard app instead of reusing the normal tray app
 - the service writes `state/service-health.json`
+- in installed mode, only the installing user plus administrators and `SYSTEM` can use the service control plane or read the installed `logs/` and `state/` directories
 
 ## 5. Install the service and tray app from source
 

@@ -163,6 +163,7 @@ static IHost BuildHost(string[] args)
     builder.Services.AddSingleton(_ => RuntimePaths.Discover(AppContext.BaseDirectory));
     builder.Services.AddSingleton<IAppLogger>(provider =>
         new FileAppLogger(provider.GetRequiredService<RuntimePaths>(), "service"));
+    builder.Services.AddSingleton<SessionGuardRuntimeAccessPolicy>();
     builder.Services.AddSingleton<IScanSnapshotStore, JsonScanSnapshotStore>();
     builder.Services.AddSingleton<IConfigurationRepository, JsonConfigurationRepository>();
     builder.Services.AddSingleton<IMitigationService, WindowsMitigationService>();

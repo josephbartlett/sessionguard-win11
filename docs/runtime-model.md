@@ -95,6 +95,7 @@ What happens:
 - the service is installed as a Windows Service with delayed auto-start
 - the app is registered to start at user sign-in with `--start-minimized`
 - the app launches quietly to the tray for the installing user
+- the installed service control plane plus `logs/` and `state/` are scoped to that user, administrators, and `SYSTEM`
 - launching the same installed app again at the same privilege level reuses the running tray app instead of starting a second copy
 
 This is the intended always-on operator setup.
@@ -115,6 +116,8 @@ That means:
 - the tray app startup is user-level
 
 If you install SessionGuard using alternate credentials or a different signed-in account, the tray startup registration lands in that installing user's profile. The intended flow is to install it from the same account that should see the tray icon at sign-in.
+
+That same account boundary now also applies to the installed service control plane and the installed `logs/` and `state/` directories. Administrators and `SYSTEM` still retain access.
 
 ## Tray icon ownership
 

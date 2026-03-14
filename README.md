@@ -29,6 +29,7 @@ That install path:
 - installs the Windows Service
 - installs the shared runtime under `C:\Program Files\SessionGuard`
 - registers the tray app to start at sign-in for the current user
+- scopes the installed service control plane plus `logs/` and `state/` access to that user, administrators, and `SYSTEM`
 - stops a running installed tray app before replacing files during reinstall or upgrade
 - attempts to launch the app minimized to the tray unless you opt out with `-DoNotLaunchApp`
 
@@ -57,6 +58,7 @@ Important behavior:
 
 - the tray icon belongs to the app, not the service
 - service-backed guard-mode, mitigation, and approval actions require both service connectivity and an elevated app session
+- in installed mode, the service pipe plus `logs/` and `state/` are scoped to the installing user, administrators, and `SYSTEM`
 - when the service is connected but the current app session cannot write, use `Open elevated controls` from the dashboard or tray-backed workflow instead of guessing which binary to relaunch
 - in normal installed use, the tray menu is the daily path and the dashboard is opened on demand
 

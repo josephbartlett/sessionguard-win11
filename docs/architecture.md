@@ -168,6 +168,7 @@ Before writing managed values, the infrastructure layer captures previous values
 The log and state folders are intentionally excluded from source control.
 
 Published service layouts now also include `install-manifest.json` with version and protocol metadata so install scripts can verify they are starting the expected runtime without depending on machine-specific build paths.
+Published installs now also stamp the installing user's SID into that manifest so the service and install scripts can align the runtime access boundary with the intended operator account.
 
 The config-upgrade path is intentionally bounded:
 
@@ -187,6 +188,8 @@ The config-upgrade path is intentionally bounded:
 - uses the same file logger and mitigation/state services
 - exposes `probe` and `scan-now` console commands for local validation
 - exposes `validate-runtime` so scripts can verify that the published layout is runnable before installation
+
+The control plane is intentionally local only. In published installs, the pipe ACL is scoped to the installing user, administrators, and `SYSTEM`, and the installed `logs/` plus `state/` directories follow the same boundary. The pipe layer now also enforces bounded request sizes and short request lifetimes so a client cannot hold the service in an indefinite read.
 
 `SessionGuard.App` currently acts as a tray-first dashboard client layered over a hybrid control plane. That keeps the background path and the desktop path aligned while still leaving room for a lighter dedicated tray shell later if the product needs one.
 

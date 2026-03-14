@@ -256,6 +256,36 @@ public sealed class ServiceScriptTests
     }
 
     [Fact]
+    public async Task ServiceCommon_SetInstallManifestAuthorizedUserSid_UpdatesManifest()
+    {
+        var repoRoot = GetRepositoryRoot();
+        var scriptRoot = Path.Combine(repoRoot, "scripts", "service");
+        var tempRoot = Path.Combine(Path.GetTempPath(), "SessionGuard.Tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempRoot);
+        File.WriteAllText(Path.Combine(tempRoot, "install-manifest.json"), "{\"ProductVersion\":\"0.0-test\"}");
+
+        var probeScript = Path.Combine(tempRoot, "set-manifest-sid.ps1");
+        File.WriteAllText(
+            probeScript,
+            $$"""
+            Set-StrictMode -Version Latest
+            $ErrorActionPreference = "Stop"
+            . "{{Path.Combine(scriptRoot, "common.ps1")}}"
+            $sid = Get-SessionGuardCurrentUserSid
+            Set-SessionGuardInstallManifestAuthorizedUserSid -PublishRoot "{{tempRoot}}" -AuthorizedUserSid $sid
+            Get-Content "{{Path.Combine(tempRoot, "install-manifest.json")}}" -Raw
+            """);
+
+        var result = await RunPowerShellScriptAsync(probeScript);
+
+        Assert.True(result.ExitCode == 0, $"PowerShell exited with {result.ExitCode}. stderr: {result.StandardError}");
+
+        using var document = JsonDocument.Parse(result.StandardOutput);
+        Assert.True(document.RootElement.TryGetProperty("AuthorizedUserSid", out var sidElement));
+        Assert.False(string.IsNullOrWhiteSpace(sidElement.GetString()));
+    }
+
+    [Fact]
     public async Task PublishCombinedBundle_WritesInstallFocusedReadmeAndRuntimeNeutralManifests()
     {
         var repoRoot = GetRepositoryRoot();

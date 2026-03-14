@@ -8,6 +8,9 @@ All notable changes to this project should be recorded here in reverse chronolog
 - Added `Open elevated controls` as the explicit path when the service is connected but the current app session cannot perform service-owned write actions.
 - Tightened tray, dashboard, notification, and recommendation wording so service connectivity and write access are described consistently.
 - Added a first-class `--technical-view` startup path so the elevated SessionGuard window can open directly into the detailed control surface without creating a second tray shell.
+- Hardened the service control plane with bounded IPC payload sizes, per-request timeouts, trusted-server verification, and install-user pipe ACLs for published installs.
+- Scoped installed `logs/` and `state/` access to the installing user, administrators, and `SYSTEM`, and stamped that access boundary into the install manifest for published service installs.
+- Expanded script coverage for install-manifest authorization stamping and added protocol tests for oversized IPC payload rejection.
 - Expanded tests for operator alerts, app startup options, and tray/action-state mapping, and refreshed the tray workflow plan and operator docs for the new runtime model.
 
 ## 1.1.4 - 2026-03-13

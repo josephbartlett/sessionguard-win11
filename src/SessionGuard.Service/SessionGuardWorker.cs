@@ -7,17 +7,20 @@ public sealed class SessionGuardWorker : BackgroundService
 {
     private readonly IConfigurationRepository _configurationRepository;
     private readonly SessionGuardServiceRuntime _runtime;
+    private readonly SessionGuardRuntimeAccessPolicy _accessPolicy;
     private readonly SessionGuardServiceHealthReporter _healthReporter;
     private readonly IAppLogger _logger;
 
     public SessionGuardWorker(
         IConfigurationRepository configurationRepository,
         SessionGuardServiceRuntime runtime,
+        SessionGuardRuntimeAccessPolicy accessPolicy,
         SessionGuardServiceHealthReporter healthReporter,
         IAppLogger logger)
     {
         _configurationRepository = configurationRepository;
         _runtime = runtime;
+        _accessPolicy = accessPolicy;
         _healthReporter = healthReporter;
         _logger = logger;
     }
@@ -25,6 +28,7 @@ public sealed class SessionGuardWorker : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var hostMode = WindowsServiceHelpers.IsWindowsService() ? "WindowsService" : "Console";
+        _accessPolicy.EnsureSensitiveDirectoryAccess();
         await _healthReporter.InitializeAsync(hostMode, stoppingToken);
         await _runtime.InitializeAsync(stoppingToken);
         _logger.Info("service.start");

@@ -40,6 +40,7 @@ $readinessWarnings = New-Object System.Collections.Generic.List[string]
 $runtimeValidation = $null
 $installManifest = $null
 $upgradeReport = $null
+$authorizedUserSid = Get-SessionGuardCurrentUserSid
 
 if (-not (Test-Path $serviceExe)) {
     $readinessIssues.Add("Service executable not found at '$serviceExe'. Run Publish-SessionGuardService.ps1 first or omit -SkipPublish.")
@@ -161,6 +162,9 @@ $upgradeReport = $upgrade.Report
 if ($null -eq $upgradeReport -or $upgradeReport.HasErrors) {
     throw "Service config upgrade failed. Review the reported migration issues before installing."
 }
+
+Set-SessionGuardInstallManifestAuthorizedUserSid -PublishRoot $PublishRoot -AuthorizedUserSid $authorizedUserSid
+Set-SessionGuardProtectedRuntimeAcl -Root $PublishRoot -AuthorizedUserSid $authorizedUserSid
 
 if ($serviceExists) {
     if ($PSCmdlet.ShouldProcess($script:SessionGuardServiceName, "Reinstall existing SessionGuard service")) {
