@@ -157,6 +157,8 @@ public sealed class MainWindowViewModelWorkflowTests
 
         Assert.Equal("Ambiguous / review signals", viewModel.PendingRestartText);
         Assert.Equal("Protected Session Active", viewModel.CurrentStatusText);
+        Assert.False(viewModel.TrayPrimaryActionVisible);
+        Assert.Equal(string.Empty, viewModel.TrayPrimaryActionText);
     }
 
     private static MainWindowViewModel CreateViewModel(SessionControlStatus status)

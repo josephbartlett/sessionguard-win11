@@ -1235,18 +1235,6 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             return;
         }
 
-        if (result.RestartPending ||
-            result.Workspace.HasRisk ||
-            result.HasAmbiguousSignals ||
-            result.LimitedVisibility ||
-            result.Policy.HasBlockingRules)
-        {
-            TrayPrimaryActionKind = TrayPrimaryActionKind.OpenDashboard;
-            TrayPrimaryActionText = "Open dashboard";
-            TrayPrimaryActionVisible = true;
-            return;
-        }
-
         TrayPrimaryActionKind = TrayPrimaryActionKind.None;
         TrayPrimaryActionText = string.Empty;
         TrayPrimaryActionVisible = false;
