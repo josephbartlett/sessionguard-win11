@@ -42,6 +42,7 @@
 
 - Tag releases as `vMAJOR.MINOR.PATCH`.
 - Use annotated tags for releases.
+- When release packaging changes, keep the direct-download checksum asset and bundle verification path in sync with the docs.
 - If a human explicitly approves a push, return release notes in this exact response shape:
   - `Release title: <title>`
   - `Description:`
@@ -102,6 +103,7 @@ Short summary of the release.
 - Keep defaults and operator-editable behavior in `config/*.json` rather than hard-coding them.
 - Keep derived folders such as `bin/`, `obj/`, `logs/`, `state/`, and packaging artifacts out of source control unless a human explicitly asks otherwise.
 - Public release assets and release bundles must not include machine-local logs, snapshots, approval state, or other runtime-generated files from prior runs.
+- Preferred direct-download release bundles should ship with checksum metadata and an extracted-bundle verification path.
 
 ## Testing and verification
 

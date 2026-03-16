@@ -36,17 +36,19 @@ Use this when you want a structured release-readiness pass without digging throu
 
 ## Combined install path
 
-1. Run `powershell -ExecutionPolicy Bypass -File scripts/install/Install-SessionGuard.ps1 -SelfContained` from an elevated shell, or run `powershell -ExecutionPolicy Bypass -File .\Install-SessionGuard.ps1` from an extracted bundle.
-2. Confirm the service is installed and configured for delayed auto-start.
-3. Confirm the current user has a SessionGuard startup registration under the Windows Run key.
-4. Confirm the installed app launches to the tray without opening duplicate windows.
-5. If Windows shows SmartScreen or another protection prompt on first launch, confirm the install still completes and the warning text tells you the app can be launched manually later.
-6. Run the installer a second time and confirm it stops the running installed tray app before replacing files instead of failing on locked binaries.
-7. Sign out and sign back in, then confirm the app starts minimized and appears in the tray.
-8. Confirm the tray app connects to the service instead of falling back locally.
-9. Launch `SessionGuard.App.exe` manually and confirm it brings the running tray app forward instead of starting a second copy.
-10. Confirm `C:\Program Files\SessionGuard\install-manifest.json` includes `AuthorizedUserSid`.
-11. Confirm `C:\Program Files\SessionGuard\logs` and `C:\Program Files\SessionGuard\state` ACLs are limited to the installing user, administrators, and `SYSTEM`.
+1. If testing the setup zip, run `Get-FileHash .\sessionguard-win11-setup-<version>-win-x64.zip -Algorithm SHA256` and confirm it matches the published checksum file.
+2. Run `powershell -ExecutionPolicy Bypass -File scripts/install/Verify-SessionGuardBundle.ps1 -BundleRoot artifacts/publish/SessionGuard` from source publish output, or run `powershell -ExecutionPolicy Bypass -File .\Verify-SessionGuard.ps1` from an extracted bundle.
+3. Run `powershell -ExecutionPolicy Bypass -File scripts/install/Install-SessionGuard.ps1 -SelfContained` from an elevated shell, or run `powershell -ExecutionPolicy Bypass -File .\Install-SessionGuard.ps1` from an extracted bundle.
+4. Confirm the service is installed and configured for delayed auto-start.
+5. Confirm the current user has a SessionGuard startup registration under the Windows Run key.
+6. Confirm the installed app launches to the tray without opening duplicate windows.
+7. If Windows shows SmartScreen or another protection prompt on first launch, confirm the install still completes and the warning text tells you the app can be launched manually later.
+8. Run the installer a second time and confirm it stops the running installed tray app before replacing files instead of failing on locked binaries.
+9. Sign out and sign back in, then confirm the app starts minimized and appears in the tray.
+10. Confirm the tray app connects to the service instead of falling back locally.
+11. Launch `SessionGuard.App.exe` manually and confirm it brings the running tray app forward instead of starting a second copy.
+12. Confirm `C:\Program Files\SessionGuard\install-manifest.json` includes `AuthorizedUserSid`.
+13. Confirm `C:\Program Files\SessionGuard\logs` and `C:\Program Files\SessionGuard\state` ACLs are limited to the installing user, administrators, and `SYSTEM`.
 
 ## Elevated behavior
 
@@ -67,10 +69,11 @@ Use this when you want a structured release-readiness pass without digging throu
 ## Packaging
 
 1. Run `powershell -ExecutionPolicy Bypass -File scripts/release/Publish-SessionGuardReleaseAssets.ps1 -SelfContained`.
-2. Confirm the setup, app, service, and source zip files exist under `artifacts/releases/<version>/`.
-3. Confirm the setup zip contains `SessionGuard.App.exe`, `SessionGuard.Service.exe`, `Install-SessionGuard.ps1`, `Uninstall-SessionGuard.ps1`, and the supporting install scripts.
-4. Confirm the published desktop app folder contains `SessionGuard.App.exe`.
-5. Confirm the public app, service, and setup zip assets contain empty `logs/` and `state/` directories only, not machine-local log files or persisted runtime JSON.
+2. Confirm the setup, app, service, source, and checksum files exist under `artifacts/releases/<version>/`.
+3. Confirm the setup zip contains `SessionGuard.App.exe`, `SessionGuard.Service.exe`, `Install-SessionGuard.ps1`, `Uninstall-SessionGuard.ps1`, `Verify-SessionGuard.ps1`, and the supporting install scripts.
+4. Confirm the extracted setup layout includes `bundle-integrity.json`.
+5. Confirm the published desktop app folder contains `SessionGuard.App.exe`.
+6. Confirm the public app, service, and setup zip assets contain empty `logs/` and `state/` directories only, not machine-local log files or persisted runtime JSON.
 
 ## Logs and state
 

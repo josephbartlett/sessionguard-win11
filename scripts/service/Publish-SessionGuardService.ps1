@@ -141,6 +141,10 @@ try {
         PublishConfiguration = $Configuration
         Runtime = $Runtime
         SelfContained = $SelfContained.IsPresent
+        PrimaryExecutable = [ordered]@{
+            Path = "SessionGuard.Service.exe"
+            Signature = Get-SessionGuardFileSignatureInfo -Path $serviceExe
+        }
         IncludedConfigFiles = @(
             "config/appsettings.json",
             "config/protected-processes.json",

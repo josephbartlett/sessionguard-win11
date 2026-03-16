@@ -20,6 +20,7 @@ if ([string]::IsNullOrWhiteSpace($OutputDir)) {
 $appPublishScript = Join-Path $PSScriptRoot "..\\app\\Publish-SessionGuardApp.ps1"
 $servicePublishScript = Join-Path $PSScriptRoot "..\\service\\Publish-SessionGuardService.ps1"
 $bundleManifestPath = Join-Path $OutputDir "bundle-manifest.json"
+$bundleIntegrityPath = Join-Path $OutputDir "bundle-integrity.json"
 $appExe = Join-Path $OutputDir "SessionGuard.App.exe"
 $serviceExe = Join-Path $OutputDir "SessionGuard.Service.exe"
 $bundleReadmePath = Join-Path $OutputDir "README.md"
@@ -66,16 +67,20 @@ This package contains the full SessionGuard runtime for one-machine installation
 - `SessionGuard.Service.exe`: background engine
 - `Install-SessionGuard.ps1`: installs both pieces in the intended way
 - `Uninstall-SessionGuard.ps1`: removes the combined install
+- `Verify-SessionGuard.ps1`: verifies the extracted bundle files before install
 
 ## Recommended install
 
 Run this from an elevated PowerShell session:
 
 ```powershell
+powershell -ExecutionPolicy Bypass -File .\Verify-SessionGuard.ps1
 powershell -ExecutionPolicy Bypass -File .\Install-SessionGuard.ps1
 ```
 
-That installs SessionGuard to `C:\Program Files\SessionGuard`, installs the Windows Service, registers the app to start at sign-in for the current user, scopes the installed service control plane plus `logs/` and `state/` access to that user, administrators, and `SYSTEM`, stops a running installed tray app before replacing files during reinstall or upgrade, and attempts to launch the app minimized to the tray unless you opt out with `-DoNotLaunchApp`.
+`Verify-SessionGuard.ps1` checks the extracted bundle against the publisher-generated file inventory and reports current Authenticode signature status for the app and service binaries. It helps catch incomplete extraction or local file tampering. It does not replace verifying the downloaded setup zip hash against the published release checksum file.
+
+The install then places SessionGuard under `C:\Program Files\SessionGuard`, installs the Windows Service, registers the app to start at sign-in for the current user, scopes the installed service control plane plus `logs/` and `state/` access to that user, administrators, and `SYSTEM`, stops a running installed tray app before replacing files during reinstall or upgrade, and attempts to launch the app minimized to the tray unless you opt out with `-DoNotLaunchApp`.
 
 Install it from the same Windows account that should see the tray icon at sign-in.
 
@@ -100,8 +105,9 @@ powershell -ExecutionPolicy Bypass -File .\Uninstall-SessionGuard.ps1 -RemoveFil
 
 - SessionGuard does not disable Windows Update.
 - SessionGuard reduces restart disruption but does not guarantee prevention of every Windows restart path.
+- SessionGuard setup zips are direct-download unsigned binaries today. Prefer verifying the published setup zip hash before install.
 - To change service-backed guard mode, mitigation, or approval state, use `Open elevated controls` from the dashboard or launch `SessionGuard.App.exe` as administrator.
-- Installer switches: `-DoNotLaunchApp`, `-DoNotStartService`, and `-ValidateOnly -AsJson`.
+- Installer switches: `-DoNotLaunchApp`, `-DoNotStartService`, `-ValidateOnly -AsJson`, and `-SkipBundleVerification`.
 '@
 
 Set-Content -Path $bundleReadmePath -Value $bundleReadme -Encoding ASCII
@@ -146,8 +152,23 @@ $ErrorActionPreference = "Stop"
     -RemoveFiles:$RemoveFiles
 '@
 
+$bundleVerifyScript = @'
+[CmdletBinding()]
+param(
+    [switch]$AsJson
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
+
+& (Join-Path $PSScriptRoot "scripts\install\Verify-SessionGuardBundle.ps1") `
+    -BundleRoot $PSScriptRoot `
+    -AsJson:$AsJson
+'@
+
 Set-Content -Path (Join-Path $OutputDir "Install-SessionGuard.ps1") -Value $bundleInstallScript -Encoding ASCII
 Set-Content -Path (Join-Path $OutputDir "Uninstall-SessionGuard.ps1") -Value $bundleUninstallScript -Encoding ASCII
+Set-Content -Path (Join-Path $OutputDir "Verify-SessionGuard.ps1") -Value $bundleVerifyScript -Encoding ASCII
 
 $bundleManifest = [ordered]@{
     ProductVersion = Get-SessionGuardProductVersion
@@ -161,14 +182,35 @@ $bundleManifest = [ordered]@{
         "SessionGuard.Service.exe",
         "Install-SessionGuard.ps1",
         "Uninstall-SessionGuard.ps1",
+        "Verify-SessionGuard.ps1",
         "scripts/install",
         "scripts/service"
+    )
+    PrimaryExecutables = @(
+        [ordered]@{
+            Path = "SessionGuard.App.exe"
+            Signature = Get-SessionGuardFileSignatureInfo -Path $appExe
+        },
+        [ordered]@{
+            Path = "SessionGuard.Service.exe"
+            Signature = Get-SessionGuardFileSignatureInfo -Path $serviceExe
+        }
     )
 }
 
 $bundleManifest | ConvertTo-Json -Depth 4 | Set-Content -Path $bundleManifestPath -Encoding UTF8
 
+$bundleIntegrity = [ordered]@{
+    ProductVersion = Get-SessionGuardProductVersion
+    PublishedAtUtc = (Get-Date).ToUniversalTime().ToString("o")
+    VerificationKind = "sha256-file-inventory"
+    Files = Get-SessionGuardBundleFileInventory -Root $OutputDir -ExcludeRelativePaths @("bundle-integrity.json")
+}
+
+$bundleIntegrity | ConvertTo-Json -Depth 6 | Set-Content -Path $bundleIntegrityPath -Encoding UTF8
+
 Write-Host "Published combined SessionGuard bundle: $OutputDir"
 Write-Host " - $appExe"
 Write-Host " - $serviceExe"
 Write-Host " - $bundleManifestPath"
+Write-Host " - $bundleIntegrityPath"

@@ -76,6 +76,7 @@ Useful switches:
 
 - `-DoNotLaunchApp`
 - `-DoNotStartService`
+- `-SkipBundleVerification`
 - `-ValidateOnly -AsJson`
 
 Service-only path:
@@ -99,6 +100,12 @@ Publish the combined setup layout:
 powershell -ExecutionPolicy Bypass -File scripts/install/Publish-SessionGuardBundle.ps1 -SelfContained
 ```
 
+Verify the published bundle layout before install:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/install/Verify-SessionGuardBundle.ps1 -BundleRoot artifacts/publish/SessionGuard
+```
+
 Publish full release assets locally:
 
 ```powershell
@@ -111,6 +118,9 @@ That produces:
 - `sessionguard-win11-app-<version>-win-x64.zip`
 - `sessionguard-win11-service-<version>-win-x64.zip`
 - `sessionguard-win11-source-<version>.zip`
+- `sessionguard-win11-sha256-<version>.txt`
+
+For direct-download release prep, verify the generated setup zip hash against that checksum file and keep the checksum asset with the published release.
 
 ## Tag-driven release flow
 
@@ -124,14 +134,14 @@ Requirements:
 Example:
 
 ```powershell
-git tag -a v1.2.0 -m "SessionGuard 1.2.0"
+git tag -a v1.3.0 -m "SessionGuard 1.3.0"
 git push origin main
-git push origin v1.2.0
+git push origin v1.3.0
 ```
 
 The release workflow:
 
 - runs the repo-owned Windows validation flow
 - publishes self-contained `win-x64` binaries
-- creates the setup, app, service, and source zip assets
+- creates the setup, app, service, source, and checksum assets
 - uploads those assets to the matching GitHub Release

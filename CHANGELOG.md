@@ -2,6 +2,14 @@
 
 All notable changes to this project should be recorded here in reverse chronological order.
 
+## 1.3.0 - 2026-03-16
+
+- Added published SHA256 checksum assets for setup, app, service, and source release packages.
+- Added extracted-bundle verification through `Verify-SessionGuard.ps1` and `scripts/install/Verify-SessionGuardBundle.ps1` so direct-download installs can catch incomplete extraction or local file tampering before installation.
+- Added trust metadata to bundle, app, service, and release manifests so publish output now records current Authenticode signature state without leaking machine-local paths.
+- Updated the combined installer to run extracted-bundle verification before install unless an advanced operator explicitly opts out with `-SkipBundleVerification`.
+- Expanded script coverage for bundle verification failures and release checksum generation.
+
 ## 1.2.1 - 2026-03-14
 
 - Downgraded `PendingFileRenameOperations` so it no longer counts as a definitive pending reboot signal by itself.

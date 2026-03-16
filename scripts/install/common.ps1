@@ -40,6 +40,278 @@ function Get-SessionGuardServiceExecutablePath {
     return Join-Path $Root "SessionGuard.Service.exe"
 }
 
+function Get-SessionGuardRelativePath {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Root,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
+
+    $rootPath = [System.IO.Path]::GetFullPath($Root)
+    $fullPath = [System.IO.Path]::GetFullPath($Path)
+
+    if (-not $rootPath.EndsWith([System.IO.Path]::DirectorySeparatorChar)) {
+        $rootPath += [System.IO.Path]::DirectorySeparatorChar
+    }
+
+    $rootUri = [System.Uri]::new($rootPath)
+    $pathUri = [System.Uri]::new($fullPath)
+    $relativePath = $rootUri.MakeRelativeUri($pathUri).ToString()
+    return [System.Uri]::UnescapeDataString($relativePath)
+}
+
+function Get-SessionGuardFileSha256 {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
+
+    if (-not (Test-Path $Path)) {
+        throw "Cannot hash missing file '$Path'."
+    }
+
+    $stream = [System.IO.File]::OpenRead($Path)
+    try {
+        $sha256 = [System.Security.Cryptography.SHA256]::Create()
+        try {
+            return ([System.BitConverter]::ToString($sha256.ComputeHash($stream))).Replace("-", "").ToUpperInvariant()
+        }
+        finally {
+            $sha256.Dispose()
+        }
+    }
+    finally {
+        $stream.Dispose()
+    }
+}
+
+function Get-SessionGuardFileSignatureInfo {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
+
+    if (-not (Test-Path $Path)) {
+        return [pscustomobject]@{
+            Path = Split-Path -Leaf $Path
+            Exists = $false
+            Status = "Missing"
+            StatusMessage = "File was not found."
+            IsSigned = $false
+            SignerSubject = ""
+            SignerThumbprint = ""
+        }
+    }
+
+    $signatureCommand = Get-Command Get-AuthenticodeSignature -ErrorAction SilentlyContinue
+    if ($null -eq $signatureCommand) {
+        try {
+            Import-Module Microsoft.PowerShell.Security -ErrorAction Stop | Out-Null
+            $signatureCommand = Get-Command Get-AuthenticodeSignature -ErrorAction SilentlyContinue
+        }
+        catch {
+            $signatureCommand = $null
+        }
+    }
+
+    if ($null -eq $signatureCommand) {
+        return [pscustomobject]@{
+            Path = Split-Path -Leaf $Path
+            Exists = $true
+            Status = "Unknown"
+            StatusMessage = "Authenticode signature status could not be resolved in this PowerShell host."
+            IsSigned = $false
+            SignerSubject = ""
+            SignerThumbprint = ""
+        }
+    }
+
+    try {
+        $signature = Get-AuthenticodeSignature -FilePath $Path
+        $signer = $signature.SignerCertificate
+        $pathLabel = Split-Path -Leaf $Path
+        $status = $signature.Status.ToString()
+        $statusMessage = switch ($status) {
+            "Valid" { "The digital signature on $pathLabel is valid." }
+            "NotSigned" { "The file $pathLabel is not digitally signed." }
+            default {
+                $rawMessage = [string]$signature.StatusMessage
+                if ([string]::IsNullOrWhiteSpace($rawMessage)) {
+                    "The digital signature status for $pathLabel is $status."
+                }
+                else {
+                    "The digital signature status for $pathLabel is $status. $rawMessage"
+                }
+            }
+        }
+        return [pscustomobject]@{
+            Path = $pathLabel
+            Exists = $true
+            Status = $status
+            StatusMessage = $statusMessage
+            IsSigned = $signature.Status -ne [System.Management.Automation.SignatureStatus]::NotSigned
+            SignerSubject = if ($null -ne $signer) { [string]$signer.Subject } else { "" }
+            SignerThumbprint = if ($null -ne $signer) { [string]$signer.Thumbprint } else { "" }
+        }
+    }
+    catch {
+        return [pscustomobject]@{
+            Path = Split-Path -Leaf $Path
+            Exists = $true
+            Status = "Unknown"
+            StatusMessage = "Authenticode signature status for $(Split-Path -Leaf $Path) could not be resolved in this PowerShell host."
+            IsSigned = $false
+            SignerSubject = ""
+            SignerThumbprint = ""
+        }
+    }
+}
+
+function Get-SessionGuardBundleIntegrityManifestPath {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Root
+    )
+
+    return Join-Path $Root "bundle-integrity.json"
+}
+
+function Get-SessionGuardBundleFileInventory {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Root,
+
+        [string[]]$ExcludeRelativePaths = @()
+    )
+
+    $excludeSet = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    foreach ($excludePath in $ExcludeRelativePaths) {
+        if (-not [string]::IsNullOrWhiteSpace($excludePath)) {
+            $excludeSet.Add(($excludePath -replace "\\", "/")) | Out-Null
+        }
+    }
+
+    return @(
+        Get-ChildItem -Path $Root -File -Recurse |
+        Sort-Object FullName |
+        ForEach-Object {
+            $relativePath = Get-SessionGuardRelativePath -Root $Root -Path $_.FullName
+            if ($excludeSet.Contains($relativePath)) {
+                return
+            }
+
+            [pscustomobject]@{
+                Path = $relativePath
+                SizeBytes = $_.Length
+                Sha256 = Get-SessionGuardFileSha256 -Path $_.FullName
+            }
+        }
+    )
+}
+
+function Invoke-SessionGuardBundleVerification {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$BundleRoot
+    )
+
+    $issues = New-Object System.Collections.Generic.List[string]
+    $warnings = New-Object System.Collections.Generic.List[string]
+    $manifestPath = Get-SessionGuardBundleIntegrityManifestPath -Root $BundleRoot
+    $manifest = $null
+
+    if (-not (Test-Path $manifestPath)) {
+        return [pscustomobject]@{
+            Available = $false
+            Verified = $false
+            BundleRoot = $BundleRoot
+            ManifestPath = $manifestPath
+            ProductVersion = ""
+            FileCount = 0
+            Issues = @("Bundle integrity manifest was not found.")
+            Warnings = @()
+            Signatures = @()
+        }
+    }
+
+    try {
+        $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
+    }
+    catch {
+        return [pscustomobject]@{
+            Available = $true
+            Verified = $false
+            BundleRoot = $BundleRoot
+            ManifestPath = $manifestPath
+            ProductVersion = ""
+            FileCount = 0
+            Issues = @("Bundle integrity manifest could not be parsed.")
+            Warnings = @()
+            Signatures = @()
+        }
+    }
+
+    $manifestFiles = @($manifest.Files)
+    $trackedPaths = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    foreach ($entry in $manifestFiles) {
+        $relativePath = [string]$entry.Path
+        $trackedPaths.Add($relativePath) | Out-Null
+        $bundlePath = Join-Path $BundleRoot ($relativePath -replace "/", "\")
+        if (-not (Test-Path $bundlePath)) {
+            $issues.Add("Tracked bundle file '$relativePath' is missing.")
+            continue
+        }
+
+        $item = Get-Item $bundlePath
+        if ($item.Length -ne [long]$entry.SizeBytes) {
+            $issues.Add("Tracked bundle file '$relativePath' has an unexpected size.")
+            continue
+        }
+
+        $actualHash = Get-SessionGuardFileSha256 -Path $bundlePath
+        if (-not [string]::Equals($actualHash, [string]$entry.Sha256, [System.StringComparison]::OrdinalIgnoreCase)) {
+            $issues.Add("Tracked bundle file '$relativePath' failed SHA256 verification.")
+        }
+    }
+
+    $actualFiles = Get-SessionGuardBundleFileInventory -Root $BundleRoot -ExcludeRelativePaths @("bundle-integrity.json")
+    foreach ($actualFile in $actualFiles) {
+        if (-not $trackedPaths.Contains([string]$actualFile.Path)) {
+            $issues.Add("Unexpected bundle file '$($actualFile.Path)' is present.")
+        }
+    }
+
+    $signatureReports = @(
+        @("SessionGuard.App.exe", "SessionGuard.Service.exe") |
+        ForEach-Object {
+            $targetPath = Join-Path $BundleRoot $_
+            if (Test-Path $targetPath) {
+                Get-SessionGuardFileSignatureInfo -Path $targetPath
+            }
+        }
+    )
+
+    foreach ($signatureReport in $signatureReports) {
+        if (-not $signatureReport.IsSigned) {
+            $warnings.Add(("{0} is not Authenticode-signed. Verify the downloaded zip hash against the published release checksum file." -f (Split-Path -Leaf $signatureReport.Path)))
+        }
+    }
+
+    return [pscustomobject]@{
+        Available = $true
+        Verified = $issues.Count -eq 0
+        BundleRoot = $BundleRoot
+        ManifestPath = $manifestPath
+        ProductVersion = if ($null -ne $manifest) { [string]$manifest.ProductVersion } else { "" }
+        FileCount = $manifestFiles.Count
+        Issues = $issues.ToArray()
+        Warnings = $warnings.ToArray()
+        Signatures = $signatureReports
+    }
+}
+
 function Get-SessionGuardStartupRegistryPath {
     return "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
 }

@@ -13,6 +13,7 @@ This guide is the fastest way to get SessionGuard running locally and understand
 If you downloaded `sessionguard-win11-setup-<version>-win-x64.zip` instead of cloning the repo, extract it and run:
 
 ```powershell
+powershell -ExecutionPolicy Bypass -File .\Verify-SessionGuard.ps1
 powershell -ExecutionPolicy Bypass -File .\Install-SessionGuard.ps1
 ```
 
@@ -24,8 +25,17 @@ That is the preferred operator path for a real machine. It:
 - scopes the installed service control plane plus `logs/` and `state/` access to that user, administrators, and `SYSTEM`
 - stops a running installed tray app before replacing files during reinstall or upgrade
 - attempts to launch the app minimized to the tray unless you opt out with `-DoNotLaunchApp`
+- can verify the extracted bundle contents before install with `Verify-SessionGuard.ps1`
 
 Run the installer from the same signed-in Windows account that should get the tray auto-start. The startup registration is written to that user's `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` key.
+
+Recommended trust check for a direct-download install:
+
+```powershell
+Get-FileHash .\sessionguard-win11-setup-<version>-win-x64.zip -Algorithm SHA256
+```
+
+Compare that hash against the published `sessionguard-win11-sha256-<version>.txt` release asset before extraction. After extraction, `Verify-SessionGuard.ps1` checks the extracted files against the publisher-generated bundle inventory and reports current Authenticode signature status for the app and service binaries.
 
 If Windows blocks the immediate launch, the install still succeeded. SessionGuard setup zips are direct-download unsigned binaries today, so Windows may show a SmartScreen or protection prompt on first launch. Open `C:\Program Files\SessionGuard\SessionGuard.App.exe` manually from your normal desktop session, use `-DoNotLaunchApp`, or wait for the next sign-in.
 
@@ -33,6 +43,7 @@ Useful install switches:
 
 - `-DoNotLaunchApp`: install without opening the tray app right away
 - `-DoNotStartService`: install without starting the Windows Service yet
+- `-SkipBundleVerification`: skip extracted-bundle file verification if you are deliberately testing a modified bundle
 - `-ValidateOnly -AsJson`: check readiness without changing the machine
 
 ## 2. Build the solution

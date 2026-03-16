@@ -134,6 +134,10 @@ try {
         Runtime = $Runtime
         SelfContained = $SelfContained.IsPresent
         StartupArguments = @("--start-minimized")
+        PrimaryExecutable = [ordered]@{
+            Path = "SessionGuard.App.exe"
+            Signature = Get-SessionGuardFileSignatureInfo -Path $appExe
+        }
         IncludedConfigFiles = @(
             "config/appsettings.json",
             "config/protected-processes.json",

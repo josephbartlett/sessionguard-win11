@@ -8,6 +8,7 @@ param(
     [switch]$SelfContained,
     [switch]$DoNotStartService,
     [switch]$DoNotLaunchApp,
+    [switch]$SkipBundleVerification,
     [switch]$ValidateOnly,
     [switch]$AsJson,
     [int]$StartupTimeoutSeconds = 30
@@ -59,6 +60,7 @@ $protectedProcessesPath = Join-Path $PublishRoot "config\\protected-processes.js
 $policiesPath = Join-Path $PublishRoot "config\\policies.json"
 $configDefaultsPath = Join-Path $PublishRoot "config.defaults"
 $bundleManifestPath = Join-Path $PublishRoot "bundle-manifest.json"
+$bundleIntegrityPath = Get-SessionGuardBundleIntegrityManifestPath -Root $PublishRoot
 $installManifestPath = Join-Path $PublishRoot "install-manifest.json"
 $startupRegistration = Get-SessionGuardAppStartupRegistration
 $serviceExists = Test-SessionGuardServiceExists
@@ -69,6 +71,7 @@ $issues = New-Object System.Collections.Generic.List[string]
 $warnings = New-Object System.Collections.Generic.List[string]
 $runtimeValidation = $null
 $bundleManifest = $null
+$bundleVerification = $null
 $appLaunchResult = $null
 
 if (-not (Test-Path $serviceExe)) {
@@ -105,6 +108,27 @@ if (Test-Path $bundleManifestPath) {
 }
 else {
     $warnings.Add("Bundle manifest is missing. Republish the combined bundle to record versioned bundle metadata.")
+}
+
+if (-not $SkipBundleVerification.IsPresent) {
+    $bundleVerification = Invoke-SessionGuardBundleVerification -BundleRoot $PublishRoot
+    if (-not $bundleVerification.Available) {
+        $warnings.Add("Bundle integrity manifest is missing. Extract a fresh setup zip or republish the combined bundle if you need extracted-file verification.")
+    }
+    else {
+        foreach ($warning in $bundleVerification.Warnings) {
+            $warnings.Add($warning)
+        }
+
+        if (-not $bundleVerification.Verified) {
+            foreach ($issue in $bundleVerification.Issues) {
+                $issues.Add($issue)
+            }
+        }
+    }
+}
+else {
+    $warnings.Add("Bundle verification was skipped explicitly.")
 }
 
 if (Test-Path $serviceExe) {
@@ -151,6 +175,8 @@ $readiness = [pscustomobject]@{
     ConfigDefaultsExists = Test-Path $configDefaultsPath
     BundleManifestPath = $bundleManifestPath
     BundleManifest = $bundleManifest
+    BundleIntegrityManifestPath = $bundleIntegrityPath
+    BundleVerification = $bundleVerification
     InstallManifestPath = $installManifestPath
     RuntimeValidation = if ($null -ne $runtimeValidation) { $runtimeValidation.Report } else { $null }
     Elevated = $isElevated
@@ -183,6 +209,11 @@ if (-not $readiness.AppExecutableExists -or -not $readiness.ServiceExecutableExi
 
 if ($null -eq $readiness.RuntimeValidation -or -not $readiness.RuntimeValidation.CanRun) {
     throw "Combined SessionGuard installation requires a runnable service layout. Republish the bundle and review the runtime validation report."
+}
+
+if (-not $SkipBundleVerification.IsPresent -and $null -ne $readiness.BundleVerification -and
+    $readiness.BundleVerification.Available -and -not $readiness.BundleVerification.Verified) {
+    throw "Combined SessionGuard installation refused to continue because the extracted bundle failed integrity verification. Re-extract the setup zip or verify the published checksum file."
 }
 
 if ($serviceExists) {

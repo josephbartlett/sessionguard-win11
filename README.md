@@ -21,7 +21,14 @@ The preferred end-user download is:
 Extract it, open an elevated PowerShell session in the extracted folder, and run:
 
 ```powershell
+powershell -ExecutionPolicy Bypass -File .\Verify-SessionGuard.ps1
 powershell -ExecutionPolicy Bypass -File .\Install-SessionGuard.ps1
+```
+
+SessionGuard releases now also publish `sessionguard-win11-sha256-<version>.txt`. For a direct-download install, verify the setup zip hash before extraction:
+
+```powershell
+Get-FileHash .\sessionguard-win11-setup-<version>-win-x64.zip -Algorithm SHA256
 ```
 
 That install path:
@@ -32,8 +39,11 @@ That install path:
 - scopes the installed service control plane plus `logs/` and `state/` access to that user, administrators, and `SYSTEM`
 - stops a running installed tray app before replacing files during reinstall or upgrade
 - attempts to launch the app minimized to the tray unless you opt out with `-DoNotLaunchApp`
+- can verify the extracted bundle contents before install with `Verify-SessionGuard.ps1`
 
 Install it from the same signed-in Windows account that should see the tray icon at sign-in. The startup registration is written to that user's `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` key.
+
+`Verify-SessionGuard.ps1` checks the extracted files against the publisher-generated bundle inventory and reports the current Authenticode signature status of `SessionGuard.App.exe` and `SessionGuard.Service.exe`. It helps catch incomplete extraction or local tampering, but it does not replace verifying the published zip hash.
 
 If Windows blocks the immediate app launch, the install still succeeds. SessionGuard setup zips are direct-download unsigned binaries today, so Windows may show a SmartScreen or protection prompt on first launch. You can launch `C:\Program Files\SessionGuard\SessionGuard.App.exe` manually from your normal desktop session, use `-DoNotLaunchApp` during install, or wait for the next sign-in.
 
@@ -95,7 +105,7 @@ See [Limitations](docs/limitations.md) for the full platform and permissions bou
 - [Limitations](docs/limitations.md)
 - [Roadmap](docs/roadmap.md)
 - [Future service and shell direction](docs/future-service-architecture.md)
-- [Current release notes](docs/releases/v1.2.1.md)
+- [Current release notes](docs/releases/v1.3.0.md)
 
 ## Practical positioning
 

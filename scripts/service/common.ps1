@@ -88,6 +88,113 @@ function Get-SessionGuardCurrentUserSid {
     return $identity.User.Value
 }
 
+function Get-SessionGuardFileSha256 {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
+
+    if (-not (Test-Path $Path)) {
+        throw "Cannot hash missing file '$Path'."
+    }
+
+    $stream = [System.IO.File]::OpenRead($Path)
+    try {
+        $sha256 = [System.Security.Cryptography.SHA256]::Create()
+        try {
+            return ([System.BitConverter]::ToString($sha256.ComputeHash($stream))).Replace("-", "").ToUpperInvariant()
+        }
+        finally {
+            $sha256.Dispose()
+        }
+    }
+    finally {
+        $stream.Dispose()
+    }
+}
+
+function Get-SessionGuardFileSignatureInfo {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
+
+    $pathLabel = Split-Path -Leaf $Path
+    if (-not (Test-Path $Path)) {
+        return [pscustomobject]@{
+            Path = $pathLabel
+            Exists = $false
+            Status = "Missing"
+            StatusMessage = "File was not found."
+            IsSigned = $false
+            SignerSubject = ""
+            SignerThumbprint = ""
+        }
+    }
+
+    $signatureCommand = Get-Command Get-AuthenticodeSignature -ErrorAction SilentlyContinue
+    if ($null -eq $signatureCommand) {
+        try {
+            Import-Module Microsoft.PowerShell.Security -ErrorAction Stop | Out-Null
+            $signatureCommand = Get-Command Get-AuthenticodeSignature -ErrorAction SilentlyContinue
+        }
+        catch {
+            $signatureCommand = $null
+        }
+    }
+
+    if ($null -eq $signatureCommand) {
+        return [pscustomobject]@{
+            Path = $pathLabel
+            Exists = $true
+            Status = "Unknown"
+            StatusMessage = "Authenticode signature status could not be resolved in this PowerShell host."
+            IsSigned = $false
+            SignerSubject = ""
+            SignerThumbprint = ""
+        }
+    }
+
+    try {
+        $signature = Get-AuthenticodeSignature -FilePath $Path
+        $signer = $signature.SignerCertificate
+        $status = $signature.Status.ToString()
+        $statusMessage = switch ($status) {
+            "Valid" { "The digital signature on $pathLabel is valid." }
+            "NotSigned" { "The file $pathLabel is not digitally signed." }
+            default {
+                $rawMessage = [string]$signature.StatusMessage
+                if ([string]::IsNullOrWhiteSpace($rawMessage)) {
+                    "The digital signature status for $pathLabel is $status."
+                }
+                else {
+                    "The digital signature status for $pathLabel is $status. $rawMessage"
+                }
+            }
+        }
+        return [pscustomobject]@{
+            Path = $pathLabel
+            Exists = $true
+            Status = $status
+            StatusMessage = $statusMessage
+            IsSigned = $signature.Status -ne [System.Management.Automation.SignatureStatus]::NotSigned
+            SignerSubject = if ($null -ne $signer) { [string]$signer.Subject } else { "" }
+            SignerThumbprint = if ($null -ne $signer) { [string]$signer.Thumbprint } else { "" }
+        }
+    }
+    catch {
+        return [pscustomobject]@{
+            Path = $pathLabel
+            Exists = $true
+            Status = "Unknown"
+            StatusMessage = "Authenticode signature status for $pathLabel could not be resolved in this PowerShell host."
+            IsSigned = $false
+            SignerSubject = ""
+            SignerThumbprint = ""
+        }
+    }
+}
+
 function Set-SessionGuardInstallManifestAuthorizedUserSid {
     param(
         [string]$PublishRoot = (Get-SessionGuardPublishRoot),

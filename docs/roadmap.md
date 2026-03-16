@@ -150,24 +150,21 @@ Reference:
 
 - [`docs/plans/v1.2.0-everyday-tray-workflow-plan.md`](plans/v1.2.0-everyday-tray-workflow-plan.md)
 
+### v1.3.0 — Packaging and Distribution Hardening
+
+Purpose:
+Make SessionGuard easier to trust and safer to install for direct-download users without changing the current app-plus-service product model.
+
+Delivered:
+
+- published SHA256 checksum assets for release downloads
+- extracted-bundle verification with a root-level `Verify-SessionGuard.ps1`
+- bundle and release manifests that record integrity and signature metadata without leaking machine-local paths
+- updated install, runtime, development, and manual-validation docs for the trust and verification path
+
 ## Likely Next Improvements
 
 The items below are not promises. They are the most likely next areas of value based on the current product shape.
-
-### 1.x — Packaging and Distribution
-
-Purpose:
-Make SessionGuard easier to install and update for direct-download users.
-
-Likely work:
-
-- stronger install and upgrade messaging
-- optional signing and trust improvements
-
-Risks:
-
-- packaging effort can sprawl quickly
-- installer convenience should not weaken auditability or service safety
 
 ### 1.x — Policy and Workspace Refinement
 

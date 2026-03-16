@@ -226,6 +226,21 @@ public sealed class ServiceScriptTests
         File.WriteAllText(Path.Combine(configDefaultsDirectory, "policies.json"), "{\"schemaVersion\":1,\"enabled\":true,\"rules\":[]}");
         File.WriteAllText(Path.Combine(publishRoot, "install-manifest.json"), $$"""{"ProductVersion":"{{productVersion}}","ProtocolVersion":"1.2"}""");
         File.WriteAllText(Path.Combine(publishRoot, "bundle-manifest.json"), $$"""{"ProductVersion":"{{productVersion}}"}""");
+        File.WriteAllText(
+            Path.Combine(publishRoot, "bundle-integrity.json"),
+            JsonSerializer.Serialize(new
+            {
+                ProductVersion = productVersion,
+                VerificationKind = "sha256-file-inventory",
+                Files = Directory.GetFiles(publishRoot, "*", SearchOption.AllDirectories)
+                    .Select(path => new FileInfo(path))
+                    .Select(file => new
+                    {
+                        Path = Path.GetRelativePath(publishRoot, file.FullName).Replace('\\', '/'),
+                        SizeBytes = file.Length,
+                        Sha256 = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(file.FullName)))
+                    })
+            }));
 
         var scriptPath = Path.Combine(repoRoot, "scripts", "install", "Install-SessionGuard.ps1");
         var installRoot = Path.Combine(Path.GetTempPath(), "SessionGuard.Install", Guid.NewGuid().ToString("N"));
@@ -249,6 +264,8 @@ public sealed class ServiceScriptTests
         Assert.True(root.GetProperty("AppSettingsExists").GetBoolean());
         Assert.True(root.GetProperty("PoliciesExists").GetBoolean());
         Assert.True(root.GetProperty("RuntimeValidation").GetProperty("CanRun").GetBoolean());
+        Assert.True(root.GetProperty("BundleVerification").GetProperty("Available").GetBoolean());
+        Assert.True(root.GetProperty("BundleVerification").GetProperty("Verified").GetBoolean());
         Assert.Contains("--start-minimized", root.GetProperty("StartupCommand").GetString(), StringComparison.OrdinalIgnoreCase);
 
         var elevated = IsElevated();
@@ -306,19 +323,24 @@ public sealed class ServiceScriptTests
         Assert.True(File.Exists(bundleReadmePath));
         var bundleReadme = File.ReadAllText(bundleReadmePath);
         Assert.Contains("Install-SessionGuard.ps1", bundleReadme, StringComparison.Ordinal);
+        Assert.Contains("Verify-SessionGuard.ps1", bundleReadme, StringComparison.Ordinal);
         Assert.DoesNotContain("docs/", bundleReadme, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("dotnet build SessionGuard.sln", bundleReadme, StringComparison.OrdinalIgnoreCase);
+        Assert.True(File.Exists(Path.Combine(outputRoot, "Verify-SessionGuard.ps1")));
+        Assert.True(File.Exists(Path.Combine(outputRoot, "bundle-integrity.json")));
 
         using var appManifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(outputRoot, "app-manifest.json")));
         Assert.False(appManifest.RootElement.TryGetProperty("AppExecutable", out _));
         Assert.False(appManifest.RootElement.TryGetProperty("ConfigDirectory", out _));
         Assert.True(appManifest.RootElement.TryGetProperty("StartupArguments", out _));
+        Assert.True(appManifest.RootElement.TryGetProperty("PrimaryExecutable", out _));
 
         using var serviceManifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(outputRoot, "install-manifest.json")));
         Assert.False(serviceManifest.RootElement.TryGetProperty("PublishRoot", out _));
         Assert.False(serviceManifest.RootElement.TryGetProperty("ServiceExecutable", out _));
         Assert.False(serviceManifest.RootElement.TryGetProperty("Validation", out _));
         Assert.True(serviceManifest.RootElement.TryGetProperty("IncludedConfigFiles", out _));
+        Assert.True(serviceManifest.RootElement.TryGetProperty("PrimaryExecutable", out _));
 
         using var bundleManifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(outputRoot, "bundle-manifest.json")));
         Assert.False(bundleManifest.RootElement.TryGetProperty("BundleRoot", out _));
@@ -326,6 +348,97 @@ public sealed class ServiceScriptTests
         Assert.False(bundleManifest.RootElement.TryGetProperty("ServiceExecutable", out _));
         Assert.False(bundleManifest.RootElement.TryGetProperty("InstallScript", out _));
         Assert.True(bundleManifest.RootElement.TryGetProperty("IncludedComponents", out _));
+        Assert.True(bundleManifest.RootElement.TryGetProperty("PrimaryExecutables", out _));
+
+        using var bundleIntegrity = JsonDocument.Parse(File.ReadAllText(Path.Combine(outputRoot, "bundle-integrity.json")));
+        Assert.True(bundleIntegrity.RootElement.TryGetProperty("Files", out var bundleFiles));
+        Assert.True(bundleFiles.GetArrayLength() > 0);
+    }
+
+    [Fact]
+    public async Task VerifyCombinedBundle_FailsWhenTrackedFileChanges()
+    {
+        var repoRoot = GetRepositoryRoot();
+        var outputRoot = Path.Combine(Path.GetTempPath(), "SessionGuard.Tests", Guid.NewGuid().ToString("N"));
+        var publishScriptPath = Path.Combine(repoRoot, "scripts", "install", "Publish-SessionGuardBundle.ps1");
+        var publishResult = await RunPowerShellScriptAsync(
+            publishScriptPath,
+            "-Configuration",
+            "Release",
+            "-Runtime",
+            "win-x64",
+            "-OutputDir",
+            outputRoot);
+
+        Assert.True(publishResult.ExitCode == 0, $"PowerShell exited with {publishResult.ExitCode}. stderr: {publishResult.StandardError}");
+
+        File.AppendAllText(Path.Combine(outputRoot, "README.md"), Environment.NewLine + "tampered");
+
+        var verifyScriptPath = Path.Combine(repoRoot, "scripts", "install", "Verify-SessionGuardBundle.ps1");
+        var verifyResult = await RunPowerShellScriptAsync(
+            verifyScriptPath,
+            "-BundleRoot",
+            outputRoot,
+            "-AsJson");
+
+        Assert.NotEqual(0, verifyResult.ExitCode);
+
+        using var document = JsonDocument.Parse(verifyResult.StandardOutput);
+        var root = document.RootElement;
+        Assert.True(root.GetProperty("Available").GetBoolean());
+        Assert.False(root.GetProperty("Verified").GetBoolean());
+        Assert.Contains(
+            root.GetProperty("Issues").EnumerateArray().Select(item => item.GetString()),
+            issue => issue is not null && issue.Contains("README.md", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task PublishReleaseAssets_WritesChecksumsAndAssetHashes()
+    {
+        var repoRoot = GetRepositoryRoot();
+        var productVersion = GetProductVersion(repoRoot);
+        var outputRoot = Path.Combine(Path.GetTempPath(), "SessionGuard.Tests", Guid.NewGuid().ToString("N"));
+        var scriptPath = Path.Combine(repoRoot, "scripts", "release", "Publish-SessionGuardReleaseAssets.ps1");
+        var result = await RunPowerShellScriptAsync(
+            scriptPath,
+            "-Version",
+            productVersion,
+            "-Configuration",
+            "Release",
+            "-Runtime",
+            "win-x64",
+            "-OutputRoot",
+            outputRoot);
+
+        Assert.True(result.ExitCode == 0, $"PowerShell exited with {result.ExitCode}. stderr: {result.StandardError}");
+
+        var checksumsPath = Path.Combine(outputRoot, $"sessionguard-win11-sha256-{productVersion}.txt");
+        Assert.True(File.Exists(checksumsPath));
+        var checksumText = File.ReadAllText(checksumsPath);
+        Assert.Contains($"sessionguard-win11-setup-{productVersion}-win-x64.zip", checksumText, StringComparison.Ordinal);
+
+        using var manifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(outputRoot, "release-assets.json")));
+        var root = manifest.RootElement;
+        var assetTypes = root.GetProperty("Assets")
+            .EnumerateArray()
+            .Select(asset => asset.GetProperty("Type").GetString())
+            .ToArray();
+
+        Assert.Contains("setup", assetTypes);
+        Assert.Contains("desktop-app", assetTypes);
+        Assert.Contains("service", assetTypes);
+        Assert.Contains("source", assetTypes);
+        Assert.Contains("checksums", assetTypes);
+
+        foreach (var asset in root.GetProperty("Assets").EnumerateArray())
+        {
+            Assert.True(asset.TryGetProperty("Sha256", out var shaElement));
+            Assert.False(string.IsNullOrWhiteSpace(shaElement.GetString()));
+            Assert.True(asset.GetProperty("SizeBytes").GetInt64() > 0);
+        }
+
+        Assert.True(root.TryGetProperty("PublishedComponents", out _));
+        Assert.True(root.TryGetProperty("TrustNotes", out _));
     }
 
     [Fact]
