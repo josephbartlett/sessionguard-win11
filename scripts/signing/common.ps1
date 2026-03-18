@@ -78,41 +78,57 @@ function Get-SessionGuardSigningSession {
     }
 
     $temporaryPaths = New-Object System.Collections.Generic.List[string]
-    if (-not [string]::IsNullOrWhiteSpace($certificateBase64)) {
-        $tempDirectory = Join-Path ([System.IO.Path]::GetTempPath()) ("SessionGuard.Signing\\" + [Guid]::NewGuid().ToString("N"))
-        New-Item -ItemType Directory -Path $tempDirectory -Force | Out-Null
-        $certificatePath = Join-Path $tempDirectory "sessionguard-signing.pfx"
-        [System.IO.File]::WriteAllBytes($certificatePath, [System.Convert]::FromBase64String($certificateBase64))
-        $temporaryPaths.Add($tempDirectory) | Out-Null
+    $certificate = $null
+    try {
+        if (-not [string]::IsNullOrWhiteSpace($certificateBase64)) {
+            $tempDirectory = Join-Path ([System.IO.Path]::GetTempPath()) ("SessionGuard.Signing\\" + [Guid]::NewGuid().ToString("N"))
+            New-Item -ItemType Directory -Path $tempDirectory -Force | Out-Null
+            $certificatePath = Join-Path $tempDirectory "sessionguard-signing.pfx"
+            [System.IO.File]::WriteAllBytes($certificatePath, [System.Convert]::FromBase64String($certificateBase64))
+            $temporaryPaths.Add($tempDirectory) | Out-Null
+        }
+
+        if (-not (Test-Path $certificatePath)) {
+            throw "Configured signing certificate path '$certificatePath' does not exist."
+        }
+
+        $flags = [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable -bor
+            [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::EphemeralKeySet
+
+        $certificate = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new(
+            $certificatePath,
+            $certificatePassword,
+            $flags)
+
+        if (-not $certificate.HasPrivateKey) {
+            throw "Configured signing certificate '$certificatePath' does not include a private key."
+        }
+
+        return [pscustomobject]@{
+            Enabled = $true
+            Required = $RequireSigning.IsPresent
+            TimestampUrl = $timestampUrl
+            SignToolPath = Resolve-SessionGuardSignToolPath
+            CertificatePath = $certificatePath
+            CertificateSubject = [string]$certificate.Subject
+            CertificateThumbprint = [string]$certificate.Thumbprint
+            Certificate = $certificate
+            CertificatePassword = $certificatePassword
+            TemporaryPaths = $temporaryPaths.ToArray()
+        }
     }
+    catch {
+        if ($null -ne $certificate) {
+            $certificate.Dispose()
+        }
 
-    if (-not (Test-Path $certificatePath)) {
-        throw "Configured signing certificate path '$certificatePath' does not exist."
-    }
+        foreach ($temporaryPath in @($temporaryPaths.ToArray())) {
+            if (-not [string]::IsNullOrWhiteSpace($temporaryPath) -and (Test-Path $temporaryPath)) {
+                Remove-Item $temporaryPath -Recurse -Force
+            }
+        }
 
-    $flags = [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable -bor
-        [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::PersistKeySet
-
-    $certificate = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new(
-        $certificatePath,
-        $certificatePassword,
-        $flags)
-
-    if (-not $certificate.HasPrivateKey) {
-        throw "Configured signing certificate '$certificatePath' does not include a private key."
-    }
-
-    return [pscustomobject]@{
-        Enabled = $true
-        Required = $RequireSigning.IsPresent
-        TimestampUrl = $timestampUrl
-        SignToolPath = Resolve-SessionGuardSignToolPath
-        CertificatePath = $certificatePath
-        CertificateSubject = [string]$certificate.Subject
-        CertificateThumbprint = [string]$certificate.Thumbprint
-        Certificate = $certificate
-        CertificatePassword = $certificatePassword
-        TemporaryPaths = $temporaryPaths.ToArray()
+        throw
     }
 }
 

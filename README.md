@@ -43,7 +43,7 @@ That install path:
 
 Install it from the same signed-in Windows account that should see the tray icon at sign-in. The startup registration is written to that user's `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` key.
 
-`Verify-SessionGuard.ps1` checks the extracted files against the publisher-generated bundle inventory and reports the current Authenticode signature status of `SessionGuard.App.exe`, `SessionGuard.Service.exe`, and the root installer scripts. It helps catch incomplete extraction or local tampering, but it does not replace verifying the published zip hash.
+`Verify-SessionGuard.ps1` checks the extracted files against the included bundle inventory and reports the current Authenticode signature status of `SessionGuard.App.exe`, `SessionGuard.Service.exe`, and the root installer scripts. It helps catch incomplete extraction and local file changes after extraction, but it does not prove publisher authenticity on its own and does not replace verifying the published zip hash.
 
 If Windows blocks the immediate app launch, the install still succeeds. Official SessionGuard tag releases are intended to be Authenticode-signed, but local or custom builds may still be unsigned and can trigger SmartScreen or other Windows trust prompts. You can launch `C:\Program Files\SessionGuard\SessionGuard.App.exe` manually from your normal desktop session, use `-DoNotLaunchApp` during install, or wait for the next sign-in.
 

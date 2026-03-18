@@ -84,7 +84,7 @@ powershell -ExecutionPolicy Bypass -File .\Verify-SessionGuard.ps1
 powershell -ExecutionPolicy Bypass -File .\Install-SessionGuard.ps1
 ```
 
-`Verify-SessionGuard.ps1` checks the extracted bundle against the publisher-generated file inventory and reports current Authenticode signature status for the app, service, and root installer scripts. It helps catch incomplete extraction or local file tampering. It does not replace verifying the downloaded setup zip hash against the published release checksum file.
+`Verify-SessionGuard.ps1` checks the extracted bundle against the included file inventory and reports current Authenticode signature status for the app, service, and root installer scripts. It helps catch incomplete extraction and local file changes after extraction. It does not prove publisher authenticity on its own and does not replace verifying the downloaded setup zip hash against the published release checksum file.
 
 The install then places SessionGuard under `C:\Program Files\SessionGuard`, installs the Windows Service, registers the app to start at sign-in for the current user, scopes the installed service control plane plus `logs/` and `state/` access to that user, administrators, and `SYSTEM`, stops a running installed tray app before replacing files during reinstall or upgrade, and attempts to launch the app minimized to the tray unless you opt out with `-DoNotLaunchApp`.
 

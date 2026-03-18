@@ -144,6 +144,6 @@ The recommended end-user distribution is a **single setup zip** that contains:
 - root-level `Install-SessionGuard.ps1`, `Uninstall-SessionGuard.ps1`, and `Verify-SessionGuard.ps1`
 - supporting install and service scripts under `scripts\`
 
-Releases also publish a separate `sessionguard-win11-sha256-<version>.txt` checksum file so direct-download users can verify the setup zip before extraction. `Verify-SessionGuard.ps1` then checks the extracted files against the publisher-generated bundle inventory and reports the current Authenticode signature status of the shipped binaries plus the root installer scripts.
+Releases also publish a separate `sessionguard-win11-sha256-<version>.txt` checksum file so direct-download users can verify the setup zip before extraction. `Verify-SessionGuard.ps1` then checks the extracted files against the included bundle inventory and reports the current Authenticode signature status of the shipped binaries plus the root installer scripts. The checksum file remains the stronger download trust signal.
 
 The separate app and service zip files still exist for advanced operator and debugging scenarios, but they are no longer the preferred end-user path.

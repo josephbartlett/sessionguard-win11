@@ -481,6 +481,84 @@ public sealed class ServiceScriptTests
     }
 
     [Fact]
+    public async Task GetSigningSession_CleansTemporaryCertificateMaterialWhenSetupFails()
+    {
+        var repoRoot = GetRepositoryRoot();
+        var probeScript = Path.Combine(Path.GetTempPath(), "SessionGuard.Tests", Guid.NewGuid().ToString("N") + ".ps1");
+        Directory.CreateDirectory(Path.GetDirectoryName(probeScript)!);
+        File.WriteAllText(
+            probeScript,
+            $$"""
+            Set-StrictMode -Version Latest
+            $ErrorActionPreference = "Stop"
+            . "{{Path.Combine(repoRoot, "scripts", "signing", "common.ps1")}}"
+
+            $tempRoot = Join-Path $env:TEMP ("SessionGuard.Tests\" + [Guid]::NewGuid().ToString("N"))
+            New-Item -ItemType Directory -Path $tempRoot -Force | Out-Null
+
+            try {
+                $base64 = [Convert]::ToBase64String([byte[]](0..31))
+
+                $signingTempRoot = Join-Path $env:TEMP "SessionGuard.Signing"
+                $before = @(
+                    Get-ChildItem -Path $signingTempRoot -Directory -ErrorAction SilentlyContinue |
+                    ForEach-Object { $_.FullName }
+                )
+
+                $env:SESSIONGUARD_SIGN_CERT_BASE64 = $base64
+                $env:SESSIONGUARD_SIGN_CERT_FILE = $null
+                $env:SESSIONGUARD_SIGN_CERT_PASSWORD = "sessionguard-test-password"
+                $env:SESSIONGUARD_SIGN_TIMESTAMP_URL = "disabled"
+                $env:SESSIONGUARD_SIGNTOOL_PATH = $null
+
+                try {
+                    Get-SessionGuardSigningSession -RequireSigning | Out-Null
+                    throw "Expected Get-SessionGuardSigningSession to fail when the temporary PFX cannot be loaded."
+                }
+                catch {
+                    if ($_.Exception.Message -match "Expected Get-SessionGuardSigningSession") {
+                        throw
+                    }
+                }
+
+                $after = @(
+                    Get-ChildItem -Path $signingTempRoot -Directory -ErrorAction SilentlyContinue |
+                    ForEach-Object { $_.FullName }
+                )
+
+                $newEntries = @(
+                    Compare-Object -ReferenceObject $before -DifferenceObject $after |
+                    Where-Object SideIndicator -eq "=>" |
+                    ForEach-Object { $_.InputObject }
+                )
+
+                [pscustomobject]@{
+                    NewEntries = $newEntries
+                } | ConvertTo-Json -Compress
+            }
+            finally {
+                $env:SESSIONGUARD_SIGN_CERT_BASE64 = $null
+                $env:SESSIONGUARD_SIGN_CERT_FILE = $null
+                $env:SESSIONGUARD_SIGN_CERT_PASSWORD = $null
+                $env:SESSIONGUARD_SIGN_TIMESTAMP_URL = $null
+                $env:SESSIONGUARD_SIGNTOOL_PATH = $null
+
+                if (Test-Path $tempRoot) {
+                    Remove-Item $tempRoot -Recurse -Force
+                }
+            }
+            """);
+
+        var result = await RunPowerShellScriptAsync(probeScript);
+
+        Assert.True(result.ExitCode == 0, $"PowerShell exited with {result.ExitCode}. stderr: {result.StandardError}");
+
+        using var document = JsonDocument.Parse(result.StandardOutput);
+        var newEntries = document.RootElement.GetProperty("NewEntries").EnumerateArray().Select(item => item.GetString()).Where(item => item is not null).ToArray();
+        Assert.Empty(newEntries);
+    }
+
+    [Fact]
     public async Task VerifyReleaseSignatures_RequireSignedFailsForUnsignedPublishOutput()
     {
         var repoRoot = GetRepositoryRoot();

@@ -132,7 +132,7 @@ $allPrimaryComponentsSigned = ($primarySignatureStatuses -notcontains "NotSigned
 $trustNotes = New-Object System.Collections.Generic.List[string]
 $trustNotes.Add("Verify the setup zip hash against the published checksum file before install.") | Out-Null
 if ($RequireSigning.IsPresent -or $allPrimaryComponentsSigned) {
-    $trustNotes.Add("Official SessionGuard release automation now expects Authenticode-signed app and service binaries. After extraction, Verify-SessionGuard.ps1 also reports signature status for the app, service, and root installer scripts.") | Out-Null
+    $trustNotes.Add("Official SessionGuard release automation now expects Authenticode-signed app and service binaries. After extraction, Verify-SessionGuard.ps1 reports current signature status for the app, service, and root installer scripts, but the published setup zip checksum remains the download trust anchor.") | Out-Null
 }
 else {
     $trustNotes.Add("This publish output was generated without a signing certificate. The manifests record current Authenticode signature status, and the checksum asset remains the primary integrity signal for unsigned local builds.") | Out-Null

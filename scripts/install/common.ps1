@@ -311,6 +311,7 @@ function Invoke-SessionGuardBundleVerification {
         BundleRoot = $BundleRoot
         ManifestPath = $manifestPath
         ProductVersion = if ($null -ne $manifest) { [string]$manifest.ProductVersion } else { "" }
+        VerificationScope = "Checks the extracted bundle against the included file inventory and reports current Authenticode signature status. Verify the published setup zip checksum separately for download authenticity."
         FileCount = $manifestFiles.Count
         Issues = $issues.ToArray()
         Warnings = $warnings.ToArray()

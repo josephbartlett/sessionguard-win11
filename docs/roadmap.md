@@ -173,7 +173,7 @@ Delivered:
 - signed root installer scripts inside the setup bundle
 - release-time signature verification for app, service, and bundle installer entry points
 - updated release workflow, docs, and manual validation for signed official releases
-- checksum assets retained as a secondary integrity check rather than the only trust signal
+- checksum assets retained as the primary download trust anchor alongside signed release binaries
 
 ## Likely Next Improvements
 

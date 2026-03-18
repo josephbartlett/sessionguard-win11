@@ -37,7 +37,7 @@ Use this when you want a structured release-readiness pass without digging throu
 ## Combined install path
 
 1. If testing the setup zip, run `Get-FileHash .\sessionguard-win11-setup-<version>-win-x64.zip -Algorithm SHA256` and confirm it matches the published checksum file.
-2. Run `powershell -ExecutionPolicy Bypass -File scripts/install/Verify-SessionGuardBundle.ps1 -BundleRoot artifacts/publish/SessionGuard` from source publish output, or run `powershell -ExecutionPolicy Bypass -File .\Verify-SessionGuard.ps1` from an extracted bundle.
+2. Run `powershell -ExecutionPolicy Bypass -File scripts/install/Verify-SessionGuardBundle.ps1 -BundleRoot artifacts/publish/SessionGuard` from source publish output, or run `powershell -ExecutionPolicy Bypass -File .\Verify-SessionGuard.ps1` from an extracted bundle. Treat that as extracted-file consistency and signature-status reporting, not as a replacement for the published setup zip checksum.
 3. If you are validating an official signed release, confirm the verification output reports `Valid` signatures for `SessionGuard.App.exe`, `SessionGuard.Service.exe`, `Install-SessionGuard.ps1`, `Uninstall-SessionGuard.ps1`, and `Verify-SessionGuard.ps1`.
 4. Run `powershell -ExecutionPolicy Bypass -File scripts/install/Install-SessionGuard.ps1 -SelfContained` from an elevated shell, or run `powershell -ExecutionPolicy Bypass -File .\Install-SessionGuard.ps1` from an extracted bundle.
 5. Confirm the service is installed and configured for delayed auto-start.
