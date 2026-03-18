@@ -324,6 +324,7 @@ public sealed class ServiceScriptTests
         var bundleReadme = File.ReadAllText(bundleReadmePath);
         Assert.Contains("Install-SessionGuard.ps1", bundleReadme, StringComparison.Ordinal);
         Assert.Contains("Verify-SessionGuard.ps1", bundleReadme, StringComparison.Ordinal);
+        Assert.Contains("Official SessionGuard release builds are intended to be Authenticode-signed.", bundleReadme, StringComparison.Ordinal);
         Assert.DoesNotContain("docs/", bundleReadme, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("dotnet build SessionGuard.sln", bundleReadme, StringComparison.OrdinalIgnoreCase);
         Assert.True(File.Exists(Path.Combine(outputRoot, "Verify-SessionGuard.ps1")));
@@ -334,6 +335,7 @@ public sealed class ServiceScriptTests
         Assert.False(appManifest.RootElement.TryGetProperty("ConfigDirectory", out _));
         Assert.True(appManifest.RootElement.TryGetProperty("StartupArguments", out _));
         Assert.True(appManifest.RootElement.TryGetProperty("PrimaryExecutable", out _));
+        Assert.True(appManifest.RootElement.TryGetProperty("Signing", out _));
 
         using var serviceManifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(outputRoot, "install-manifest.json")));
         Assert.False(serviceManifest.RootElement.TryGetProperty("PublishRoot", out _));
@@ -341,6 +343,7 @@ public sealed class ServiceScriptTests
         Assert.False(serviceManifest.RootElement.TryGetProperty("Validation", out _));
         Assert.True(serviceManifest.RootElement.TryGetProperty("IncludedConfigFiles", out _));
         Assert.True(serviceManifest.RootElement.TryGetProperty("PrimaryExecutable", out _));
+        Assert.True(serviceManifest.RootElement.TryGetProperty("Signing", out _));
 
         using var bundleManifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(outputRoot, "bundle-manifest.json")));
         Assert.False(bundleManifest.RootElement.TryGetProperty("BundleRoot", out _));
@@ -349,6 +352,8 @@ public sealed class ServiceScriptTests
         Assert.False(bundleManifest.RootElement.TryGetProperty("InstallScript", out _));
         Assert.True(bundleManifest.RootElement.TryGetProperty("IncludedComponents", out _));
         Assert.True(bundleManifest.RootElement.TryGetProperty("PrimaryExecutables", out _));
+        Assert.True(bundleManifest.RootElement.TryGetProperty("RootScripts", out _));
+        Assert.True(bundleManifest.RootElement.TryGetProperty("Signing", out _));
 
         using var bundleIntegrity = JsonDocument.Parse(File.ReadAllText(Path.Combine(outputRoot, "bundle-integrity.json")));
         Assert.True(bundleIntegrity.RootElement.TryGetProperty("Files", out var bundleFiles));
@@ -439,6 +444,85 @@ public sealed class ServiceScriptTests
 
         Assert.True(root.TryGetProperty("PublishedComponents", out _));
         Assert.True(root.TryGetProperty("TrustNotes", out _));
+        Assert.True(root.TryGetProperty("SigningRequired", out var signingRequiredElement));
+        Assert.False(signingRequiredElement.GetBoolean());
+        Assert.True(root.GetProperty("PublishedComponents").GetProperty("Bundle").TryGetProperty("RootScripts", out _));
+    }
+
+    [Fact]
+    public async Task PublishReleaseAssets_RequireSigningFailsWithoutConfiguredCertificate()
+    {
+        var repoRoot = GetRepositoryRoot();
+        var outputRoot = Path.Combine(Path.GetTempPath(), "SessionGuard.Tests", Guid.NewGuid().ToString("N"));
+        var probeScript = Path.Combine(Path.GetTempPath(), "SessionGuard.Tests", Guid.NewGuid().ToString("N") + ".ps1");
+        Directory.CreateDirectory(Path.GetDirectoryName(probeScript)!);
+        File.WriteAllText(
+            probeScript,
+            $$"""
+            Set-StrictMode -Version Latest
+            $ErrorActionPreference = "Stop"
+            $env:SESSIONGUARD_SIGN_CERT_BASE64 = $null
+            $env:SESSIONGUARD_SIGN_CERT_FILE = $null
+            $env:SESSIONGUARD_SIGN_CERT_PASSWORD = $null
+            $env:SESSIONGUARD_SIGN_TIMESTAMP_URL = $null
+            $env:SESSIONGUARD_SIGNTOOL_PATH = $null
+            & "{{Path.Combine(repoRoot, "scripts", "release", "Publish-SessionGuardReleaseAssets.ps1")}}" `
+                -Version "{{GetProductVersion(repoRoot)}}" `
+                -Configuration Release `
+                -Runtime win-x64 `
+                -OutputRoot "{{outputRoot}}" `
+                -RequireSigning
+            """);
+
+        var result = await RunPowerShellScriptAsync(probeScript);
+
+        Assert.NotEqual(0, result.ExitCode);
+        Assert.Contains("Release signing was required", result.StandardError + Environment.NewLine + result.StandardOutput, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task VerifyReleaseSignatures_RequireSignedFailsForUnsignedPublishOutput()
+    {
+        var repoRoot = GetRepositoryRoot();
+        var outputRoot = Path.Combine(Path.GetTempPath(), "SessionGuard.Tests", Guid.NewGuid().ToString("N"));
+        var publishProbeScript = Path.Combine(Path.GetTempPath(), "SessionGuard.Tests", Guid.NewGuid().ToString("N") + ".ps1");
+        Directory.CreateDirectory(Path.GetDirectoryName(publishProbeScript)!);
+        File.WriteAllText(
+            publishProbeScript,
+            $$"""
+            Set-StrictMode -Version Latest
+            $ErrorActionPreference = "Stop"
+            $env:SESSIONGUARD_SIGN_CERT_BASE64 = $null
+            $env:SESSIONGUARD_SIGN_CERT_FILE = $null
+            $env:SESSIONGUARD_SIGN_CERT_PASSWORD = $null
+            $env:SESSIONGUARD_SIGN_TIMESTAMP_URL = $null
+            $env:SESSIONGUARD_SIGNTOOL_PATH = $null
+            & "{{Path.Combine(repoRoot, "scripts", "release", "Publish-SessionGuardReleaseAssets.ps1")}}" `
+                -Version "{{GetProductVersion(repoRoot)}}" `
+                -Configuration Release `
+                -Runtime win-x64 `
+                -OutputRoot "{{outputRoot}}"
+            """);
+
+        var publishResult = await RunPowerShellScriptAsync(publishProbeScript);
+        Assert.True(publishResult.ExitCode == 0, $"PowerShell exited with {publishResult.ExitCode}. stderr: {publishResult.StandardError}");
+
+        var verifyScriptPath = Path.Combine(repoRoot, "scripts", "signing", "Verify-SessionGuardReleaseSignatures.ps1");
+        var verifyResult = await RunPowerShellScriptAsync(
+            verifyScriptPath,
+            "-OutputRoot",
+            outputRoot,
+            "-RequireSigned",
+            "-AsJson");
+
+        Assert.NotEqual(0, verifyResult.ExitCode);
+
+        using var document = JsonDocument.Parse(verifyResult.StandardOutput);
+        var root = document.RootElement;
+        Assert.False(root.GetProperty("Verified").GetBoolean());
+        Assert.Contains(
+            root.GetProperty("Issues").EnumerateArray().Select(item => item.GetString()),
+            issue => issue is not null && issue.Contains("not Authenticode-valid", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

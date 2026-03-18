@@ -4,7 +4,8 @@ param(
     [string]$Configuration = "Release",
     [string]$Runtime = "win-x64",
     [string]$OutputRoot = "",
-    [switch]$SelfContained
+    [switch]$SelfContained,
+    [switch]$RequireSigning
 )
 
 Set-StrictMode -Version Latest
@@ -89,6 +90,10 @@ if ($SelfContained.IsPresent) {
     $publishParameters.SelfContained = $true
 }
 
+if ($RequireSigning.IsPresent) {
+    $publishParameters.RequireSigning = $true
+}
+
 & $appPublishScript @publishParameters -OutputDir $appPublishRoot
 & $servicePublishScript @publishParameters -OutputDir $servicePublishRoot
 & $bundlePublishScript @publishParameters -OutputDir $bundlePublishRoot
@@ -117,20 +122,37 @@ $appManifest = Get-Content (Join-Path $appPublishRoot "app-manifest.json") -Raw 
 $serviceManifest = Get-Content (Join-Path $servicePublishRoot "install-manifest.json") -Raw | ConvertFrom-Json
 $bundleManifest = Get-Content (Join-Path $bundlePublishRoot "bundle-manifest.json") -Raw | ConvertFrom-Json
 
+$primarySignatureStatuses = @(
+    [string]$appManifest.PrimaryExecutable.Signature.Status,
+    [string]$serviceManifest.PrimaryExecutable.Signature.Status
+)
+$allPrimaryComponentsSigned = ($primarySignatureStatuses -notcontains "NotSigned") -and
+    ($primarySignatureStatuses -notcontains "Unknown")
+
+$trustNotes = New-Object System.Collections.Generic.List[string]
+$trustNotes.Add("Verify the setup zip hash against the published checksum file before install.") | Out-Null
+if ($RequireSigning.IsPresent -or $allPrimaryComponentsSigned) {
+    $trustNotes.Add("Official SessionGuard release automation now expects Authenticode-signed app and service binaries. After extraction, Verify-SessionGuard.ps1 also reports signature status for the app, service, and root installer scripts.") | Out-Null
+}
+else {
+    $trustNotes.Add("This publish output was generated without a signing certificate. The manifests record current Authenticode signature status, and the checksum asset remains the primary integrity signal for unsigned local builds.") | Out-Null
+}
+
 $manifest = [ordered]@{
     ProductVersion = $versionValue
     Runtime = $Runtime
     SelfContained = $SelfContained.IsPresent
     CreatedAtUtc = (Get-Date).ToUniversalTime().ToString("o")
     OutputRoot = $OutputRoot
-    TrustNotes = @(
-        "Verify the setup zip hash against the published checksum file before install.",
-        "SessionGuard direct-download binaries may still be unsigned; the publish manifests record current Authenticode signature status."
-    )
+    SigningRequired = $RequireSigning.IsPresent
+    TrustNotes = $trustNotes.ToArray()
     PublishedComponents = [ordered]@{
         DesktopApp = $appManifest.PrimaryExecutable
         Service = $serviceManifest.PrimaryExecutable
-        Bundle = $bundleManifest.PrimaryExecutables
+        Bundle = [ordered]@{
+            PrimaryExecutables = $bundleManifest.PrimaryExecutables
+            RootScripts = $bundleManifest.RootScripts
+        }
     }
     Assets = @($assetRecords + $checksumRecord)
 }

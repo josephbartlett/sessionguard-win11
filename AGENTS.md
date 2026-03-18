@@ -42,7 +42,7 @@
 
 - Tag releases as `vMAJOR.MINOR.PATCH`.
 - Use annotated tags for releases.
-- When release packaging changes, keep the direct-download checksum asset and bundle verification path in sync with the docs.
+- When release packaging changes, keep the direct-download checksum asset, signature verification path, and bundle verification path in sync with the docs.
 - If a human explicitly approves a push, return release notes in this exact response shape:
   - `Release title: <title>`
   - `Description:`

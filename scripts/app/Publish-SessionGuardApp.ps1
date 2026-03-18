@@ -4,13 +4,15 @@ param(
     [string]$Runtime = "win-x64",
     [string]$OutputDir = "",
     [switch]$SelfContained,
-    [switch]$PreserveRuntimeState
+    [switch]$PreserveRuntimeState,
+    [switch]$RequireSigning
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 . (Join-Path $PSScriptRoot "..\\service\\common.ps1")
+. (Join-Path $PSScriptRoot "..\\signing\\common.ps1")
 
 $repoRoot = Get-SessionGuardRepositoryRoot
 if ([string]::IsNullOrWhiteSpace($OutputDir)) {
@@ -30,6 +32,7 @@ New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
 
 $backupRoot = $null
 $preservedDirectories = @{}
+$signingSession = Get-SessionGuardSigningSession -RequireSigning:$RequireSigning
 
 function Restore-PreservedDirectory {
     param(
@@ -126,6 +129,8 @@ try {
         throw "Expected published desktop executable at '$appExe'."
     }
 
+    Invoke-SessionGuardCodeSigning -Session $signingSession -Paths @($appExe) -Description "SessionGuard Desktop App" | Out-Null
+
     $productVersion = Get-SessionGuardProductVersion
     $manifest = [ordered]@{
         ProductVersion = $productVersion
@@ -133,6 +138,13 @@ try {
         PublishConfiguration = $Configuration
         Runtime = $Runtime
         SelfContained = $SelfContained.IsPresent
+        Signing = [ordered]@{
+            Enabled = $signingSession.Enabled
+            Required = $RequireSigning.IsPresent
+            CertificateSubject = $signingSession.CertificateSubject
+            CertificateThumbprint = $signingSession.CertificateThumbprint
+            TimestampUrl = $signingSession.TimestampUrl
+        }
         StartupArguments = @("--start-minimized")
         PrimaryExecutable = [ordered]@{
             Path = "SessionGuard.App.exe"
@@ -162,6 +174,7 @@ catch {
     throw
 }
 finally {
+    Remove-SessionGuardSigningSession -Session $signingSession
     if ($backupRoot -and (Test-Path $backupRoot)) {
         Remove-Item $backupRoot -Recurse -Force
     }

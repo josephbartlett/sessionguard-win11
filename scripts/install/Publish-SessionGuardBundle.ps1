@@ -3,7 +3,8 @@ param(
     [string]$Configuration = "Release",
     [string]$Runtime = "win-x64",
     [string]$OutputDir = "",
-    [switch]$SelfContained
+    [switch]$SelfContained,
+    [switch]$RequireSigning
 )
 
 Set-StrictMode -Version Latest
@@ -11,6 +12,7 @@ $ErrorActionPreference = "Stop"
 
 . (Join-Path $PSScriptRoot "..\\service\\common.ps1")
 . (Join-Path $PSScriptRoot "common.ps1")
+. (Join-Path $PSScriptRoot "..\\signing\\common.ps1")
 
 $repoRoot = Get-SessionGuardRepositoryRoot
 if ([string]::IsNullOrWhiteSpace($OutputDir)) {
@@ -33,6 +35,10 @@ $publishParameters = @{
 
 if ($SelfContained.IsPresent) {
     $publishParameters.SelfContained = $true
+}
+
+if ($RequireSigning.IsPresent) {
+    $publishParameters.RequireSigning = $true
 }
 
 & $appPublishScript @publishParameters
@@ -78,13 +84,13 @@ powershell -ExecutionPolicy Bypass -File .\Verify-SessionGuard.ps1
 powershell -ExecutionPolicy Bypass -File .\Install-SessionGuard.ps1
 ```
 
-`Verify-SessionGuard.ps1` checks the extracted bundle against the publisher-generated file inventory and reports current Authenticode signature status for the app and service binaries. It helps catch incomplete extraction or local file tampering. It does not replace verifying the downloaded setup zip hash against the published release checksum file.
+`Verify-SessionGuard.ps1` checks the extracted bundle against the publisher-generated file inventory and reports current Authenticode signature status for the app, service, and root installer scripts. It helps catch incomplete extraction or local file tampering. It does not replace verifying the downloaded setup zip hash against the published release checksum file.
 
 The install then places SessionGuard under `C:\Program Files\SessionGuard`, installs the Windows Service, registers the app to start at sign-in for the current user, scopes the installed service control plane plus `logs/` and `state/` access to that user, administrators, and `SYSTEM`, stops a running installed tray app before replacing files during reinstall or upgrade, and attempts to launch the app minimized to the tray unless you opt out with `-DoNotLaunchApp`.
 
 Install it from the same Windows account that should see the tray icon at sign-in.
 
-If Windows blocks the immediate launch, the install still succeeded. SessionGuard setup zips are direct-download unsigned binaries today, so Windows may show a SmartScreen or protection prompt on first launch. Open `C:\Program Files\SessionGuard\SessionGuard.App.exe` manually from your normal desktop session, use `-DoNotLaunchApp`, or wait for the next sign-in.
+If Windows blocks the immediate launch, the install still succeeded. Official SessionGuard release builds are intended to be Authenticode-signed, but local or custom builds may still be unsigned and can trigger SmartScreen or other Windows trust prompts. Open `C:\Program Files\SessionGuard\SessionGuard.App.exe` manually from your normal desktop session, use `-DoNotLaunchApp`, or wait for the next sign-in.
 
 ## How SessionGuard runs
 
@@ -105,7 +111,8 @@ powershell -ExecutionPolicy Bypass -File .\Uninstall-SessionGuard.ps1 -RemoveFil
 
 - SessionGuard does not disable Windows Update.
 - SessionGuard reduces restart disruption but does not guarantee prevention of every Windows restart path.
-- SessionGuard setup zips are direct-download unsigned binaries today. Prefer verifying the published setup zip hash before install.
+- Verify the published setup zip hash before install, even for signed official releases.
+- Official SessionGuard release builds are intended to be Authenticode-signed. Local or custom builds may still be unsigned.
 - To change service-backed guard mode, mitigation, or approval state, use `Open elevated controls` from the dashboard or launch `SessionGuard.App.exe` as administrator.
 - Installer switches: `-DoNotLaunchApp`, `-DoNotStartService`, `-ValidateOnly -AsJson`, and `-SkipBundleVerification`.
 '@
@@ -170,12 +177,31 @@ Set-Content -Path (Join-Path $OutputDir "Install-SessionGuard.ps1") -Value $bund
 Set-Content -Path (Join-Path $OutputDir "Uninstall-SessionGuard.ps1") -Value $bundleUninstallScript -Encoding ASCII
 Set-Content -Path (Join-Path $OutputDir "Verify-SessionGuard.ps1") -Value $bundleVerifyScript -Encoding ASCII
 
+$signingSession = Get-SessionGuardSigningSession -RequireSigning:$RequireSigning
+try {
+    $bundleScriptPaths = @(
+        Get-ChildItem -Path $OutputDir -Filter *.ps1 -File -Recurse |
+        ForEach-Object { $_.FullName }
+    )
+    Invoke-SessionGuardCodeSigning -Session $signingSession -Paths $bundleScriptPaths -Description "SessionGuard Installer Scripts" | Out-Null
+}
+finally {
+    Remove-SessionGuardSigningSession -Session $signingSession
+}
+
 $bundleManifest = [ordered]@{
     ProductVersion = Get-SessionGuardProductVersion
     PublishedAtUtc = (Get-Date).ToUniversalTime().ToString("o")
     PublishConfiguration = $Configuration
     Runtime = $Runtime
     SelfContained = $SelfContained.IsPresent
+    Signing = [ordered]@{
+        Enabled = $signingSession.Enabled
+        Required = $RequireSigning.IsPresent
+        CertificateSubject = $signingSession.CertificateSubject
+        CertificateThumbprint = $signingSession.CertificateThumbprint
+        TimestampUrl = $signingSession.TimestampUrl
+    }
     StartupArguments = @("--start-minimized")
     IncludedComponents = @(
         "SessionGuard.App.exe",
@@ -194,6 +220,20 @@ $bundleManifest = [ordered]@{
         [ordered]@{
             Path = "SessionGuard.Service.exe"
             Signature = Get-SessionGuardFileSignatureInfo -Path $serviceExe
+        }
+    )
+    RootScripts = @(
+        [ordered]@{
+            Path = "Install-SessionGuard.ps1"
+            Signature = Get-SessionGuardFileSignatureInfo -Path (Join-Path $OutputDir "Install-SessionGuard.ps1")
+        },
+        [ordered]@{
+            Path = "Uninstall-SessionGuard.ps1"
+            Signature = Get-SessionGuardFileSignatureInfo -Path (Join-Path $OutputDir "Uninstall-SessionGuard.ps1")
+        },
+        [ordered]@{
+            Path = "Verify-SessionGuard.ps1"
+            Signature = Get-SessionGuardFileSignatureInfo -Path (Join-Path $OutputDir "Verify-SessionGuard.ps1")
         }
     )
 }

@@ -35,9 +35,9 @@ Recommended trust check for a direct-download install:
 Get-FileHash .\sessionguard-win11-setup-<version>-win-x64.zip -Algorithm SHA256
 ```
 
-Compare that hash against the published `sessionguard-win11-sha256-<version>.txt` release asset before extraction. After extraction, `Verify-SessionGuard.ps1` checks the extracted files against the publisher-generated bundle inventory and reports current Authenticode signature status for the app and service binaries.
+Compare that hash against the published `sessionguard-win11-sha256-<version>.txt` release asset before extraction. After extraction, `Verify-SessionGuard.ps1` checks the extracted files against the publisher-generated bundle inventory and reports current Authenticode signature status for the app, service, and root installer scripts.
 
-If Windows blocks the immediate launch, the install still succeeded. SessionGuard setup zips are direct-download unsigned binaries today, so Windows may show a SmartScreen or protection prompt on first launch. Open `C:\Program Files\SessionGuard\SessionGuard.App.exe` manually from your normal desktop session, use `-DoNotLaunchApp`, or wait for the next sign-in.
+If Windows blocks the immediate launch, the install still succeeded. Official SessionGuard tag releases are intended to be Authenticode-signed, but local or custom builds may still be unsigned and can trigger SmartScreen or other Windows trust prompts. Open `C:\Program Files\SessionGuard\SessionGuard.App.exe` manually from your normal desktop session, use `-DoNotLaunchApp`, or wait for the next sign-in.
 
 Useful install switches:
 

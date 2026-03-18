@@ -41,7 +41,8 @@
 - The desktop UI now behaves as a tray-first shell, but deeper diagnosis still depends on opening the full dashboard window.
 - Desktop notifications are local tray balloon tips only. They are not Windows toast notifications, do not integrate with a richer action center workflow, and are easiest to notice when the dashboard window is hidden or minimized.
 - The local named-pipe control plane is now versioned, but compatibility is still only guaranteed within the local SessionGuard release line.
-- SessionGuard direct-download releases now publish checksum files and extracted-bundle verification, but the binaries may still be unsigned and can still trigger SmartScreen or other Windows trust prompts on first launch.
+- Official SessionGuard tag releases are intended to be Authenticode-signed, but local or custom builds may still be unsigned and can still trigger SmartScreen or other Windows trust prompts on first launch.
+- Even signed releases may still encounter SmartScreen reputation prompts at first. Standard code-signing helps Windows trust, but EV signing is still the faster path for reputation buildup if distribution volume or prompt reduction becomes critical later.
 - Service installation, update, and start or stop scripts are included, but the workflow is still aimed at local operator deployment rather than enterprise fleet rollout.
 - Published runtime config is now preserved across republish operations and has a bounded schema migration path, but future breaking config redesigns will still need explicit migration steps before they can be claimed upgrade-safe.
 - The combined install path currently registers tray startup for the current user only. If multiple users sign into the same machine, each user would need their own app auto-start registration.

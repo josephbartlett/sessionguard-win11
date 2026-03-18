@@ -122,6 +122,28 @@ That produces:
 
 For direct-download release prep, verify the generated setup zip hash against that checksum file and keep the checksum asset with the published release.
 
+## Signing and trust
+
+SessionGuard uses standard Authenticode signing for official releases. EV signing is still optional outside the repo and is mainly a trust and SmartScreen reputation choice, not a code requirement.
+
+Supported signing inputs:
+
+- `SESSIONGUARD_SIGN_CERT_BASE64`: base64-encoded `.pfx`
+- `SESSIONGUARD_SIGN_CERT_FILE`: local path to a `.pfx`
+- `SESSIONGUARD_SIGN_CERT_PASSWORD`: `.pfx` password
+- `SESSIONGUARD_SIGN_TIMESTAMP_URL`: optional RFC3161 timestamp URL
+- `SESSIONGUARD_SIGNTOOL_PATH`: optional explicit `signtool.exe` path
+
+Official tag releases should use the release workflow with signing required. Local builds can stay unsigned unless you explicitly supply a certificate.
+For GitHub Actions, configure `SESSIONGUARD_SIGN_CERT_BASE64` and `SESSIONGUARD_SIGN_CERT_PASSWORD` as repository secrets. Optional timestamp and `signtool.exe` overrides can be supplied through repository variables.
+
+Local signed release example:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/release/Publish-SessionGuardReleaseAssets.ps1 -Version 1.4.0 -Configuration Release -Runtime win-x64 -SelfContained -RequireSigning
+powershell -ExecutionPolicy Bypass -File scripts/signing/Verify-SessionGuardReleaseSignatures.ps1 -OutputRoot artifacts/releases/1.4.0 -RequireSigned
+```
+
 ## Tag-driven release flow
 
 GitHub Actions will publish release assets when you push an annotated `vX.Y.Z` tag.
@@ -134,14 +156,15 @@ Requirements:
 Example:
 
 ```powershell
-git tag -a v1.3.0 -m "SessionGuard 1.3.0"
+git tag -a v1.4.0 -m "SessionGuard 1.4.0"
 git push origin main
-git push origin v1.3.0
+git push origin v1.4.0
 ```
 
 The release workflow:
 
 - runs the repo-owned Windows validation flow
 - publishes self-contained `win-x64` binaries
+- requires configured signing secrets and verifies official release signatures
 - creates the setup, app, service, source, and checksum assets
 - uploads those assets to the matching GitHub Release

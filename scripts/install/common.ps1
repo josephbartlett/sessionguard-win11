@@ -284,7 +284,13 @@ function Invoke-SessionGuardBundleVerification {
     }
 
     $signatureReports = @(
-        @("SessionGuard.App.exe", "SessionGuard.Service.exe") |
+        @(
+            "SessionGuard.App.exe",
+            "SessionGuard.Service.exe",
+            "Install-SessionGuard.ps1",
+            "Uninstall-SessionGuard.ps1",
+            "Verify-SessionGuard.ps1"
+        ) |
         ForEach-Object {
             $targetPath = Join-Path $BundleRoot $_
             if (Test-Path $targetPath) {
@@ -294,8 +300,8 @@ function Invoke-SessionGuardBundleVerification {
     )
 
     foreach ($signatureReport in $signatureReports) {
-        if (-not $signatureReport.IsSigned) {
-            $warnings.Add(("{0} is not Authenticode-signed. Verify the downloaded zip hash against the published release checksum file." -f (Split-Path -Leaf $signatureReport.Path)))
+        if ($signatureReport.Status -ne "Valid") {
+            $warnings.Add(("{0} is not Authenticode-valid. Verify the downloaded zip hash against the published release checksum file. {1}" -f (Split-Path -Leaf $signatureReport.Path), $signatureReport.StatusMessage))
         }
     }
 

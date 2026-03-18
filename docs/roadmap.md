@@ -162,6 +162,19 @@ Delivered:
 - bundle and release manifests that record integrity and signature metadata without leaking machine-local paths
 - updated install, runtime, development, and manual-validation docs for the trust and verification path
 
+### v1.4.0 — Release Signing and Trust
+
+Purpose:
+Move SessionGuard's direct-download trust story beyond hashes alone by requiring release signing in automation while keeping local unsigned builds workable.
+
+Delivered:
+
+- standard Authenticode signing support for app and service release binaries
+- signed root installer scripts inside the setup bundle
+- release-time signature verification for app, service, and bundle installer entry points
+- updated release workflow, docs, and manual validation for signed official releases
+- checksum assets retained as a secondary integrity check rather than the only trust signal
+
 ## Likely Next Improvements
 
 The items below are not promises. They are the most likely next areas of value based on the current product shape.

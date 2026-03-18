@@ -43,9 +43,9 @@ That install path:
 
 Install it from the same signed-in Windows account that should see the tray icon at sign-in. The startup registration is written to that user's `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` key.
 
-`Verify-SessionGuard.ps1` checks the extracted files against the publisher-generated bundle inventory and reports the current Authenticode signature status of `SessionGuard.App.exe` and `SessionGuard.Service.exe`. It helps catch incomplete extraction or local tampering, but it does not replace verifying the published zip hash.
+`Verify-SessionGuard.ps1` checks the extracted files against the publisher-generated bundle inventory and reports the current Authenticode signature status of `SessionGuard.App.exe`, `SessionGuard.Service.exe`, and the root installer scripts. It helps catch incomplete extraction or local tampering, but it does not replace verifying the published zip hash.
 
-If Windows blocks the immediate app launch, the install still succeeds. SessionGuard setup zips are direct-download unsigned binaries today, so Windows may show a SmartScreen or protection prompt on first launch. You can launch `C:\Program Files\SessionGuard\SessionGuard.App.exe` manually from your normal desktop session, use `-DoNotLaunchApp` during install, or wait for the next sign-in.
+If Windows blocks the immediate app launch, the install still succeeds. Official SessionGuard tag releases are intended to be Authenticode-signed, but local or custom builds may still be unsigned and can trigger SmartScreen or other Windows trust prompts. You can launch `C:\Program Files\SessionGuard\SessionGuard.App.exe` manually from your normal desktop session, use `-DoNotLaunchApp` during install, or wait for the next sign-in.
 
 For full install, uninstall, and source-run instructions, use [Getting Started](docs/getting-started.md).
 
@@ -105,7 +105,7 @@ See [Limitations](docs/limitations.md) for the full platform and permissions bou
 - [Limitations](docs/limitations.md)
 - [Roadmap](docs/roadmap.md)
 - [Future service and shell direction](docs/future-service-architecture.md)
-- [Current release notes](docs/releases/v1.3.0.md)
+- [Current release notes](docs/releases/v1.4.0.md)
 
 ## Practical positioning
 

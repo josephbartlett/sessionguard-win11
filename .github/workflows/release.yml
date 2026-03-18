@@ -49,12 +49,29 @@ jobs:
           powershell -ExecutionPolicy Bypass -File scripts/ci/Invoke-WindowsValidation.ps1 -Configuration Release
 
       - name: Publish release assets
+        env:
+          SESSIONGUARD_SIGN_CERT_BASE64: ${{ secrets.SESSIONGUARD_SIGN_CERT_BASE64 }}
+          SESSIONGUARD_SIGN_CERT_PASSWORD: ${{ secrets.SESSIONGUARD_SIGN_CERT_PASSWORD }}
+          SESSIONGUARD_SIGN_TIMESTAMP_URL: ${{ vars.SESSIONGUARD_SIGN_TIMESTAMP_URL }}
+          SESSIONGUARD_SIGNTOOL_PATH: ${{ vars.SESSIONGUARD_SIGNTOOL_PATH }}
         run: |
           powershell -ExecutionPolicy Bypass -File scripts/release/Publish-SessionGuardReleaseAssets.ps1 `
             -Version "${{ steps.version.outputs.version }}" `
             -Configuration Release `
             -Runtime win-x64 `
-            -SelfContained
+            -SelfContained `
+            -RequireSigning
+
+      - name: Verify release signatures
+        env:
+          SESSIONGUARD_SIGN_CERT_BASE64: ${{ secrets.SESSIONGUARD_SIGN_CERT_BASE64 }}
+          SESSIONGUARD_SIGN_CERT_PASSWORD: ${{ secrets.SESSIONGUARD_SIGN_CERT_PASSWORD }}
+          SESSIONGUARD_SIGN_TIMESTAMP_URL: ${{ vars.SESSIONGUARD_SIGN_TIMESTAMP_URL }}
+          SESSIONGUARD_SIGNTOOL_PATH: ${{ vars.SESSIONGUARD_SIGNTOOL_PATH }}
+        run: |
+          powershell -ExecutionPolicy Bypass -File scripts/signing/Verify-SessionGuardReleaseSignatures.ps1 `
+            -OutputRoot "artifacts/releases/${{ steps.version.outputs.version }}" `
+            -RequireSigned
 
       - name: Publish validation summary
         if: always()

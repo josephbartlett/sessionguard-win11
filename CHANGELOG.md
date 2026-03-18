@@ -2,6 +2,14 @@
 
 All notable changes to this project should be recorded here in reverse chronological order.
 
+## 1.4.0 - 2026-03-17
+
+- Added standard Authenticode signing support for official release automation using PFX-backed certificate material and timestamping.
+- Added release-time signature verification for the published app, service, and setup-bundle installer entry points.
+- Added signing metadata to app, service, and bundle manifests so release output records the signing configuration and current signature state.
+- Signed the root installer scripts inside the published setup bundle and updated bundle verification to report their signature state alongside the app and service binaries.
+- Updated the release workflow, development guide, README, getting-started guide, runtime model, limitations, and manual validation checklist for the new signing and trust model.
+
 ## 1.3.0 - 2026-03-16
 
 - Added published SHA256 checksum assets for setup, app, service, and source release packages.
