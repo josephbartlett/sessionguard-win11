@@ -150,28 +150,22 @@ Reference:
 
 - [`docs/plans/v1.2.0-everyday-tray-workflow-plan.md`](plans/v1.2.0-everyday-tray-workflow-plan.md)
 
-### v1.3.0 — Packaging and Distribution Hardening
+## Current Unreleased Work On `main`
+
+### Packaging and Distribution Hardening
 
 Purpose:
 Make SessionGuard easier to trust and safer to install for direct-download users without changing the current app-plus-service product model.
 
-Delivered:
+Implemented on `main`, but not currently represented by a public `v1.3.0` release tag:
 
 - published SHA256 checksum assets for release downloads
 - extracted-bundle verification with a root-level `Verify-SessionGuard.ps1`
 - bundle and release manifests that record integrity and signature metadata without leaking machine-local paths
-- updated install, runtime, development, and manual-validation docs for the trust and verification path
-
-### v1.4.0 — Release Signing and Trust
-
-Purpose:
-Move SessionGuard's direct-download trust story beyond hashes alone by requiring release signing in automation while keeping local unsigned builds workable.
-
-Delivered:
-
 - standard Authenticode signing support for app and service release binaries
 - signed root installer scripts inside the setup bundle
 - release-time signature verification for app, service, and bundle installer entry points
+- hardened signing-session cleanup and ephemeral certificate handling for release automation
 - updated release workflow, docs, and manual validation for signed official releases
 - checksum assets retained as the primary download trust anchor alongside signed release binaries
 

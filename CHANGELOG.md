@@ -2,22 +2,11 @@
 
 All notable changes to this project should be recorded here in reverse chronological order.
 
-## 1.4.0 - 2026-03-17
+## Unreleased
 
-- Added standard Authenticode signing support for official release automation using PFX-backed certificate material and timestamping.
-- Hardened the signing helper so temporary certificate material is cleaned up on setup failure and imported certificates use ephemeral key storage.
-- Added release-time signature verification for the published app, service, and setup-bundle installer entry points.
-- Added signing metadata to app, service, and bundle manifests so release output records the signing configuration and current signature state.
-- Signed the root installer scripts inside the published setup bundle and updated bundle verification/docs to treat the published setup zip checksum as the primary direct-download trust anchor.
-- Updated the release workflow, development guide, README, getting-started guide, runtime model, limitations, and manual validation checklist for the new signing and trust model.
-
-## 1.3.0 - 2026-03-16
-
-- Added published SHA256 checksum assets for setup, app, service, and source release packages.
-- Added extracted-bundle verification through `Verify-SessionGuard.ps1` and `scripts/install/Verify-SessionGuardBundle.ps1` so direct-download installs can catch incomplete extraction or local file tampering before installation.
-- Added trust metadata to bundle, app, service, and release manifests so publish output now records current Authenticode signature state without leaking machine-local paths.
-- Updated the combined installer to run extracted-bundle verification before install unless an advanced operator explicitly opts out with `-SkipBundleVerification`.
-- Expanded script coverage for bundle verification failures and release checksum generation.
+- Packaging and distribution hardening work on `main` now publishes and verifies setup-bundle integrity metadata, checksum assets, and Authenticode signature state for direct-download release prep.
+- The combined installer can verify extracted bundle contents before install, and the publish pipeline records trust metadata without leaking machine-local paths.
+- Official tag-release signing support, signature verification, and ephemeral signing-session cleanup are implemented in the repo, but this work is not currently represented by a shipped `1.3.0` tag.
 
 ## 1.2.1 - 2026-03-14
 

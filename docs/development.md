@@ -140,8 +140,8 @@ For GitHub Actions, configure `SESSIONGUARD_SIGN_CERT_BASE64` and `SESSIONGUARD_
 Local signed release example:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/release/Publish-SessionGuardReleaseAssets.ps1 -Version 1.4.0 -Configuration Release -Runtime win-x64 -SelfContained -RequireSigning
-powershell -ExecutionPolicy Bypass -File scripts/signing/Verify-SessionGuardReleaseSignatures.ps1 -OutputRoot artifacts/releases/1.4.0 -RequireSigned
+powershell -ExecutionPolicy Bypass -File scripts/release/Publish-SessionGuardReleaseAssets.ps1 -Version <next-version> -Configuration Release -Runtime win-x64 -SelfContained -RequireSigning
+powershell -ExecutionPolicy Bypass -File scripts/signing/Verify-SessionGuardReleaseSignatures.ps1 -OutputRoot artifacts/releases/<next-version> -RequireSigned
 ```
 
 ## Tag-driven release flow
@@ -156,9 +156,9 @@ Requirements:
 Example:
 
 ```powershell
-git tag -a v1.4.0 -m "SessionGuard 1.4.0"
+git tag -a v<next-version> -m "SessionGuard <next-version>"
 git push origin main
-git push origin v1.4.0
+git push origin v<next-version>
 ```
 
 The release workflow:
